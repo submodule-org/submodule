@@ -13,3 +13,6 @@
 #.pnp.*
 
 node_modules
+
+# submodule specific
+**/.submodule

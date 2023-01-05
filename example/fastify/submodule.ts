@@ -7,18 +7,19 @@ import fastify from "fastify"
 export default <Submodule<Config, PreparedContext, Context, RouteModule>>{
   configFn() {
     const configSchema = z.object({
-      port: z.number(),
+      port: z.number().default(3000),
       logLevel: z.literal("fatal")
         .or(z.literal("error"))
         .or(z.literal("warn"))
         .or(z.literal("info"))
         .or(z.literal("debug"))
         .or(z.literal("trace"))
+        .default('info')
     }) satisfies z.ZodType<Config>
 
     return configSchema.parse({
-      port: Number(process.env.PORT || 3000),
-      logLevel: process.env.LOG_LEVEL || 'info'
+      port: process.env.PORT,
+      logLevel: process.env.LOG_LEVEL
     })
   },
   preparedContextFn({ config }) {

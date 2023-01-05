@@ -1,8 +1,8 @@
 import { Logger, Level } from "pino"
 
 export type Config = {
-  port: number,
-  logLevel: Level
+  port?: number,
+  logLevel?: Level
 }
 
 export type PreparedContext = {
@@ -22,6 +22,4 @@ export type RouteModule = {
   default: RouteFn
 }
 
-export type Context = PreparedContext & {
-
-}
+export type Context = PreparedContext & {}

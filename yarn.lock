@@ -703,6 +703,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"dotenv@npm:^16.0.3":
+  version: 16.0.3
+  resolution: "dotenv@npm:16.0.3"
+  checksum: afcf03f373d7a6d62c7e9afea6328e62851d627a4e73f2e12d0a8deae1cd375892004f3021883f8aec85932cd2834b091f568ced92b4774625b321db83b827f8
+  languageName: node
+  linkType: hard
+
 "emoji-regex@npm:^8.0.0":
   version: 8.0.0
   resolution: "emoji-regex@npm:8.0.0"
@@ -1782,10 +1789,41 @@ __metadata:
   languageName: node
   linkType: hard
 
+"nats@npm:^2.10.2":
+  version: 2.10.2
+  resolution: "nats@npm:2.10.2"
+  dependencies:
+    nkeys.js: 1.0.4
+    web-streams-polyfill: ^3.2.1
+  checksum: b5d4b6e0dbb6e1376b84aab5f7e5c4d2335e3953f287ebd635d156477e6603d3f5a067fa32f6a93015232f032d40d01f72515d5fc2ddabd73e4da9a409c5b5f0
+  languageName: node
+  linkType: hard
+
+"nats@workspace:example/nats":
+  version: 0.0.0-use.local
+  resolution: "nats@workspace:example/nats"
+  dependencies:
+    dotenv: ^16.0.3
+    nats: ^2.10.2
+    pino: ^8.8.0
+    submodule: "workspace:^"
+    zod: ^3.20.2
+  languageName: unknown
+  linkType: soft
+
 "negotiator@npm:^0.6.3":
   version: 0.6.3
   resolution: "negotiator@npm:0.6.3"
   checksum: b8ffeb1e262eff7968fc90a2b6767b04cfd9842582a9d0ece0af7049537266e7b2506dfb1d107a32f06dd849ab2aea834d5830f7f4d0e5cb7d36e1ae55d021d9
+  languageName: node
+  linkType: hard
+
+"nkeys.js@npm:1.0.4":
+  version: 1.0.4
+  resolution: "nkeys.js@npm:1.0.4"
+  dependencies:
+    tweetnacl: 1.0.3
+  checksum: 58645d49e7907443810f0e83443d6126a6171493cea908edb130a62111796f511995f7b738cdb067caaa652a29813286fe7146363437a5466e3cee48ddffb77e
   languageName: node
   linkType: hard
 
@@ -2358,8 +2396,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "submodule-parent@workspace:."
   dependencies:
+    dotenv: ^16.0.3
     esbuild: ^0.16.13
     esbuild-register: ^3.4.2
+    nats: ^2.10.2
+    pino: ^8.8.0
+    submodule: "workspace:^"
     tsup: ^6.5.0
   languageName: unknown
   linkType: soft
@@ -2517,6 +2559,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"tweetnacl@npm:1.0.3":
+  version: 1.0.3
+  resolution: "tweetnacl@npm:1.0.3"
+  checksum: e4a57cac188f0c53f24c7a33279e223618a2bfb5fea426231991652a13247bea06b081fd745d71291fcae0f4428d29beba1b984b1f1ce6f66b06a6d1ab90645c
+  languageName: node
+  linkType: hard
+
 "typescript@npm:^4.9.4":
   version: 4.9.4
   resolution: "typescript@npm:4.9.4"
@@ -2568,6 +2617,13 @@ __metadata:
   version: 1.0.2
   resolution: "util-deprecate@npm:1.0.2"
   checksum: 474acf1146cb2701fe3b074892217553dfcf9a031280919ba1b8d651a068c9b15d863b7303cb15bd00a862b498e6cf4ad7b4a08fb134edd5a6f7641681cb54a2
+  languageName: node
+  linkType: hard
+
+"web-streams-polyfill@npm:^3.2.1":
+  version: 3.2.1
+  resolution: "web-streams-polyfill@npm:3.2.1"
+  checksum: b119c78574b6d65935e35098c2afdcd752b84268e18746606af149e3c424e15621b6f1ff0b42b2676dc012fc4f0d313f964b41a4b5031e525faa03997457da02
   languageName: node
   linkType: hard
 

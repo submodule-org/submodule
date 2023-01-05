@@ -33,12 +33,12 @@ export default new Command()
     const nonValidatedSubmodule = tryRequire({ dir: args.cwd, modulePath: args.config })
 
     const submodule = submoduleSchema.parse(nonValidatedSubmodule.default || nonValidatedSubmodule)
-    const config = submodule?.configFn?.() || {}
+    const config = await submodule?.configFn?.() || {}
     
-    const preparedContext = submodule?.preparedContextFn?.({ config }) || {}
+    const preparedContext = await submodule?.preparedContextFn?.({ config }) || {}
 
     const routes = requireDir(path.join(args.cwd, args.routeDir))
-    const preparedRoutes = submodule?.handlerFn?.({ config, preparedContext, handlers: routes }) || routes
+    const preparedRoutes = await submodule?.handlerFn?.({ config, preparedContext, handlers: routes }) || routes
 
     await submodule?.adaptorFn?.({ config, preparedContext, router: preparedRoutes })
   });
