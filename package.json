@@ -1,0 +1,13 @@
+{
+  "name": "submodule-parent",
+  "packageManager": "yarn@3.3.0",
+  "dependencies": {
+    "esbuild": "^0.16.13",
+    "esbuild-register": "^3.4.2",
+    "tsup": "^6.5.0"
+  },
+  "workspaces": [
+    "pkgs/*",
+    "example/*"
+  ]
+}

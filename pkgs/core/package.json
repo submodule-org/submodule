@@ -1,0 +1,35 @@
+{
+  "name": "submodule",
+  "dependencies": {
+    "@types/node": "^18.11.18",
+    "chalk": "^5.2.0",
+    "commander": "^9.4.1",
+    "esbuild": "^0.16.13",
+    "esbuild-register": "^3.4.2",
+    "require-dir": "^1.2.0",
+    "typescript": "^4.9.4",
+    "zod": "^3.20.2"
+  },
+  "scripts": {
+    "dev": "yarn run -T tsup --watch",
+    "core:dev": "yarn dev",
+    "build": "yarn run -T tsup"
+  },
+  "bin": "dist/cli.js",
+  "types": "dist/index.d.ts",
+  "tsup": {
+    "entry": [
+      "src/index.ts",
+      "src/cli.ts",
+      "src/index.ts",
+      "src/commands/*.ts"
+    ],
+    "splitting": false,
+    "sourcemap": true,
+    "clean": true,
+    "dts": true
+  },
+  "devDependencies": {
+    "@types/require-dir": "^1.0.2"
+  }
+}

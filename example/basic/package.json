@@ -1,0 +1,9 @@
+{
+  "name": "basic",
+  "packageManager": "yarn@3.3.0",
+  "dependencies": {
+    "commander": "^9.4.1",
+    "submodule": "workspace:^",
+    "zod": "^3.20.2"
+  }
+}
