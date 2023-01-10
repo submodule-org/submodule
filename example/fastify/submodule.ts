@@ -37,15 +37,18 @@ export default <Submodule<Config, PreparedContext, Context, RouteModule>>{
     const routeModSchema = z.object({
       default: z.function(),
       meta: metaSchema.optional()
-    }) satisfies z.ZodType<RouteModule>
+    })
     
     // just in case name format is needed
     const routes: Record<string, RouteModule> = {}
     Object.keys(handlers).forEach(route => {
-      const routeModule = routeModSchema.safeParse(handlers[route])
+      const routeModule = routeModSchema.passthrough().safeParse(handlers[route])
 
       if (routeModule.success) {
-        routes[route] = routeModule.data
+        routes[route] = {
+          handle: routeModule.data.default,
+          meta: routeModule.data.meta
+        }
       }
     })
 
@@ -63,7 +66,7 @@ export default <Submodule<Config, PreparedContext, Context, RouteModule>>{
         method: router[route]?.meta?.method || 'GET',
         url: `/${route}`,
         async handler(req, res) {
-          const fn = router[route].default
+          const fn = router[route].handle
           const result = await fn({ ...preparedContext })
 
           res.send(result)

@@ -19,7 +19,7 @@ export type RouteFn = (context: Context) => Promise<any> | any
 
 export type RouteModule = {
   meta?: RouteMeta
-  default: RouteFn
+  handle: RouteFn
 }
 
 export type Context = PreparedContext & {}

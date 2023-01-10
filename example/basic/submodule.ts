@@ -45,6 +45,7 @@ export default <Submodule<Config, PreparedContext, Context, RouteFn>>{
         const command = new Command()
           .argument('<name>', 'function name')
           .action(async args => {
+            console.log(router)
             if (!router[args]) {
               console.log('route not found', args)
               return

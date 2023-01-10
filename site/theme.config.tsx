@@ -5,5 +5,14 @@ export default {
   project: {
     link: 'https://github.com/silenteer/submodule',
   },
+  
+  editLink: {
+    component: null
+  },
+
+  feedback: {
+    content: null
+  }
+
   // ...
 } satisfies DocsThemeConfig

@@ -40,7 +40,7 @@ export default <Submodule<Config, PreparedContext, NatsContext, NatsModule>> {
     
     const routes: Record<string, NatsModule> = {}
     for (const path in handlers) {
-      const handlerMod = handlerSchema.parse(handlers[path]?.['default'])
+      const handlerMod = handlerSchema.passthrough().parse(handlers[path]?.['default'])
       routes[path] = handlerMod
     }
 
@@ -74,7 +74,7 @@ export default <Submodule<Config, PreparedContext, NatsContext, NatsModule>> {
             : {}
 
           route?.input?.parse(incomingObject)
-
+          
           const result = await route.handle(incomingObject, context)
 
           if (msg.reply && result !== undefined) {

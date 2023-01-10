@@ -1,6 +1,7 @@
 import type { RouteFn } from "../types"
+import { test } from "./hello2"
 
-export default <RouteFn> function(context) {
-  console.log('hello world')
+export default <RouteFn> function hello(context) {
+  test()
   return { hello: 'world' }
 }

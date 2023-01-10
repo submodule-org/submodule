@@ -1,5 +1,8 @@
 {
   "name": "submodule",
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "dependencies": {
     "@types/node": "^18.11.18",
     "chalk": "^5.2.0",
@@ -30,6 +33,7 @@
     "dts": true
   },
   "devDependencies": {
-    "@types/require-dir": "^1.0.2"
+    "@types/require-dir": "^1.0.2",
+    "vitest": "^0.26.3"
   }
 }
