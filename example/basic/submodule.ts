@@ -5,6 +5,11 @@ import repl from "repl"
 import { Command } from "commander"
 
 export default <Submodule<Config, PreparedContext, Context, RouteFn>>{
+  submodule: {
+    appName: 'submodule-basic',
+    appVersion: 'local-test',
+  },
+
   async configFn() {
     const configSchema = z.object({
       fastify: z.object({
@@ -18,7 +23,7 @@ export default <Submodule<Config, PreparedContext, Context, RouteFn>>{
       }
     })
   },
-  handlerFn({ handlers }) {
+  async handlerFn({ handlers }) {
     const handlerSchema = z.object({
       default: z.function()
     })

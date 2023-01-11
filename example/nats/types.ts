@@ -2,7 +2,8 @@ import { Msg, NatsConnection } from "nats"
 import { z } from "zod"
 
 export type PreparedContext = {
-  nc: NatsConnection
+  nc: NatsConnection,
+  logger: typeof console.log
 }
 
 export type Config = {

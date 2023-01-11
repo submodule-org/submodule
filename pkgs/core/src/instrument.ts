@@ -39,6 +39,32 @@ export function trace<Fn extends AnyFn>(name: string, fn: Fn, spanOptions: SpanO
   } as Fn
 }
 
+export function instrument(input: any, maxLevel = 1, currentLevel = 0) {
+  if (input === null || input === undefined) return input
+  if (currentLevel > maxLevel) return input
+  
+  if ( // there can be more
+    typeof input !== 'object' ||
+    Array.isArray(input) ||
+
+    // built-in objects like date, bytearray etc
+    utils.types.isDate(input)
+  ) {
+    return input
+  }
+
+  Object.keys(input).forEach(key => {
+    const instance = input[key]
+    if (typeof instance === 'function') {
+      input[key] = trace(key, instance)
+    } else {
+      input[key] = instrument(input[key], maxLevel, currentLevel + 1)
+    }
+  })
+
+  return input
+}
+
 export function startSpan(name: string, spanOptions?: SpanOptions, context?: Context) {
   return getTracer()
     .startSpan(name, spanOptions, context)

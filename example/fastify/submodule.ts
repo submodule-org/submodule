@@ -5,7 +5,11 @@ import { Config, Context, PreparedContext, RouteMeta, RouteModule } from "./type
 import fastify from "fastify"
 
 export default <Submodule<Config, PreparedContext, Context, RouteModule>>{
-  configFn() {
+  submodule: {
+    appName: 'submodule-fastify'
+  },
+
+  async configFn() {
     const configSchema = z.object({
       port: z.number().default(3000),
       logLevel: z.literal("fatal")
@@ -22,12 +26,12 @@ export default <Submodule<Config, PreparedContext, Context, RouteModule>>{
       logLevel: process.env.LOG_LEVEL
     })
   },
-  preparedContextFn({ config }) {
+  async preparedContextFn({ config }) {
     return {
       logger: pino({ level: config.logLevel })
     }
   },
-  handlerFn({ handlers }) {
+  async handlerFn({ handlers }) {
     const metaSchema = z.object({
       websocket: z.boolean().optional(),
       path: z.string().optional(),
@@ -38,7 +42,7 @@ export default <Submodule<Config, PreparedContext, Context, RouteModule>>{
       default: z.function(),
       meta: metaSchema.optional()
     })
-    
+
     // just in case name format is needed
     const routes: Record<string, RouteModule> = {}
     Object.keys(handlers).forEach(route => {

@@ -1,10 +1,15 @@
 import { type Submodule } from "submodule"
+import * as tracer from "submodule/dist/instrument"
 import dotenv from "dotenv"
 import { z } from "zod"
 import { Config, NatsContext, NatsModule, PreparedContext } from "./types"
 import { connect, JSONCodec, StringCodec } from "nats"
 
 export default <Submodule<Config, PreparedContext, NatsContext, NatsModule>> {
+  submodule: {
+    appName: 'submodule-nats'
+  },
+
   configFn() {
     const envConfig = dotenv.config({ debug: Boolean(process.env.DEBUG) }).parsed
 
@@ -27,9 +32,9 @@ export default <Submodule<Config, PreparedContext, NatsContext, NatsModule>> {
       pass: config.nats?.pass,
     })
     
-    return { nc }
+    return { nc, logger: console.log }
   },
-  handlerFn({ config, handlers, preparedContext }) {
+  async handlerFn({ config, handlers, preparedContext }) {
     const handlerSchema = z.object({
       subject: z.string().optional(),
       input: z.instanceof(z.Schema).optional(),
@@ -63,23 +68,25 @@ export default <Submodule<Config, PreparedContext, NatsContext, NatsModule>> {
 
       ;(async () => {
         for await (const msg of sub) {
-          const context: NatsContext = {
-            ...preparedContext,
-            msg,
-            subject: route.subject || path
-          }
-
-          const incomingObject = msg.data.length > 0 
-            ? codec.decode(msg.data)
-            : {}
-
-          route?.input?.parse(incomingObject)
-          
-          const result = await route.handle(incomingObject, context)
-
-          if (msg.reply && result !== undefined) {
-            msg.respond(codec.encode(result))
-          }
+          tracer.trace(`nats.incoming.${msg.subject}`, async () => {
+            const context: NatsContext = {
+              ...preparedContext,
+              msg,
+              subject: route.subject || path
+            }
+  
+            const incomingObject = msg.data.length > 0 
+              ? codec.decode(msg.data)
+              : {}
+  
+            route?.input?.parse(incomingObject)
+            
+            const result = await route.handle(incomingObject, context)
+  
+            if (msg.reply && result !== undefined) {
+              msg.respond(codec.encode(result))
+            }
+          }) ()
         }
       })();
     })
