@@ -2,8 +2,7 @@ import { Command } from "commander"
 import requireDir from "require-dir";
 import path from "path"
 import { z } from "zod"
-
-import shimmer from "shimmer";
+import { trace } from "../instrument"
 
 function tryRequire(args: { dir: string, modulePath: string, optional?: boolean }) {
   try {
@@ -19,20 +18,6 @@ type Arg = {
   config: string,
   routeDir: string
 }
-
-function measurableFn(original: () => any) {
-  const returnFn = async function () {
-    console.log("Starting request!");
-    var returned = await original.apply(this, arguments)
-    console.log("Done setting up request -- OH YEAH!");
-    return returned;
-  };
-
-  returnFn.name = original.name + 'Wrapped'
-
-  return returnFn
-}
-
 
 // don't overuse zod to validate function shape, it has performance impact as well as weird interception to the input and result
 const submoduleSchema = z.object({
@@ -57,15 +42,14 @@ export default new Command()
     const routes = requireDir(path.join(args.cwd, args.routeDir))
     const preparedRoutes = await submodule?.handlerFn?.({ config, preparedContext, handlers: routes }) || routes
 
-
     // trap the route so we know when it is started/ended
     Object.keys(preparedRoutes).forEach(routeKey => {
       const route = preparedRoutes[routeKey]
 
       if (typeof route === 'function') {
-        shimmer.wrap<any, any>(preparedRoutes, routeKey, measurableFn)
+        preparedRoutes[routeKey] = trace(routeKey, route)
       } else {
-        shimmer.wrap<any, any>(route, 'handle', measurableFn)
+        preparedRoutes[routeKey].handle = trace(routeKey, preparedRoutes[routeKey].handle)
       }
     })
 

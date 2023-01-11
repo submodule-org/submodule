@@ -5,6 +5,36 @@ __metadata:
   version: 6
   cacheKey: 8
 
+"@esbuild-kit/cjs-loader@npm:^2.4.1":
+  version: 2.4.1
+  resolution: "@esbuild-kit/cjs-loader@npm:2.4.1"
+  dependencies:
+    "@esbuild-kit/core-utils": ^3.0.0
+    get-tsconfig: ^4.2.0
+  checksum: a516065907be0ead76ac2199ccb08ff92659ba5e2edb4bb8772b6a63afe4faed7eb45a3b4d87266a68c7c135c3dba971cd087bc6f16c382356e835c7dd3440f5
+  languageName: node
+  linkType: hard
+
+"@esbuild-kit/core-utils@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "@esbuild-kit/core-utils@npm:3.0.0"
+  dependencies:
+    esbuild: ~0.15.10
+    source-map-support: ^0.5.21
+  checksum: 0e89ec718e2211bf95c48a8085aaef88e8e416f42abd1c62d488d5458eecd3fbc144179a0c5570ad36fa7e2d3bbc411f8d3fb28802c37ced2154dc2c6ded9dfe
+  languageName: node
+  linkType: hard
+
+"@esbuild-kit/esm-loader@npm:^2.5.4":
+  version: 2.5.4
+  resolution: "@esbuild-kit/esm-loader@npm:2.5.4"
+  dependencies:
+    "@esbuild-kit/core-utils": ^3.0.0
+    get-tsconfig: ^4.2.0
+  checksum: 8f4b4b6470f7afeb58ddc15ddcc4e35a6d25910133f2b21a82a793918c6f8e28768d5cd77b1c90a003f2f1c83cb476b68354580a4e04e83e2da3312afe5b5895
+  languageName: node
+  linkType: hard
+
 "@esbuild/android-arm64@npm:0.16.13":
   version: 0.16.13
   resolution: "@esbuild/android-arm64@npm:0.16.13"
@@ -422,6 +452,103 @@ __metadata:
     mkdirp: ^1.0.4
     rimraf: ^3.0.2
   checksum: 52dc02259d98da517fae4cb3a0a3850227bdae4939dda1980b788a7670636ca2b4a01b58df03dd5f65c1e3cb70c50fa8ce5762b582b3f499ec30ee5ce1fd9380
+  languageName: node
+  linkType: hard
+
+"@opentelemetry/api@npm:^1.3.0":
+  version: 1.3.0
+  resolution: "@opentelemetry/api@npm:1.3.0"
+  checksum: 33d284b67b6fab20ff72961d289c6487d3cb27caf7489f0231d7030551f82871e081e744b0390751d8aef3bf1614bd79f854788901a354e15274f552581fb374
+  languageName: node
+  linkType: hard
+
+"@opentelemetry/context-async-hooks@npm:1.8.0":
+  version: 1.8.0
+  resolution: "@opentelemetry/context-async-hooks@npm:1.8.0"
+  peerDependencies:
+    "@opentelemetry/api": ">=1.0.0 <1.4.0"
+  checksum: 80bb2eff58e7db019e3e9bdf5ec3ab269a3cf89cf002e18a3a9837f1e9432af784ca3ec78ed9de816a11f8ddd04db279714767b34302c9360f4c7412736a5773
+  languageName: node
+  linkType: hard
+
+"@opentelemetry/core@npm:1.8.0":
+  version: 1.8.0
+  resolution: "@opentelemetry/core@npm:1.8.0"
+  dependencies:
+    "@opentelemetry/semantic-conventions": 1.8.0
+  peerDependencies:
+    "@opentelemetry/api": ">=1.0.0 <1.4.0"
+  checksum: 09cd58ec764f97b175af47fbaff335f06a31914fcb59b30c4f96f6ba69391ce4e59e3da46a95fd15a7d0e8fc5c638195aba95ca1a916127207481f1283991c97
+  languageName: node
+  linkType: hard
+
+"@opentelemetry/propagator-b3@npm:1.8.0":
+  version: 1.8.0
+  resolution: "@opentelemetry/propagator-b3@npm:1.8.0"
+  dependencies:
+    "@opentelemetry/core": 1.8.0
+  peerDependencies:
+    "@opentelemetry/api": ">=1.0.0 <1.4.0"
+  checksum: 2fb9d5079de7823b2a1eaf69912f31e566ed140b73f72a29c54e1bcd0f2bb827e29c5308b7110d3a3614eeedc862a405e891f79c947f84f1e718ad42968251be
+  languageName: node
+  linkType: hard
+
+"@opentelemetry/propagator-jaeger@npm:1.8.0":
+  version: 1.8.0
+  resolution: "@opentelemetry/propagator-jaeger@npm:1.8.0"
+  dependencies:
+    "@opentelemetry/core": 1.8.0
+  peerDependencies:
+    "@opentelemetry/api": ">=1.0.0 <1.4.0"
+  checksum: 9a0ed02e31ff1c1982e424920a5d6713d3b0d5d22fd27158cebcd2b885e7f3907dd0c1a9c903216f63cc1a1fd16c26c5c14a67b0f341e8ad1db7610d6cdaf10b
+  languageName: node
+  linkType: hard
+
+"@opentelemetry/resources@npm:1.8.0":
+  version: 1.8.0
+  resolution: "@opentelemetry/resources@npm:1.8.0"
+  dependencies:
+    "@opentelemetry/core": 1.8.0
+    "@opentelemetry/semantic-conventions": 1.8.0
+  peerDependencies:
+    "@opentelemetry/api": ">=1.0.0 <1.4.0"
+  checksum: eeea7864c486d31679dbae3c31e9badf277ece24ba8bd063e2bcc34b2d7240f543678b8106743aff30c6b0f028f2bed286d64cfd7b5cde6f9a0f6a9271a3fce1
+  languageName: node
+  linkType: hard
+
+"@opentelemetry/sdk-trace-base@npm:1.8.0, @opentelemetry/sdk-trace-base@npm:^1.8.0":
+  version: 1.8.0
+  resolution: "@opentelemetry/sdk-trace-base@npm:1.8.0"
+  dependencies:
+    "@opentelemetry/core": 1.8.0
+    "@opentelemetry/resources": 1.8.0
+    "@opentelemetry/semantic-conventions": 1.8.0
+  peerDependencies:
+    "@opentelemetry/api": ">=1.0.0 <1.4.0"
+  checksum: a6139f18fa974e264c50e28ee7ec518a4d2fea96e2e61d1e925b9381212890eec49c0684dfdb9fadcc81615578e637354e4ebfc331d0262912325de33d488c57
+  languageName: node
+  linkType: hard
+
+"@opentelemetry/sdk-trace-node@npm:^1.8.0":
+  version: 1.8.0
+  resolution: "@opentelemetry/sdk-trace-node@npm:1.8.0"
+  dependencies:
+    "@opentelemetry/context-async-hooks": 1.8.0
+    "@opentelemetry/core": 1.8.0
+    "@opentelemetry/propagator-b3": 1.8.0
+    "@opentelemetry/propagator-jaeger": 1.8.0
+    "@opentelemetry/sdk-trace-base": 1.8.0
+    semver: ^7.3.5
+  peerDependencies:
+    "@opentelemetry/api": ">=1.0.0 <1.4.0"
+  checksum: b36328d977678f866a53f8e970d74d8a9e67a8c209467bb7593c0a1813abf91f43003119730a0620c5f657899bf70ce178041fc8bbc343cd09ab3a1dbb60d5f0
+  languageName: node
+  linkType: hard
+
+"@opentelemetry/semantic-conventions@npm:1.8.0, @opentelemetry/semantic-conventions@npm:^1.8.0":
+  version: 1.8.0
+  resolution: "@opentelemetry/semantic-conventions@npm:1.8.0"
+  checksum: df30ad9486b6c611c4110fab80815301a7cc9cb320983d6c5792a1b411dc4e4f04c489b2abfdea0da7f7bbb27b9f3c456764ba07f23432900a9bbcbc5f98ff58
   languageName: node
   linkType: hard
 
@@ -1129,7 +1256,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"esbuild@npm:^0.15.1":
+"esbuild@npm:^0.15.1, esbuild@npm:~0.15.10":
   version: 0.15.18
   resolution: "esbuild@npm:0.15.18"
   dependencies:
@@ -1603,6 +1730,13 @@ __metadata:
   version: 6.0.1
   resolution: "get-stream@npm:6.0.1"
   checksum: e04ecece32c92eebf5b8c940f51468cd53554dcbb0ea725b2748be583c9523d00128137966afce410b9b051eb2ef16d657cd2b120ca8edafcf5a65e81af63cad
+  languageName: node
+  linkType: hard
+
+"get-tsconfig@npm:^4.2.0":
+  version: 4.3.0
+  resolution: "get-tsconfig@npm:4.3.0"
+  checksum: 2597aab99aa3a24db209e192a3e5874ac47fc5abc71703ee26346e0c5816cb346ca09fc813c739db5862d3a2905d89aeca1b0cbc46c2b272398d672309aaf414
   languageName: node
   linkType: hard
 
@@ -2926,6 +3060,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "submodule@workspace:pkgs/core"
   dependencies:
+    "@opentelemetry/api": ^1.3.0
+    "@opentelemetry/sdk-trace-base": ^1.8.0
+    "@opentelemetry/sdk-trace-node": ^1.8.0
+    "@opentelemetry/semantic-conventions": ^1.8.0
     "@types/node": ^18.11.18
     "@types/require-dir": ^1.0.2
     chalk: ^5.2.0
@@ -2933,6 +3071,7 @@ __metadata:
     esbuild: ^0.16.13
     esbuild-register: ^3.4.2
     require-dir: ^1.2.0
+    tsx: ^3.12.2
     typescript: ^4.9.4
     vitest: ^0.26.3
     zod: ^3.20.2
@@ -3101,6 +3240,23 @@ __metadata:
     tsup: dist/cli-default.js
     tsup-node: dist/cli-node.js
   checksum: 625082f2a2afc63024ddd54f5aca28372a7b4ec4f7c402f8aacefd0c56d8da7250665dbb4097d40edcf2cbd4168d96ed4593ecb903ab36e625628f375980e266
+  languageName: node
+  linkType: hard
+
+"tsx@npm:^3.12.2":
+  version: 3.12.2
+  resolution: "tsx@npm:3.12.2"
+  dependencies:
+    "@esbuild-kit/cjs-loader": ^2.4.1
+    "@esbuild-kit/core-utils": ^3.0.0
+    "@esbuild-kit/esm-loader": ^2.5.4
+    fsevents: ~2.3.2
+  dependenciesMeta:
+    fsevents:
+      optional: true
+  bin:
+    tsx: dist/cli.js
+  checksum: c227512ed7b480bd295c5420c560ec8311a4827b92e8040b7ca519627c7e1d35d48c25b26b4b11277cc437bba98696149f5148a9a06334f37b48bbaa870bff64
   languageName: node
   linkType: hard
 
