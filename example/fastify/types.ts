@@ -15,11 +15,11 @@ export type RouteMeta = {
   websocket?: boolean
 }
 
-export type RouteFn = (context: Context) => Promise<any> | any
+export type RouteFn<Param> = (context: Context, param: Param) => Promise<any> | any
 
-export type RouteModule = {
+export type RouteModule<Param = any> = {
   meta?: RouteMeta
-  handle: RouteFn
+  handle: RouteFn<Param>
 }
 
 export type Context = PreparedContext & {}

@@ -4,25 +4,19 @@ import { z } from "zod"
 import repl from "repl"
 import { Command } from "commander"
 
+
 export default <Submodule<Config, PreparedContext, Context, RouteFn>>{
   submodule: {
     appName: 'submodule-basic',
     appVersion: 'local-test',
   },
 
-  async configFn() {
-    const configSchema = z.object({
-      fastify: z.object({
-        port: z.number()
-      })
-    }) satisfies z.ZodType<Config>
-
-    return configSchema.parse({
-      fastify: {
-        port: 3000
-      }
-    })
+  async preparedContext() {
+    return {
+      test: require('./hello2').test
+    }
   },
+
   async handlerFn({ handlers }) {
     const handlerSchema = z.object({
       default: z.function()
@@ -50,7 +44,6 @@ export default <Submodule<Config, PreparedContext, Context, RouteFn>>{
         const command = new Command()
           .argument('<name>', 'function name')
           .action(async args => {
-            console.log(router)
             if (!router[args]) {
               console.log('route not found', args)
               return

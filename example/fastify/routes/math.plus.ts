@@ -1,8 +1,12 @@
 import { RouteFn } from "../types";
 
-export default <RouteFn> function ({ logger }) {
-  logger.info("hello world")
+type MathParam = {
+  left: number
+  right: number
+}
+
+export default <RouteFn<MathParam>> function ({ logger }, { left, right }) {
   return {
-    hello: 'world'
+    sum: Number(left) + Number(right)
   }
 }

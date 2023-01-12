@@ -1,11 +1,8 @@
-
 export type Config = {
-  fastify: {
-    port: number
-  }
 }
 
 export type PreparedContext = {
+  test: () => any
 }
 
 export type Context = PreparedContext & { config: Config }

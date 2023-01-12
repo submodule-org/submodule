@@ -28,12 +28,6 @@ export async function init(config: {
     resource,
   });
 
-  process.env.DEBUG && (() => {
-    const exporter = new ConsoleSpanExporter();
-    const processor = new SimpleSpanProcessor(exporter);
-    provider.addSpanProcessor(processor);
-  }) ()
-  
   const jaegerExporter = new OTLPTraceExporter({
     url: config.oltpUrl,
     headers: {},

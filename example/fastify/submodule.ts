@@ -60,9 +60,7 @@ export default <Submodule<Config, PreparedContext, Context, RouteModule>>{
   },
   adaptorFn({ config, preparedContext, router }) {
     const server = fastify({
-      logger: {
-        level: config.logLevel
-      }
+      logger: preparedContext.logger
     })
 
     Object.keys(router).forEach(route => {
@@ -71,7 +69,9 @@ export default <Submodule<Config, PreparedContext, Context, RouteModule>>{
         url: `/${route}`,
         async handler(req, res) {
           const fn = router[route].handle
-          const result = await fn({ ...preparedContext })
+
+          const requestParam = Object.assign({}, req.body, req.params, req.query)
+          const result = await fn({ ...preparedContext }, requestParam)
 
           res.send(result)
         }

@@ -32,7 +32,7 @@ export default <Submodule<Config, PreparedContext, NatsContext, NatsModule>> {
       pass: config.nats?.pass,
     })
     
-    return { nc, logger: console.log }
+    return { nc, logger: function() { console.log(...arguments) }  }
   },
   async handlerFn({ config, handlers, preparedContext }) {
     const handlerSchema = z.object({
