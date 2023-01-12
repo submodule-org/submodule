@@ -35,16 +35,25 @@ const submoduleSchema = z.object({
 const debugCore = require('debug')('submodule.core')
 
 const program = new Command()
-  .option('--cwd', 'current working dir', process.cwd())
-  .option('-c, --config', 'config file', './submodule')
-  .option('-r, --routeDir', 'route dir', './routes')
+  .option('--cwd <cwd>', 'current working dir', process.cwd())
+  .option('-c, --config <config>', 'config file', 'submodule')
+  .option('-r, --routeDir <routeDir>', 'route dir', './routes')
   .option('--dev', 'watch for changes automatically', false)
   .passThroughOptions(true)
   .action(async function (args: Arg, command: Command) {
-    const loaded = requireDir(args.cwd, { recurse: false })
-    const nonValidatedSubmodule = loaded['submodule'] || {}
+    const resovledCwd = path.resolve(process.cwd(), args.cwd)
+    const loaded = requireDir(resovledCwd, { recurse: false })
+    
+    let nonValidatedSubmodule = {}
 
-    const submodule = submoduleSchema.parse(nonValidatedSubmodule.default || nonValidatedSubmodule)
+    if (loaded[args.config]) {
+      debugCore('loading custom submodule')
+      nonValidatedSubmodule = loaded[args.config].default || loaded[args.config]
+    } else {
+      debugCore('using default submodule')
+    }
+
+    const submodule = submoduleSchema.parse(nonValidatedSubmodule)
     const submoduleConfig = submodule.submodule
 
     debugCore('submodule loaded')
@@ -60,7 +69,7 @@ const program = new Command()
     
     debugCore('executing run')
 
-    const routes = requireDir(path.join(args.cwd, args.routeDir))
+    const routes = requireDir(path.join(process.cwd(), args.cwd, args.routeDir))
     debugCore('routes loaded')
 
     const preparedRoutes = instrument(await submodule?.handlerFn?.({ config, preparedContext, handlers: routes }) || routes, 1)
@@ -78,10 +87,17 @@ const program = new Command()
     })
 
     command.addCommand(new Command('inspect')
+      .option('--format <format>', 'inspect output format')
       .description('support you to understand current config')
-      .action(async function inspect() {
+      .action(async function inspect(args) {
         debugCore('executing inspect')
-        console.dir({ config, preparedContext, routes, preparedRoutes }, { depth: 2 })
+
+        if ('stringify' === args?.format) {
+          console.log(JSON.stringify({ config, preparedContext, routes, preparedRoutes }))
+        } else {
+          console.dir({ config, preparedContext, routes, preparedRoutes }, { depth: 2 })
+        }
+
         process.exit(0)
       }))
     
@@ -99,4 +115,8 @@ const program = new Command()
     await command.parseAsync(command.args, { from: 'user' })
   });
 
+program.on('error', function errorHandler() {
+  console.log(arguments)
+  process.exit(1)
+})
 program.parse()
