@@ -2,10 +2,10 @@
   "name": "nats",
   "packageManager": "yarn@3.3.0",
   "dependencies": {
+    "@submodule/cli": "workspace:^",
     "dotenv": "^16.0.3",
     "nats": "^2.10.2",
     "pino": "^8.8.0",
-    "submodule": "workspace:^",
     "zod": "^3.20.2"
   }
 }

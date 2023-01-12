@@ -2,9 +2,9 @@
   "name": "tests",
   "packageManager": "yarn@3.3.0",
   "dependencies": {
+    "@submodule/cli": "workspace:^",
     "chalk": "^5.2.0",
     "execa": "^6.1.0",
-    "submodule": "workspace:^",
     "vitest": "^0.27.1"
   }
 }

@@ -1,4 +1,4 @@
-import type { Submodule } from "submodule"
+import type { Submodule } from "@submodule/cli"
 import { Config, Context, PreparedContext, RouteFn } from "./types"
 import { z } from "zod"
 import repl from "repl"

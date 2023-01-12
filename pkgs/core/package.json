@@ -1,5 +1,6 @@
 {
-  "name": "submodule",
+  "name": "@submodule/cli",
+  "version": "1.0.0",
   "engines": {
     "node": ">=16.0.0"
   },

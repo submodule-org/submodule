@@ -1,4 +1,4 @@
-import { type Submodule } from "submodule"
+import { type Submodule } from "@submodule/cli"
 import * as tracer from "submodule/dist/instrument"
 import dotenv from "dotenv"
 import { z } from "zod"

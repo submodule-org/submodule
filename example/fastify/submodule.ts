@@ -1,5 +1,5 @@
 import pino from "pino"
-import { Submodule } from "submodule"
+import { Submodule } from "@submodule/cli"
 import { z } from "zod"
 import { Config, Context, PreparedContext, RouteMeta, RouteModule } from "./types"
 import fastify from "fastify"
