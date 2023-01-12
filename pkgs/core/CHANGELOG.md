@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.1.1](https://github.com/silenteer/submodule/compare/v1.1.0...v1.1.1) (2023-01-12)
+
+
+### Bug Fixes
+
+* cleanup dependencies ([6e0cccd](https://github.com/silenteer/submodule/commit/6e0cccd134eccc5fe3448c680abec773eda736ba))
+
 ## 1.1.0 (2023-01-12)
 
 
