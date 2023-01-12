@@ -88,7 +88,6 @@ const program = new Command()
     command.addCommand(new Command('run')
       .description('process to run the application')
       .action(async function defaultAction() {
-      
 
       await submodule?.adaptorFn?.({ config, preparedContext, router: preparedRoutes })
     }))

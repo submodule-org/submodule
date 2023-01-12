@@ -64,8 +64,3 @@ export function instrument(input: any, maxLevel = 1, currentLevel = 0) {
 
   return input
 }
-
-export function startSpan(name: string, spanOptions?: SpanOptions, context?: Context) {
-  return getTracer()
-    .startSpan(name, spanOptions, context)
-}
