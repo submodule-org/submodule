@@ -27,7 +27,9 @@
     "core:dev": "yarn dev",
     "build": "yarn run -T tsup"
   },
-  "bin": "dist/cli.js",
+  "bin": {
+    "submodule": "dist/cli.js"
+  },
   "types": "dist/index.d.ts",
   "tsup": {
     "entry": [
