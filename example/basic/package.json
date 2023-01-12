@@ -5,5 +5,11 @@
     "commander": "^9.4.1",
     "submodule": "workspace:^",
     "zod": "^3.20.2"
+  },
+  "scripts": {
+    "dev": "nodemon -e ts,js --exec submodule run"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20"
   }
 }
