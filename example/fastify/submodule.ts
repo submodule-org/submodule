@@ -1,10 +1,10 @@
 import pino from "pino"
 import { Submodule } from "@submodule/cli"
 import { z } from "zod"
-import { Config, Context, PreparedContext, RouteMeta, RouteModule } from "./types"
+import { Config, Context, PreparedContext, RouteMeta, Router } from "./types"
 import fastify from "fastify"
 
-export default <Submodule<Config, PreparedContext, Context, RouteModule>>{
+export default <Submodule<Config, PreparedContext, Context, Router>>{
   submodule: {
     appName: 'submodule-fastify'
   },
@@ -31,7 +31,7 @@ export default <Submodule<Config, PreparedContext, Context, RouteModule>>{
       logger: pino({ level: config.logLevel })
     }
   },
-  async handlerFn({ handlers }) {
+  async handlerFn({ handlers, preparedContext }) {
     const metaSchema = z.object({
       websocket: z.boolean().optional(),
       path: z.string().optional(),
@@ -44,13 +44,20 @@ export default <Submodule<Config, PreparedContext, Context, RouteModule>>{
     })
 
     // just in case name format is needed
-    const routes: Record<string, RouteModule> = {}
+    const routes: Router = {}
     Object.keys(handlers).forEach(route => {
-      const routeModule = routeModSchema.passthrough().safeParse(handlers[route])
+      const routeModule = routeModSchema
+        .passthrough().safeParse(handlers[route])
 
       if (routeModule.success) {
+        const routeHandler = routeModule.data.default
+
         routes[route] = {
-          handle: routeModule.data.default,
+          handle: ({ request }) => {
+            const param = Object.assign({}, request.query, request.body)
+
+            return routeHandler(preparedContext, param)
+          },
           meta: routeModule.data.meta
         }
       }
@@ -68,11 +75,7 @@ export default <Submodule<Config, PreparedContext, Context, RouteModule>>{
         method: router[route]?.meta?.method || 'GET',
         url: `/${route}`,
         async handler(req, res) {
-          const fn = router[route].handle
-
-          const requestParam = Object.assign({}, req.body, req.params, req.query)
-          const result = await fn({ ...preparedContext }, requestParam)
-
+          const result = await router[route].handle({ request: req, response: res})
           res.send(result)
         }
       })

@@ -44,6 +44,7 @@ const program = new Command()
     const resovledCwd = path.resolve(process.cwd(), args.cwd)
     const loaded = requireDir(resovledCwd, { recurse: false })
     
+    debugCore('submodule starting %O', args)
     let nonValidatedSubmodule = {}
 
     if (loaded[args.config]) {
@@ -56,24 +57,24 @@ const program = new Command()
     const submodule = submoduleSchema.parse(nonValidatedSubmodule)
     const submoduleConfig = submodule.submodule
 
-    debugCore('submodule loaded')
-
+    debugCore('submodule loaded %O', submoduleConfig)
+    
     // not needed to wait
     submoduleConfig?.traceEnabled && tracing.init(submoduleConfig)
 
     const config = await submodule?.configFn?.() || {}
-    debugCore('config loaded')
+    debugCore('config loaded %O', config)
 
     const preparedContext = instrument(await submodule?.preparedContextFn?.({ config }) || {}, 1)
-    debugCore('preparedContext loaded')
+    debugCore('preparedContext loaded %O', preparedContext)
     
     debugCore('executing run')
 
-    const routes = requireDir(path.join(process.cwd(), args.cwd, args.routeDir))
-    debugCore('routes loaded')
+    const routes = requireDir(path.join(args.cwd, args.routeDir))
+    debugCore('routes loaded %O', routes)
 
     const preparedRoutes = instrument(await submodule?.handlerFn?.({ config, preparedContext, handlers: routes }) || routes, 1)
-    debugCore('routes enriched')
+    debugCore('router %O', preparedRoutes)
 
     // trap the route so we know when it is started/ended
     Object.keys(preparedRoutes).forEach(routeKey => {

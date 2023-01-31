@@ -1,15 +1,22 @@
-export type PromiseFn<T = any> = (...args: any[]) => Promise<T> | T
+export type RouteLike<AdaptorContext = unknown> = {
+  handle: (context: AdaptorContext) => (...args: any[]) => unknown | Promise<unknown>
+}
 
-type ExecutableRoute = {
-  handle: (...args: any) => any
-} | ((...args: any[]) => any)
+export type RouterLike<
+  AdaptorContext = unknown, 
+  Route extends RouteLike<AdaptorContext> = RouteLike<AdaptorContext>
+> = Record<string, Route>
 
-export type Submodule<Config = any, PreparedContext = any, Context = any, RouteDef extends ExecutableRoute = any> = {
+export type Submodule<
+  Config = unknown,
+  PreparedContext = unknown,
+  Context = unknown,
+  Router extends RouterLike<Context> = RouterLike<Context>> = {
   submodule?: SubmoduleConfig
   configFn?(): Config | Promise<Config>
-  preparedContextFn?(input: { config: Config }): Promise<PreparedContext>
-  handlerFn?(input: { config: Config, preparedContext: PreparedContext, handlers: Record<string, unknown> }): Promise<Record<string, RouteDef>>
-  adaptorFn?(input: { config: Config, preparedContext: PreparedContext, router: Record<string, RouteDef>, execute: (input: () => any) => void}): Promise<void>
+  preparedContextFn?(input: { config: Config }): PreparedContext | Promise<PreparedContext>
+  handlerFn?(input: { config: Config, preparedContext: PreparedContext, handlers: Record<string, unknown> }): Router | Promise<Router>
+  adaptorFn?(input: { config: Config, preparedContext: PreparedContext, router: Router, execute: (input: () => any) => void}): Promise<void>
 }
 
 export type SubmoduleConfig = {

@@ -892,6 +892,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@silenteer/natsu-type@npm:*, @silenteer/natsu-type@npm:^0.0.12":
+  version: 0.0.12
+  resolution: "@silenteer/natsu-type@npm:0.0.12"
+  checksum: 34cab17cf622b257f354194ffeed5c930063ed57724b2cdaf910e94f2a4b3b5c84d2cb39071107f50cc8e39bbeee2a987aebabcd164287e8bdff77fff523ed6d
+  languageName: node
+  linkType: hard
+
+"@silenteer/natsu@npm:^1.0.25":
+  version: 1.0.29
+  resolution: "@silenteer/natsu@npm:1.0.29"
+  dependencies:
+    "@silenteer/natsu-type": "*"
+    nats: 2.6.1
+  checksum: 1b381fb1a0b0a5b29d8855dab78a4a0e369f4601cddcb13eae6c5fa4c325972bd1fc231de8daa8c34e871bbddf45944e787937b357d40a11a283318e9913f2ac
+  languageName: node
+  linkType: hard
+
 "@submodule/cli@workspace:^, @submodule/cli@workspace:pkgs/core":
   version: 0.0.0-use.local
   resolution: "@submodule/cli@workspace:pkgs/core"
@@ -911,6 +928,7 @@ __metadata:
     esbuild: ^0.16.13
     esbuild-register: ^3.4.2
     require-dir: ^1.2.0
+    typescript: ^4.9.5
     vitest: ^0.26.3
     zod: ^3.20.2
   bin:
@@ -4321,6 +4339,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"nats@npm:2.6.1":
+  version: 2.6.1
+  resolution: "nats@npm:2.6.1"
+  dependencies:
+    nkeys.js: ^1.0.0-9
+  checksum: 554b0b1e9b4cf3638da06a08549fd76759f317c9cb13caadb10caa5028273f970d8917dc913b26ffaf17b6a043320ce75885ed04ed7f1362ffcff002507caf87
+  languageName: node
+  linkType: hard
+
 "nats@npm:^2.10.2":
   version: 2.10.2
   resolution: "nats@npm:2.10.2"
@@ -4331,7 +4358,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nats@workspace:example/nats":
+"nats@workspace:^, nats@workspace:example/nats":
   version: 0.0.0-use.local
   resolution: "nats@workspace:example/nats"
   dependencies:
@@ -4339,6 +4366,18 @@ __metadata:
     dotenv: ^16.0.3
     nats: ^2.10.2
     pino: ^8.8.0
+    zod: ^3.20.2
+  languageName: unknown
+  linkType: soft
+
+"natsu@workspace:example/natsu":
+  version: 0.0.0-use.local
+  resolution: "natsu@workspace:example/natsu"
+  dependencies:
+    "@silenteer/natsu": ^1.0.25
+    "@silenteer/natsu-type": ^0.0.12
+    "@submodule/cli": "workspace:^"
+    nats: "workspace:^"
     zod: ^3.20.2
   languageName: unknown
   linkType: soft
@@ -4357,7 +4396,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nkeys.js@npm:1.0.4":
+"nkeys.js@npm:1.0.4, nkeys.js@npm:^1.0.0-9":
   version: 1.0.4
   resolution: "nkeys.js@npm:1.0.4"
   dependencies:
@@ -6136,6 +6175,26 @@ __metadata:
   version: 0.0.6
   resolution: "typedarray@npm:0.0.6"
   checksum: 33b39f3d0e8463985eeaeeacc3cb2e28bc3dfaf2a5ed219628c0b629d5d7b810b0eb2165f9f607c34871d5daa92ba1dc69f49051cf7d578b4cbd26c340b9d1b1
+  languageName: node
+  linkType: hard
+
+"typescript@npm:^4.9.5":
+  version: 4.9.5
+  resolution: "typescript@npm:4.9.5"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: ee000bc26848147ad423b581bd250075662a354d84f0e06eb76d3b892328d8d4440b7487b5a83e851b12b255f55d71835b008a66cbf8f255a11e4400159237db
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@^4.9.5#~builtin<compat/typescript>":
+  version: 4.9.5
+  resolution: "typescript@patch:typescript@npm%3A4.9.5#~builtin<compat/typescript>::version=4.9.5&hash=d73830"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 2eee5c37cad4390385db5db5a8e81470e42e8f1401b0358d7390095d6f681b410f2c4a0c496c6ff9ebd775423c7785cdace7bcdad76c7bee283df3d9718c0f20
   languageName: node
   linkType: hard
 

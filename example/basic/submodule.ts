@@ -1,11 +1,11 @@
-import type { Submodule } from "@submodule/cli"
-import { Config, Context, PreparedContext, RouteFn } from "./types"
+import type { Submodule, RouterLike } from "@submodule/cli"
+import { Config, Context, PreparedContext, RouteDef, RouteFn } from "./types"
 import { z } from "zod"
 import repl from "repl"
 import { Command } from "commander"
 
 
-export default <Submodule<Config, PreparedContext, Context, RouteFn>>{
+export default <Submodule<Config, PreparedContext, Context, RouteDef>>{
   submodule: {
     appName: 'submodule-basic',
     appVersion: 'local-test',
@@ -22,12 +22,14 @@ export default <Submodule<Config, PreparedContext, Context, RouteFn>>{
       default: z.function()
     })
 
-    const router: Record<string, RouteFn> = {}
+    const router: RouterLike<Context, RouteDef> = {}
     Object.keys(handlers).forEach(handlerName => {
       const parseResult = handlerSchema.safeParse(handlers[handlerName])
 
       if (parseResult.success) {
-        router[handlerName] = parseResult.data.default
+        router[handlerName] = {
+          handle: parseResult.data.default
+        }
       }
     })
 
@@ -49,7 +51,8 @@ export default <Submodule<Config, PreparedContext, Context, RouteFn>>{
               return
             }
 
-            console.log(await router[args](context))
+            const call = router[args].handle
+            console.log(await call(context))
           })
           
         if (args.trim() === '') {

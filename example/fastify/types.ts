@@ -1,4 +1,5 @@
 import { Logger, Level } from "pino"
+import type { FastifyRequest, FastifyReply } from "fastify"
 
 export type Config = {
   port?: number,
@@ -15,11 +16,17 @@ export type RouteMeta = {
   websocket?: boolean
 }
 
-export type RouteFn<Param> = (context: Context, param: Param) => Promise<any> | any
+export type Context = FastifyParam & PreparedContext
+export type RouteFn<Param = unknown> = (context: Context, param: Param) => Promise<any> | any
 
-export type RouteModule<Param = any> = {
-  meta?: RouteMeta
-  handle: RouteFn<Param>
+type FastifyParam = {
+  request: FastifyRequest
+  response: FastifyReply
 }
 
-export type Context = PreparedContext & {}
+export type RouteModule = {
+  meta?: RouteMeta
+  handle: (param: FastifyParam) => ReturnType<RouteFn<any>>
+}
+
+export type Router = Record<string, RouteModule>
