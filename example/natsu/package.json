@@ -1,0 +1,11 @@
+{
+  "name": "natsu",
+  "packageManager": "yarn@3.3.0",
+  "dependencies": {
+    "@silenteer/natsu": "^1.0.25",
+    "@silenteer/natsu-type": "^0.0.12",
+    "@submodule/cli": "workspace:^",
+    "nats": "workspace:^",
+    "zod": "^3.20.2"
+  }
+}

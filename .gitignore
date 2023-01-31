@@ -11,8 +11,8 @@
 # Documentation here: https://yarnpkg.com/features/zero-installs
 .yarn/cache
 
-**/.yarn/*
-**/.yarn/cache
+site/.yarn/*
+site/.yarn/cache
 
 node_modules
 
