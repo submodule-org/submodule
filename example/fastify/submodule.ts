@@ -1,15 +1,13 @@
 import pino from "pino"
-import { Submodule } from "@submodule/cli"
+import { Builder } from "@submodule/cli"
 import { z } from "zod"
 import { Config, Context, PreparedContext, RouteMeta, Router } from "./types"
 import fastify from "fastify"
 
-export default <Submodule<Config, PreparedContext, Context, Router>>{
-  submodule: {
-    appName: 'submodule-fastify'
-  },
-
-  async configFn() {
+export default Builder.new({
+  appName: 'submodule-fastify'
+})
+  .setConfigFn<Config>(() => {
     const configSchema = z.object({
       port: z.number().default(3000),
       logLevel: z.literal("fatal")
@@ -25,13 +23,13 @@ export default <Submodule<Config, PreparedContext, Context, Router>>{
       port: process.env.PORT,
       logLevel: process.env.LOG_LEVEL
     })
-  },
-  async preparedContextFn({ config }) {
+  })
+  .setPreparedContextFn<PreparedContext>(async ({ config }) => {
     return {
       logger: pino({ level: config.logLevel })
     }
-  },
-  async handlerFn({ handlers, preparedContext }) {
+  })
+  .setHandlerFn<Context, Router>(async ({ handlers, preparedContext }) => {
     const metaSchema = z.object({
       websocket: z.boolean().optional(),
       path: z.string().optional(),
@@ -64,8 +62,8 @@ export default <Submodule<Config, PreparedContext, Context, Router>>{
     })
 
     return routes
-  },
-  adaptorFn({ config, preparedContext, router }) {
+  })
+  .setAdaptorFn<Router>(async ({ config, preparedContext, router }) => {
     const server = fastify({
       logger: preparedContext.logger
     })
@@ -75,7 +73,7 @@ export default <Submodule<Config, PreparedContext, Context, Router>>{
         method: router[route]?.meta?.method || 'GET',
         url: `/${route}`,
         async handler(req, res) {
-          const result = await router[route].handle({ request: req, response: res})
+          const result = await router[route].handle({ request: req, response: res })
           res.send(result)
         }
       })
@@ -84,5 +82,5 @@ export default <Submodule<Config, PreparedContext, Context, Router>>{
     server.listen({
       port: config.port
     })
-  },
-}
+  })
+  .build()
