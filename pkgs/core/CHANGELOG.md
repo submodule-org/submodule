@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.2.0](https://github.com/silenteer/submodule/compare/v1.1.3...v1.2.0) (2023-02-01)
+
+
+### Features
+
+* update type API ([87dbf92](https://github.com/silenteer/submodule/commit/87dbf92f5b0c97567da0374211b71bddab8f1ac5))
+* upgrade types API ([c33e2e2](https://github.com/silenteer/submodule/commit/c33e2e266aca8f65c1e93d1f4bf1f87413d322fc))
+
 ### [1.1.3](https://github.com/silenteer/submodule/compare/v1.1.2...v1.1.3) (2023-01-12)
 
 ### [1.1.2](https://github.com/silenteer/submodule/compare/v1.1.1...v1.1.2) (2023-01-12)
