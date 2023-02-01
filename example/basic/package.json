@@ -4,6 +4,7 @@
   "dependencies": {
     "@submodule/cli": "workspace:^",
     "commander": "^9.4.1",
+    "string-argv": "^0.3.1",
     "zod": "^3.20.2"
   },
   "scripts": {

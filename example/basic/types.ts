@@ -5,9 +5,11 @@ export type PreparedContext = {
   test: () => any
 }
 
-export type Context = PreparedContext & { config: Config }
+export type Context = {}
 
-export type RouteFn = (context: Context) => unknown | Promise<unknown>
+export type RouteFn<Param = any> = (context: Param) => unknown | Promise<unknown>
 export type RouteDef = {
-  handle: RouteFn
+  handle: (param: any) => ReturnType<RouteFn>
 }
+
+export type Router = Record<string, RouteDef>

@@ -7,7 +7,7 @@ export type Config = {
 }
 
 export type PreparedContext = {
-  logger: Logger
+  readonly logger: Logger
 }
 
 export type RouteMeta = {

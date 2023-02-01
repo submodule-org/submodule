@@ -1,33 +1,68 @@
 import { Submodule } from "@submodule/cli"
 import { connect, JSONCodec } from "nats"
-import type { Config, PreparedContext, Context, Route } from "./submodule.types"
 import { z } from "zod"
+import type { Config, NatsContext, PreparedContext, Router } from "./submodule.types"
 
-import natsService from "./services/nats"
-import logService from "./services/logger"
-import * as  helpers from "./services/helpers"
-import { NatsAuthorizationResult, NatsHandler, NatsHandleResult, NatsValidationInjection, NatsValidationResult } from "@silenteer/natsu"
+import { NatsHandler, NatsHandleResult } from "@silenteer/natsu"
 import { NatsService } from "@silenteer/natsu-type"
+import * as helpers from "./services/helpers"
+import logService from "./services/logger"
+import natsService from "./services/nats"
+import debug from "debug"
 
+const natsuDebug = debug("submodule.natsu")
 
 type AnyService = NatsService<string, unknown, unknown>
-class ValidationError extends Error { constructor(message?: string) { super(message) }}
-class AuthorizationError extends Error { constructor(message?: string) { super(message) }}
+class ValidationError extends Error { constructor(message?: string) { super(message) } }
+class AuthorizationError extends Error { constructor(message?: string) { super(message) } }
+
+const codec = JSONCodec()
+
+const natsuRequestSchema = z.object({
+  headers: z.object({}).optional().default({}),
+  body: z.any().optional()
+}).optional().default({})
 
 export async function processor(
-  mod: NatsHandler<AnyService>, 
-  context: Context, 
+  mod: NatsHandler<AnyService>,
+  { subject, message }: NatsContext,
   preparedContext: PreparedContext): Promise<NatsHandleResult<AnyService>> {
-    
-  const { authorizeInjection, handleInjection, natsInjection, validateInjection } = preparedContext
-  const contextForValidation = { ...natsInjection, ...validateInjection }
-  const contextForAuthorization = { ...natsInjection, ...authorizeInjection }
-  const contextForHandle = { ...natsInjection, ...handleInjection }
 
-  return undefined as any
+  const input = message.data.length > 0
+    ? codec.decode(message.data)
+    : undefined
+
+  const data = natsuRequestSchema.parse(input)
+
+  const { authorizeInjection, handleInjection, natsInjection, validateInjection } = preparedContext
+  const contextForValidation = { ...natsInjection, ...validateInjection, message, subject, handler: mod }
+  const contextForAuthorization = { ...natsInjection, ...authorizeInjection, message, subject, handler: mod }
+  const contextForHandle = { ...natsInjection, ...handleInjection, message, subject, handler: mod }
+
+  return Promise.resolve()
+    .then(_ => mod.validate?.(data, contextForValidation))
+    .then(maybeValidated => {
+      if (!maybeValidated || maybeValidated.code === 'OK') {
+        return
+      }
+
+      throw new ValidationError()
+    })
+    .then(_ => mod.authorize?.(data, contextForAuthorization))
+    .then(maybeAuthorized => {
+      if (!maybeAuthorized || maybeAuthorized.code === 'OK') {
+        return
+      }
+
+      throw new AuthorizationError()
+    })
+    .then(_ => mod.handle(data, contextForHandle))
+    .then(handleResult => {
+      return handleResult
+    })
 }
 
-export default <Submodule<Config, PreparedContext, Context, Route>>{
+export default <Submodule<Config, PreparedContext, NatsContext, Router>>{
   submodule: {
     appName: "submodule-natsu"
   },
@@ -60,7 +95,7 @@ export default <Submodule<Config, PreparedContext, Context, Route>>{
       })
     })
 
-    const routers: Record<string, Route> = {}
+    const routers: Router = {}
     const paths = Object.keys(handlers)
 
     paths.forEach(path => {
@@ -69,9 +104,9 @@ export default <Submodule<Config, PreparedContext, Context, Route>>{
       if (validatedNatsuMod.success) {
         const mod = validatedNatsuMod.data.default
 
-        routers[path] = {
-          ...mod,
-          handle: (context: Context) => processor(mod as any, context, preparedContext)
+        routers[mod.subject] = {
+          meta: mod as any,
+          handle: (context) => processor(mod as any, context, preparedContext)
         }
       }
     })
@@ -79,35 +114,30 @@ export default <Submodule<Config, PreparedContext, Context, Route>>{
     return routers
   },
 
-  async adaptorFn({ preparedContext: { nc, natsInjection }, router }) {
+  async adaptorFn({ preparedContext: { nc }, router }) {
 
     const paths = Object.keys(router)
     paths.forEach(path => {
+      natsuDebug('registering %s to route', path)
       const route = router[path]
-      const sub = nc.subscribe(route.subject);
-      const codec = JSONCodec()
+      const sub = nc.subscribe(path);
 
-        ; (async () => {
-          for await (const msg of sub) {
-            const input = msg.data.length > 0
-              ? codec.decode(msg.data)
-              : undefined
-
-            const context: Context = {
-              ...natsInjection,
-              input,
-              message: msg,
-              handler: route as any,
-              subject: route.subject || path
-            }
-
-            const result = await route.handle(context)
-
-            if (msg.reply && result !== undefined) {
-              msg.respond(codec.encode(result))
-            }
+      ; (async () => {
+        for await (const msg of sub) {
+          const context: NatsContext = {
+            message: msg,
+            subject: path
           }
-        })();
+
+          natsuDebug('incoming message %s %n', msg.subject, msg.data.length)
+          const result = await route.handle(context)
+          natsuDebug('finished processing %s %O', msg.subject, result)
+
+          if (msg.reply && result !== undefined) {
+            msg.respond(codec.encode(result))
+          }
+        }
+      })();
     })
   }
 }

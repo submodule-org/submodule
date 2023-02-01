@@ -1324,6 +1324,7 @@ __metadata:
     "@submodule/cli": "workspace:^"
     commander: ^9.4.1
     nodemon: ^2.0.20
+    string-argv: ^0.3.1
     zod: ^3.20.2
   languageName: unknown
   linkType: soft
@@ -4377,6 +4378,7 @@ __metadata:
     "@silenteer/natsu": ^1.0.25
     "@silenteer/natsu-type": ^0.0.12
     "@submodule/cli": "workspace:^"
+    debug: ^4.3.4
     nats: "workspace:^"
     zod: ^3.20.2
   languageName: unknown
@@ -5715,6 +5717,13 @@ __metadata:
   dependencies:
     mixme: ^0.5.1
   checksum: 26ce872a6812d5c784fa1f042bfd403644bc1c019f64627b5012c4544830a5570bef98b47225b38120c5878b326f3d1a213cd999a2285c98b536e5e202ca5bdf
+  languageName: node
+  linkType: hard
+
+"string-argv@npm:^0.3.1":
+  version: 0.3.1
+  resolution: "string-argv@npm:0.3.1"
+  checksum: efbd0289b599bee808ce80820dfe49c9635610715429c6b7cc50750f0437e3c2f697c81e5c390208c13b5d5d12d904a1546172a88579f6ee5cbaaaa4dc9ec5cf
   languageName: node
   linkType: hard
 

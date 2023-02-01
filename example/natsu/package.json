@@ -5,6 +5,7 @@
     "@silenteer/natsu": "^1.0.25",
     "@silenteer/natsu-type": "^0.0.12",
     "@submodule/cli": "workspace:^",
+    "debug": "^4.3.4",
     "nats": "workspace:^",
     "zod": "^3.20.2"
   }

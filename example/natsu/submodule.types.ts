@@ -20,8 +20,11 @@ export type RequestContext = {
   message: Msg
 }
 
-export type Context = NatsInjection<AnyService> & { input: any } & RequestContext
+export type NatsContext = Pick<NatsInjection<AnyService>, "subject" | "message">
 
-export type Route = NatsHandler<AnyService> & {
-  handle: (context: Context) => Promise<NatsHandleResult<AnyService>>
+export type Route = {
+  handle: (context: NatsContext) => Promise<NatsHandleResult<AnyService>>
+  meta: NatsHandler<AnyService>
 }
+
+export type Router = Record<string, Route>
