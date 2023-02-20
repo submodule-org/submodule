@@ -1,12 +1,13 @@
-import pino from "pino"
 import { Builder } from "@submodule/cli"
+import fastify from "fastify"
+import pino from "pino"
 import { z } from "zod"
 import { Config, Context, PreparedContext, RouteMeta, Router } from "./types"
-import fastify from "fastify"
 
-export default Builder.new({
-  appName: 'submodule-fastify'
-})
+export default Builder
+  .new({
+    appName: 'submodule-fastify'
+  })
   .setConfigFn<Config>(() => {
     const configSchema = z.object({
       port: z.number().default(3000),

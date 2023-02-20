@@ -7,6 +7,6 @@ type MathParam = {
 
 export default <RouteFn<MathParam>> function ({ logger }, { left, right }) {
   return {
-    sum: Number(left) + Number(right)
+    sum: Number(left) - Number(right)
   }
 }

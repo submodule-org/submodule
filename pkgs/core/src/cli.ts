@@ -1,4 +1,5 @@
 import * as tracing from "./tracing"
+import { fork } from "child_process"
 import { register } from "esbuild-register/dist/node"
 register({})
 
@@ -38,86 +39,113 @@ const program = new Command()
   .option('--cwd <cwd>', 'current working dir', process.cwd())
   .option('-c, --config <config>', 'config file', 'submodule')
   .option('-r, --routeDir <routeDir>', 'route dir', './routes')
-  .option('--dev', 'watch for changes automatically', false)
+  .option('-d, --dev', 'watch for changes automatically', false)
   .passThroughOptions(true)
   .action(async function (args: Arg, command: Command) {
-    const resovledCwd = path.resolve(process.cwd(), args.cwd)
-    const loaded = requireDir(resovledCwd, { recurse: false })
-    
-    debugCore('submodule starting %O', args)
-    let nonValidatedSubmodule = {}
+    if (args.dev && !process.env.SUBMODULE_CHILD) {
+      const chokidar = await import('chokidar')
+      const watcher = chokidar.watch(args.cwd)
 
-    if (loaded[args.config]) {
-      debugCore('loading custom submodule')
-      nonValidatedSubmodule = loaded[args.config].default || loaded[args.config]
-    } else {
-      debugCore('using default submodule')
-    }
+      function delegate() {
+        const forked = fork(`${__dirname}/cli.js`, command.args, { 
+          env: { ...process.env, SUBMODULE_CHILD: "true" },
+          execArgv: [...process.execArgv, '--enable-source-maps']
+        });
 
-    const submodule = submoduleSchema.parse(nonValidatedSubmodule)
-    const submoduleConfig = submodule.submodule
-
-    debugCore('submodule loaded %O', submoduleConfig)
-    
-    // not needed to wait
-    submoduleConfig?.traceEnabled && tracing.init(submoduleConfig)
-
-    const config = await submodule?.configFn?.() || {}
-    debugCore('config loaded %O', config)
-
-    const preparedContext = instrument(await submodule?.preparedContextFn?.({ config }) || {}, 1)
-    debugCore('preparedContext loaded %O', preparedContext)
-    
-    debugCore('executing run')
-
-    const routes = requireDir(path.join(args.cwd, args.routeDir))
-    debugCore('routes loaded %O', routes)
-
-    const preparedRoutes = instrument(await submodule?.handlerFn?.({ config, preparedContext, handlers: routes }) || routes, 1)
-    debugCore('router %O', preparedRoutes)
-
-    // trap the route so we know when it is started/ended
-    Object.keys(preparedRoutes).forEach(routeKey => {
-      const route = preparedRoutes[routeKey]
-
-      if (typeof route === 'function') {
-        preparedRoutes[routeKey] = trace(routeKey, route)
-      } else {
-        preparedRoutes[routeKey].handle = trace(routeKey, preparedRoutes[routeKey].handle)
+        forked.on('error', console.error)
+        return forked
       }
-    })
 
-    command.addCommand(new Command('inspect')
-      .option('--format <format>', 'inspect output format')
-      .description('support you to understand current config')
-      .action(async function inspect(args) {
-        debugCore('executing inspect')
+      let forked = delegate()
 
-        if ('stringify' === args?.format) {
-          console.log(JSON.stringify({ config, preparedContext, routes, preparedRoutes }))
+      watcher.on('change', async (path) => {
+        debugCore('change detected %s. restarting submodule', path)
+        
+        !forked.killed && forked.kill()
+        forked = delegate()
+      })
+
+    } else {
+      const resovledCwd = path.resolve(process.cwd(), args.cwd)
+      const loaded = requireDir(resovledCwd, { recurse: false })
+      
+      debugCore('submodule starting %O', args)
+      let nonValidatedSubmodule = {}
+  
+      if (loaded[args.config]) {
+        debugCore('loading custom submodule')
+        nonValidatedSubmodule = loaded[args.config].default || loaded[args.config]
+      } else {
+        debugCore('using default submodule')
+      }
+  
+      const submodule = submoduleSchema.parse(nonValidatedSubmodule)
+      const submoduleConfig = submodule.submodule
+  
+      debugCore('submodule loaded %O', submoduleConfig)
+      
+      // not needed to wait
+      submoduleConfig?.traceEnabled && tracing.init(submoduleConfig)
+  
+      const config = await submodule?.configFn?.() || {}
+      debugCore('config loaded %O', config)
+  
+      const preparedContext = instrument(await submodule?.preparedContextFn?.({ config }) || {}, 1)
+      debugCore('preparedContext loaded %O', preparedContext)
+      
+      debugCore('executing run')
+  
+      const routes = requireDir(path.join(args.cwd, args.routeDir))
+      debugCore('routes loaded %O', routes)
+  
+      const preparedRoutes = instrument(await submodule?.handlerFn?.({ config, preparedContext, handlers: routes }) || routes, 1)
+      debugCore('router %O', preparedRoutes)
+  
+      // trap the route so we know when it is started/ended
+      Object.keys(preparedRoutes).forEach(routeKey => {
+        const route = preparedRoutes[routeKey]
+  
+        if (typeof route === 'function') {
+          preparedRoutes[routeKey] = trace(routeKey, route)
         } else {
-          console.dir({ config, preparedContext, routes, preparedRoutes }, { depth: 2 })
+          preparedRoutes[routeKey].handle = trace(routeKey, preparedRoutes[routeKey].handle)
         }
-
-        process.exit(0)
+      })
+  
+      command.addCommand(new Command('inspect')
+        .option('--format <format>', 'inspect output format')
+        .description('support you to understand current config')
+        .action(async function inspect(args) {
+          debugCore('executing inspect')
+  
+          if ('stringify' === args?.format) {
+            console.log(JSON.stringify({ config, preparedContext, routes, preparedRoutes }))
+          } else {
+            console.dir({ config, preparedContext, routes, preparedRoutes }, { depth: 2 })
+          }
+  
+          process.exit(0)
+        }))
+      
+      command.addCommand(new Command('run')
+        .description('process to run the application')
+        .action(async function defaultAction() {
+  
+        await submodule?.adaptorFn?.({ config, preparedContext, router: preparedRoutes })
       }))
+  
+      command.action(async function() {
+        command.help()
+      })
+  
+      await command.parseAsync(command.args, { from: 'user' })
+    }
     
-    command.addCommand(new Command('run')
-      .description('process to run the application')
-      .action(async function defaultAction() {
-
-      await submodule?.adaptorFn?.({ config, preparedContext, router: preparedRoutes })
-    }))
-
-    command.action(async function() {
-      command.help()
-    })
-
-    await command.parseAsync(command.args, { from: 'user' })
   });
 
 program.on('error', function errorHandler() {
   console.log(arguments)
   process.exit(1)
 })
+
 program.parse()

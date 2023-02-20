@@ -923,6 +923,7 @@ __metadata:
     "@types/debug": ^4.1.7
     "@types/node": ^18.11.18
     "@types/require-dir": ^1.0.2
+    chokidar: ^3.5.3
     commander: ^9.4.1
     debug: ^4.3.4
     esbuild: ^0.16.13
@@ -1528,7 +1529,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chokidar@npm:^3.5.1, chokidar@npm:^3.5.2":
+"chokidar@npm:^3.5.1, chokidar@npm:^3.5.2, chokidar@npm:^3.5.3":
   version: 3.5.3
   resolution: "chokidar@npm:3.5.3"
   dependencies:
