@@ -1323,7 +1323,7 @@ __metadata:
   resolution: "basic@workspace:example/basic"
   dependencies:
     "@submodule/cli": "workspace:^"
-    commander: ^9.4.1
+    commander: ^10.0.0
     nodemon: ^2.0.20
     string-argv: ^0.3.1
     zod: ^3.20.2
@@ -1647,6 +1647,13 @@ __metadata:
   bin:
     color-support: bin.js
   checksum: 9b7356817670b9a13a26ca5af1c21615463b500783b739b7634a0c2047c16cef4b2865d7576875c31c3cddf9dd621fa19285e628f20198b233a5cfdda6d0793b
+  languageName: node
+  linkType: hard
+
+"commander@npm:^10.0.0":
+  version: 10.0.0
+  resolution: "commander@npm:10.0.0"
+  checksum: 9f6495651f878213005ac744dd87a85fa3d9f2b8b90d1c19d0866d666bda7f735adfd7c2f10dfff345782e2f80ea258f98bb4efcef58e4e502f25f883940acfd
   languageName: node
   linkType: hard
 
