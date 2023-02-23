@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import * as tracing from "./tracing"
 import { fork } from "child_process"
 import { register } from "esbuild-register/dist/node"
