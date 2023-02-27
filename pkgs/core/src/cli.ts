@@ -23,12 +23,17 @@ const submoduleConfigSchema = z.object({
 const submoduleSchema = z.object({
   createConfig: z.function().optional(),
   createServices: z.function().optional(),
+  createRoute: z.function().optional(),
   createRouter: z.function().optional(),
   createCommands: z.function().optional(),
   submodule: submoduleConfigSchema.default({
     appName: 'local',
     traceEnabled: true
   }).optional()
+})
+
+const routeModuleSchema = z.object({
+  default: z.function()
 })
 
 const debugCore = require('debug')('submodule.core')
@@ -41,6 +46,8 @@ const program = new Command()
   .argument('[subCommand]', 'subcommand to forward to')
   .passThroughOptions(true)
   .action(async function (subCommand: string, args: SubmoduleArgs, command: Command) {
+    debugCore('submodule starting %O', args)
+
     if (args.dev && !process.env.SUBMODULE_CHILD) {
       const chokidar = await import('chokidar')
       const watcher = chokidar.watch(args.cwd)
@@ -68,7 +75,6 @@ const program = new Command()
       const resovledCwd = path.resolve(process.cwd(), args.cwd)
       const loaded = await requireDir(resovledCwd, { recurse: false })
       
-      debugCore('submodule starting %O', args)
       let nonValidatedSubmodule = {}
   
       if (loaded[args.config]) {
@@ -105,26 +111,38 @@ const program = new Command()
         const routes = await requireDir(path.join(args.cwd, args.routeDir))
         debugCore('routes loaded %O', routes)
     
-        const router = instrument(await submodule?.createRouter?.({ config, services, routeModules: routes }) || routes, 1)
+        const preparedRoutes = {}
+        const createRoute = submodule.createRoute
+          ? submodule.createRoute
+          : function defaultCreateRoute({ config, services, routeModule }) {
+              const verifiedModule = routeModuleSchema.parse(routeModule)
+
+              return {
+                handle: async function defaultRouteHandler(context: unknown) {
+                  return await verifiedModule.default({ config, services, context })
+                }
+              }
+            }
+
+        Object.keys(routes).forEach(routeKey => {
+          const routeModule = routes[routeKey]
+          preparedRoutes[routeKey] = createRoute({ config, services, routeModule })
+        })
+
+        const router = instrument(await submodule?.createRouter?.({ config, services, routeModules: preparedRoutes }) || preparedRoutes, 1)
         debugCore('router %O', router)
     
         // trap the route so we know when it is started/ended
         Object.keys(router).forEach(routeKey => {
-          const route = router[routeKey]
-    
-          if (typeof route === 'function') {
-            router[routeKey] = trace(routeKey, route)
-          } else {
-            router[routeKey].handle = trace(routeKey, router[routeKey].handle)
-          }
+          router[routeKey].handle = trace(routeKey, router[routeKey].handle)
         })
 
         return { routes, router }
       }
 
-      const { routes, router } = await loadRoutes()
+      const { router } = await loadRoutes()
 
-      await submodule?.createCommands?.({ config, services, router, commandArgs: ['submoduleCommand', subCommand, ...command.args] })
+      await submodule?.createCommands?.({ config, services, router, subCommand, commandArgs: ['submoduleCommand', subCommand, ...command.args] })
     }
     
   });

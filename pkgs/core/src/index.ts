@@ -11,11 +11,21 @@ export type SubmoduleArgs = {
   dev: boolean
 }
 
+export type DefaultRouteModule<
+  Input = unknown,
+  Output = unknown,
+  Config = unknown,
+  Services = unknown,
+  Context = unknown
+>  = {
+  default: (input: A.Compute<{ config: Config, services: Services, context: Context, input: Input }>) => Output | Promise<Output>
+}
+
 export type Submodule<
   Config = unknown,
   Services = unknown,
   Context = unknown,
-  RouteModule = unknown,
+  RouteModule = DefaultRouteModule<unknown, unknown, Config, Services, Context>,
   Route extends RouteLike<Context> = RouteLike<Context>,
   Router extends Record<string, Route> = Record<string, Route>> = A.Compute<{
     submodule?: {
@@ -34,5 +44,5 @@ export type Submodule<
     createServices?(input: { config: A.Compute<Config> }): A.Compute<Services> | Promise<A.Compute<Services>>
     createRoute?(input: { config: Config, services: Services, routeModule: RouteModule, routeName: string }): Promise<Route> | Route
     createRouter?(input: { config: A.Compute<Config>, services: A.Compute<Services>, routeModules: Record<string, Route> }): Router | Promise<Router>
-    createCommands?(input: { config: Config, services: A.Compute<Services>, router: Router, commandArgs: string[] }): void | Promise<void>
+    createCommands?(input: { config: Config, services: A.Compute<Services>, router: Router, subCommand?: string, commandArgs: string[] }): void | Promise<void>
   }>
