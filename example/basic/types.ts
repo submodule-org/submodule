@@ -1,7 +1,4 @@
-export type Config = {
-}
-
-export type PreparedContext = {
+export type Services = {
   test: () => any
 }
 

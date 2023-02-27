@@ -1,16 +1,22 @@
-import { Builder } from "@submodule/cli"
+import { Submodule } from "@submodule/cli"
 import { Command } from "commander"
 import repl from "repl"
 import stringArgv from 'string-argv'
 import { z } from "zod"
-import { Context, Router } from "./types"
+import { Context, Router, Services } from "./types"
 
-export default Builder
-  .new({
+export default {
+  submodule: {
     appName: 'submodule-basic',
     appVersion: 'local-test',
-  })
-  .setHandlerFn<Context, Router>(async ({ handlers }) => {
+  },
+  services() {
+    return {
+      test() { console.log('test') }
+    }
+  },
+
+  handlerFn: async ({ handlers }) => {
     const handlerSchema = z.object({
       default: z.function()
     })
@@ -29,8 +35,8 @@ export default Builder
     })
 
     return router
-  })
-  .setAdaptorFn(async ({ router }) => {
+  },
+  adaptorFn: async ({ router }) => {
     const replServer = repl.start({ prompt: '> '})
     replServer.context.router = router
     replServer.defineCommand('send', {
@@ -62,5 +68,5 @@ export default Builder
         this.displayPrompt()
       }
     })
-  })
-  .build()
+  }
+} satisfies Submodule<undefined, Services>

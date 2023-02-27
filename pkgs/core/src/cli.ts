@@ -6,19 +6,13 @@ import { register } from "esbuild-register/dist/node"
 register({})
 
 import { Command } from "commander"
-import requireDir from "require-dir";
+import { requireDir } from "./loader";
 import path from "path"
 import { z } from "zod"
 import { trace, instrument } from "./instrument"
 import fs from "fs"
 
-type Arg = {
-  cwd: string,
-  config: string,
-  routeDir: string,
-  commandDir: string,
-  dev: boolean
-}
+import type { SubmoduleArgs } from "./index"
 
 const submoduleConfigSchema = z.object({
   appName: z.string(),
@@ -27,10 +21,10 @@ const submoduleConfigSchema = z.object({
 
 // don't overuse zod to validate function shape, it has performance impact as well as weird interception to the input and result
 const submoduleSchema = z.object({
-  configFn: z.function().optional(),
-  preparedContextFn: z.function().optional(),
-  handlerFn: z.function().optional(),
-  adaptorFn: z.function().optional(),
+  createConfig: z.function().optional(),
+  createServices: z.function().optional(),
+  createRouter: z.function().optional(),
+  createCommands: z.function().optional(),
   submodule: submoduleConfigSchema.default({
     appName: 'local',
     traceEnabled: true
@@ -43,15 +37,10 @@ const program = new Command()
   .option('--cwd <cwd>', 'current working dir', process.cwd())
   .option('-c, --config <config>', 'config file', 'submodule')
   .option('-r, --routeDir <routeDir>', 'route dir', './routes')
-  .option('-m, --commandDir <commandDir>', 'command dir', './commands')
   .option('-d, --dev', 'watch for changes automatically', false)
   .argument('[subCommand]', 'subcommand to forward to')
   .passThroughOptions(true)
-  .action(async function (subCommand: string, args: Arg, command: Command) {
-    if (!subCommand) {
-      command.help()
-    }
-
+  .action(async function (subCommand: string, args: SubmoduleArgs, command: Command) {
     if (args.dev && !process.env.SUBMODULE_CHILD) {
       const chokidar = await import('chokidar')
       const watcher = chokidar.watch(args.cwd)
@@ -77,7 +66,7 @@ const program = new Command()
 
     } else {
       const resovledCwd = path.resolve(process.cwd(), args.cwd)
-      const loaded = requireDir(resovledCwd, { recurse: false })
+      const loaded = await requireDir(resovledCwd, { recurse: false })
       
       debugCore('submodule starting %O', args)
       let nonValidatedSubmodule = {}
@@ -97,11 +86,11 @@ const program = new Command()
       // not needed to wait
       submoduleConfig?.traceEnabled && tracing.init(submoduleConfig)
   
-      const config = await submodule?.configFn?.() || {}
+      const config = await submodule?.createConfig?.() || {}
       debugCore('config loaded %O', config)
   
-      const preparedContext = instrument(await submodule?.preparedContextFn?.({ config }) || {}, 1)
-      debugCore('preparedContext loaded %O', preparedContext)
+      const services = instrument(await submodule?.createServices?.({ config }) || {}, 1)
+      debugCore('services loaded %O', services)
       
       debugCore('executing run')
 
@@ -113,71 +102,29 @@ const program = new Command()
           return { routes: {}, preparedRoutes: {}}
         }
         
-        const routes = requireDir(path.join(args.cwd, args.routeDir))
+        const routes = await requireDir(path.join(args.cwd, args.routeDir))
         debugCore('routes loaded %O', routes)
     
-        const preparedRoutes = instrument(await submodule?.handlerFn?.({ config, preparedContext, handlers: routes }) || routes, 1)
-        debugCore('router %O', preparedRoutes)
+        const router = instrument(await submodule?.createRouter?.({ config, services, routeModules: routes }) || routes, 1)
+        debugCore('router %O', router)
     
         // trap the route so we know when it is started/ended
-        Object.keys(preparedRoutes).forEach(routeKey => {
-          const route = preparedRoutes[routeKey]
+        Object.keys(router).forEach(routeKey => {
+          const route = router[routeKey]
     
           if (typeof route === 'function') {
-            preparedRoutes[routeKey] = trace(routeKey, route)
+            router[routeKey] = trace(routeKey, route)
           } else {
-            preparedRoutes[routeKey].handle = trace(routeKey, preparedRoutes[routeKey].handle)
+            router[routeKey].handle = trace(routeKey, router[routeKey].handle)
           }
         })
 
-        return { routes, preparedRoutes }
+        return { routes, router }
       }
 
-      const { routes, preparedRoutes } = await loadRoutes()
+      const { routes, router } = await loadRoutes()
 
-      command.addCommand(new Command('inspect')
-        .option('--format <format>', 'inspect output format')
-        .description('support you to understand current config')
-        .action(async function inspect(args) {
-          debugCore('executing inspect')
-  
-          if ('stringify' === args?.format) {
-            console.log(JSON.stringify({ config, preparedContext, routes, preparedRoutes }))
-          } else {
-            console.dir({ config, preparedContext, routes, preparedRoutes }, { depth: 2 })
-          }
-  
-          process.exit(0)
-        }))
-      
-      command.addCommand(new Command('run')
-        .description('process to run the application')
-        .action(async function defaultAction() {
-  
-        await submodule?.adaptorFn?.({ config, preparedContext, router: preparedRoutes })
-      }))
-  
-      if (['inspect', 'run'].includes(subCommand)) {
-        await command.parseAsync(command.args, { from: 'user' })
-      } else {
-        /** Loading commands dir */
-        const isCommandDirExist = fs.existsSync(path.join(args.cwd, args.commandDir))
-
-        if (!isCommandDirExist) {
-          throw new Error(`Cannot find external commands dir of ${args.commandDir}`)
-        }
-
-        const loadedCommands = requireDir(path.join(args.cwd, args.commandDir))
-        if (!loadedCommands[subCommand]) {
-          throw new Error(`cannot find file ${subCommand} in ${args.commandDir}`)
-        }
-
-        if (typeof loadedCommands[subCommand]['default'] !== 'function') {
-          throw new Error(`It's expected for ${path.join(args.cwd, args.commandDir, subCommand)} to export a default function`)
-        }
-
-        await loadedCommands[subCommand]['default']({ config, preparedContext, routes, preparedRoutes, args: command.args })
-      }
+      await submodule?.createCommands?.({ config, services, router, commandArgs: ['submoduleCommand', subCommand, ...command.args] })
     }
     
   });
