@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.1.0](https://github.com/silenteer/submodule/compare/v2.0.0...v2.1.0) (2023-02-27)
+
+
+### Features
+
+* added few more APIs, SPIs ([caa6f84](https://github.com/silenteer/submodule/commit/caa6f8497ebd71d0176a807de0248e21598dc98c))
+
 ## [2.0.0](https://github.com/silenteer/submodule/compare/v1.4.1...v2.0.0) (2023-02-27)
 
 
