@@ -5,11 +5,8 @@ import { fork } from "child_process"
 
 const debugCore = require('debug')('submodule.core')
 
-if (typeof global.Deno === undefined) {
-  debugCore('Non deno environment detected, loading esbuild')
-  const { register } = require("esbuild-register/dist/node")
-  register({})
-}
+import { register } from "esbuild-register/dist/node"
+register()
 
 import { Command } from "commander"
 import { requireDir } from "./loader";
@@ -42,8 +39,6 @@ const routeModuleSchema = z.object({
   default: z.function()
 })
 
-
-
 const program = new Command()
   .option('--cwd <cwd>', 'current working dir', process.cwd())
   .option('-c, --config <config>', 'config file', 'submodule')
@@ -55,6 +50,7 @@ const program = new Command()
     debugCore('submodule starting %O', args)
 
     if (args.dev && !process.env.SUBMODULE_CHILD) {
+      debugCore('Running in dev')
       const chokidar = await import('chokidar')
       const watcher = chokidar.watch(`${args.cwd}/**/*.{js,ts,json}`)
 
