@@ -2,8 +2,14 @@
 
 import * as tracing from "./tracing"
 import { fork } from "child_process"
-import { register } from "esbuild-register/dist/node"
-register({})
+
+const debugCore = require('debug')('submodule.core')
+
+if (typeof global.Deno === undefined) {
+  debugCore('Non deno environment detected, loading esbuild')
+  const { register } = require("esbuild-register/dist/node")
+  register({})
+}
 
 import { Command } from "commander"
 import { requireDir } from "./loader";
@@ -36,7 +42,7 @@ const routeModuleSchema = z.object({
   default: z.function()
 })
 
-const debugCore = require('debug')('submodule.core')
+
 
 const program = new Command()
   .option('--cwd <cwd>', 'current working dir', process.cwd())
