@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.2.0](https://github.com/silenteer/submodule/compare/v2.1.1...v2.2.0) (2023-02-28)
+
+
+### Features
+
+* by default, subcommand will just call the default function of the corresponding route ([10fd127](https://github.com/silenteer/submodule/commit/10fd12754ba578d2207432b611958210db1be0d2))
+
 ### [2.1.1](https://github.com/silenteer/submodule/compare/v2.1.0...v2.1.1) (2023-02-28)
 
 ## [2.1.0](https://github.com/silenteer/submodule/compare/v2.0.0...v2.1.0) (2023-02-27)
