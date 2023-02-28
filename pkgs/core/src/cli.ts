@@ -142,7 +142,22 @@ const program = new Command()
 
       const { router } = await loadRoutes()
 
-      await submodule?.createCommands?.({ config, services, router, subCommand, commandArgs: ['submoduleCommand', subCommand, ...command.args] })
+      if (!submodule?.createCommands && !subCommand) {
+
+        return program.help()
+
+      } else if (!submodule?.createCommands) {
+        
+        const potentialRoute = router[subCommand]
+        if (!potentialRoute) {
+          return program.help()
+        }
+
+        return await potentialRoute.handle({ config, services, router })
+        
+      } else {
+        return await submodule?.createCommands?.({ config, services, router, subCommand, commandArgs: ['submoduleCommand', subCommand, ...command.args] })
+      }
     }
     
   });

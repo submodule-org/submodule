@@ -1,6 +1,9 @@
 {
   "name": "todo",
   "packageManager": "yarn@3.3.0",
+  "scripts": {
+    "start": "submodule"
+  },
   "dependencies": {
     "@hono/node-server": "^0.2.4",
     "@submodule/cli": "workspace:^",

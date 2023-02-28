@@ -1,0 +1,10 @@
+{
+  "name": "nosense",
+  "packageManager": "yarn@3.3.0",
+  "scripts": {
+    "start": "submodule -r . test"
+  },
+  "dependencies": {
+    "@submodule/cli": "workspace:^"
+  }
+}

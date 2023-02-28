@@ -1,6 +1,9 @@
 {
   "name": "cli",
   "packageManager": "yarn@3.3.0",
+  "scripts": {
+    "start": "submodule"
+  },
   "dependencies": {
     "@submodule/cli": "workspace:^",
     "commander": "^10.0.0"

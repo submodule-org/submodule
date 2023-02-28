@@ -4456,6 +4456,14 @@ __metadata:
   languageName: node
   linkType: hard
 
+"nosense@workspace:example/nosense":
+  version: 0.0.0-use.local
+  resolution: "nosense@workspace:example/nosense"
+  dependencies:
+    "@submodule/cli": "workspace:^"
+  languageName: unknown
+  linkType: soft
+
 "npm-run-path@npm:^4.0.1":
   version: 4.0.1
   resolution: "npm-run-path@npm:4.0.1"
