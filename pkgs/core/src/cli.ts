@@ -50,7 +50,7 @@ const program = new Command()
 
     if (args.dev && !process.env.SUBMODULE_CHILD) {
       const chokidar = await import('chokidar')
-      const watcher = chokidar.watch(args.cwd)
+      const watcher = chokidar.watch(`${args.cwd}/**/*.{js,ts,json}`)
 
       function delegate() {
         const forked = fork(`${__dirname}/cli.js`, command.args, { 
@@ -124,10 +124,10 @@ const program = new Command()
               }
             }
 
-        Object.keys(routes).forEach(routeKey => {
+        for (const routeKey of Object.keys(routes)) {
           const routeModule = routes[routeKey]
-          preparedRoutes[routeKey] = createRoute({ config, services, routeModule })
-        })
+          preparedRoutes[routeKey] = await createRoute({ config, services, routeModule })
+        }
 
         const router = instrument(await submodule?.createRouter?.({ config, services, routeModules: preparedRoutes }) || preparedRoutes, 1)
         debugCore('router %O', router)
