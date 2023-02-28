@@ -1,27 +1,30 @@
-import { Submodule, RouterLike } from "@submodule/cli"
-import { } from "@submodule/cli"
+import type { Submodule, DefaultRouteModule, RouteLike } from "@submodule/cli"
 import { Level } from "level"
 import type { LevelConfig } from "./services/level.client"
 import type { TodoService } from "./services/todo.service"
+import type { Context as HonoContext } from "hono"
 
 export declare module TodoApp {
-  type TodoServices = {
+  type Config = {
+    levelConfig: LevelConfig
+    honoConfig?: { port: number }
+  }
+
+  type Services = {
     db: Level
     todoService: TodoService
   }
 
-  type RouteFn = (services: TodoServices, input?: unknown) => Promise<unknown>
-  type RouteModule = {
-    default: RouteFn
+  type Context = {
+    honoContext: HonoContext
   }
 
-  type TodoAppRouter = RouterLike<RouteModule>
+  type RouteMeta = 'GET' | 'POST' | 'PUT'
 
+  type RouteModule<Input = unknown, Output = unknown> = DefaultRouteModule<Input, Output, Config, Services, Context> & { meta?: RouteMeta }
+  type Route = RouteLike<Context> & { meta?: RouteMeta }
   
+  type RouteFn<Input = unknown, Output = unknown> = RouteModule<Input, Output>['default']
 
-  type TodoModuleConfig = {
-    levelConfig: LevelConfig
-  }
-
-  type TodoSubmodule = Submodule<TodoModuleConfig, TodoServices>
+  type TodoSubmodule = Submodule<Config, Services, Context, RouteModule, Route>
 }

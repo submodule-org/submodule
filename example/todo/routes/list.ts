@@ -1,7 +1,9 @@
-import type { RouteFn, RouteModule } from "../submodule.types"
+import type { TodoApp } from "../submodule.types"
 
-const route: RouteFn = ({}) => {
-  return context.todoService.listTodos()
+const fn: TodoApp.RouteFn = ({ services }) => {
+  return services.todoService.listTodos()
 }
 
-export default route
+export default fn
+
+export const meta: TodoApp.RouteMeta = "GET"
