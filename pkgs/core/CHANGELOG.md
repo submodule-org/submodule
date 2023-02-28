@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.3.0](https://github.com/silenteer/submodule/compare/v2.2.0...v2.3.0) (2023-02-28)
+
+
+### Features
+
+* added deno checking ([5174657](https://github.com/silenteer/submodule/commit/5174657fcd8dd24fb119eb74e8be941769262aed))
+
 ## [2.2.0](https://github.com/silenteer/submodule/compare/v2.1.1...v2.2.0) (2023-02-28)
 
 
