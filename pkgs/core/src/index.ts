@@ -21,6 +21,31 @@ export type DefaultRouteModule<
   default: (input: A.Compute<{ config: Config, services: Services, context: Context, input: Input }>) => Output | Promise<Output>
 }
 
+export type ArgShape = {
+  name: string
+  description?: string
+  required?: boolean
+  defaultValue?: string
+  value?: string
+}
+
+export type OptShape = {
+  name: string
+  shortName?: string
+  required?: boolean
+  defaultValue?: string
+  value?: string
+}
+
+export type CommandShape = {
+  description?: string
+  args?: A.Compute<Omit<ArgShape, 'value'>>[]
+  opts?: A.Compute<Omit<OptShape, 'value'>>[]
+  action: (input: { subCommand: string, args: string[], opts: Record<string, string> }) => void | Promise<void>
+}
+
+export type Commands = Record<string, CommandShape>
+
 export type Submodule<
   Config = unknown,
   Services = unknown,
@@ -44,5 +69,5 @@ export type Submodule<
     createServices?(input: { config: A.Compute<Config> }): A.Compute<Services> | Promise<A.Compute<Services>>
     createRoute?(input: { config: Config, services: Services, routeModule: RouteModule, routeName: string }): Promise<Route> | Route
     createRouter?(input: { config: A.Compute<Config>, services: A.Compute<Services>, routeModules: Record<string, Route> }): Router | Promise<Router>
-    createCommands?(input: { config: Config, services: A.Compute<Services>, router: Router, subCommand?: string, commandArgs: string[] }): void | Promise<void>
+    createCommands?(input: { config: Config, services: A.Compute<Services>, router: Router, subCommand?: string, commandArgs: string[] }): (void | Commands) | Promise<void | Commands>
   }>

@@ -15,7 +15,7 @@ import { z } from "zod"
 import { trace, instrument } from "./instrument"
 import fs from "fs"
 
-import type { SubmoduleArgs } from "./index"
+import type { ArgShape, CommandShape, OptShape, SubmoduleArgs } from "./index"
 
 const submoduleConfigSchema = z.object({
   appName: z.string(),
@@ -38,6 +38,33 @@ const submoduleSchema = z.object({
 const routeModuleSchema = z.object({
   default: z.function()
 })
+
+const argSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  required: z.boolean().optional().default(false),
+  defaultValue: z.string().optional(),
+  value: z.string().optional()
+}) satisfies z.ZodType<ArgShape>
+
+
+const optSchema = z.object({
+  name: z.string(),
+  shortName: z.string().length(1).optional(),
+  description: z.string().optional(),
+  required: z.boolean().optional().default(false),
+  defaultValue: z.string().optional(),
+  value: z.string().optional()
+}) satisfies z.ZodType<OptShape>
+
+const commandSchema = z.object({
+  description: z.string().optional(),
+  action: z.function().returns(z.void().or(z.promise(z.void()))),
+  args: z.array(argSchema).optional(),
+  opts: z.array(optSchema).optional()
+}) satisfies z.ZodType<CommandShape>
+
+const commandsSchema = z.record(commandSchema)
 
 const program = new Command()
   .option('--cwd <cwd>', 'current working dir', process.cwd())
@@ -143,22 +170,49 @@ const program = new Command()
       }
 
       const { router } = await loadRoutes()
-
-      if (!submodule?.createCommands && !subCommand) {
-
-        return program.help()
-
-      } else if (!submodule?.createCommands) {
+      
+      const commands = await submodule?.createCommands?.({ config, services, router, subCommand, commandArgs: ['submoduleCommand', subCommand, ...command.args] })
+      if (submodule.createCommands && commands === undefined) {
+        debugCore('finished processing, expected the createCommands did something already')
+        return
+      }
+      
+      if (submodule.createCommands) {
+        debugCore('using %O to create more commands', commands)
+        const validatedCommandsShape = commandsSchema.parse(commands)
         
-        const potentialRoute = router[subCommand]
-        if (!potentialRoute) {
-          return program.help()
+        for (const commandName of Object.keys(validatedCommandsShape)) {
+          const commandShape = validatedCommandsShape[commandName]
+          debugCore('adding command %s %O', commandName, commandShape)
+
+          const addingCommand = new Command(commandName).action(async function commandHandler() {
+            const refCommand = arguments[arguments.length - 1] as Command
+            commandShape.action({ args: refCommand.args, opts: refCommand.opts() })
+          })
+
+          commandShape.description && addingCommand.description(commandShape.description)
+          
+          commandShape?.args?.forEach(arg => {
+            const wrapper = () => arg.required ? `<${arg.name}>` :`[${arg.name}]`
+            addingCommand.argument(wrapper(), arg.description, arg.defaultValue)
+          })
+
+          commandShape?.opts?.forEach(opt => {
+            const shortName = opt.shortName ? `-${opt.shortName}` : ''
+            const fullName = opt.required ? `--${opt.name} <${opt.name}>` : `--${opt.name}` 
+            addingCommand.option(`${shortName}, ${fullName}`, opt.description)
+          })
+
+          command.addCommand(addingCommand)
         }
 
-        return await potentialRoute.handle({ config, services, router })
-        
+        if (!subCommand) {
+          return command.help()
+        } else {
+          await command.parseAsync(command.args, { from: 'user' })
+        }
       } else {
-        return await submodule?.createCommands?.({ config, services, router, subCommand, commandArgs: ['submoduleCommand', subCommand, ...command.args] })
+        await router[subCommand]?.handle?.({ config, services })
       }
     }
     

@@ -1,5 +1,5 @@
 import type { CliApp } from "./submodule.types"
-import { Command, program } from "commander"
+import { Commands } from "@submodule/cli"
 
 export default {
   submodule: { appName: "example-cli" },
@@ -15,35 +15,31 @@ export default {
     return {
       async handle(context) {
         const fn = routeModule.default
-        fn({ config, context, input: {}, services })
+        return fn({ config, context, input: {}, services })
       },
       args: routeModule.args,
-      options: routeModule.options
+      options: routeModule.options,
+      description: routeModule.description
     }
   },
 
-  async createCommands({ router, subCommand, commandArgs }) {
-    Object.keys(router)
-      .forEach(routerKey => {
-        const { handle, args, options } = router[routerKey]
+  async createCommands({ router }) {
+    const commands: Commands = {}
 
-        const command = new Command(routerKey)
-
-        args?.forEach(arg => command.addArgument(arg))
-        options?.forEach(opt => command.addOption(opt))
-        command.action(function handler() {
-          const commandRef = arguments[arguments.length - 1] as Command
-          handle({ args: commandRef.args, options: commandRef.opts() })
-        })
-
-        program.addCommand(command)
-      })
-
-    if (subCommand === undefined) {
-      program.help()
-    } else {
-      await program.parseAsync(commandArgs)
+    for (const routePath of Object.keys(router)) {
+      const route = router[routePath]
+      commands[routePath] = {
+        action: async ({ args, opts}) => { 
+          const result = await route.handle({ args, opts })
+          console.log(result)
+        },
+        args: route?.args,
+        opts: route?.options,
+        description: route?.description
+      }
     }
+
+    return commands;
   },
 
 } satisfies CliApp.CliSubmodule
