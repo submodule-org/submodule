@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.4.0](https://github.com/silenteer/submodule/compare/v2.3.1...v2.4.0) (2023-03-01)
+
+
+### Features
+
+* added commands extension without commander ([6318ce0](https://github.com/silenteer/submodule/commit/6318ce00f470a19ee0477a0a83521b28cf264f45))
+
 ### [2.3.1](https://github.com/silenteer/submodule/compare/v2.3.0...v2.3.1) (2023-02-28)
 
 ## [2.3.0](https://github.com/silenteer/submodule/compare/v2.2.0...v2.3.0) (2023-02-28)
