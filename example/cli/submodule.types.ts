@@ -5,7 +5,9 @@ export declare namespace CliApp {
   type Services = {}
   type Context = { args: string[], opts: Record<string, string> }
 
-  type RouteModule<Input = unknown, Output = unknown> = DefaultRouteModule<Input, Output, Config, Services, Context> & { args?: ArgShape[], options?: OptShape[], description?: string }
+  type RouteModule<Input = unknown, Output = unknown> = DefaultRouteModule<Input, Output, Config, Services, Context> 
+    & { args?: ArgShape[], options?: OptShape[], description?: string }
+    
   type Route = RouteLike<Context> & { args?: ArgShape[], options?: OptShape[], description?: string }
 
   type RouteFn = RouteModule['default']
