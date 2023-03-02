@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.4.1](https://github.com/submodule-js/submodule/compare/v2.4.0...v2.4.1) (2023-03-02)
+
 ## [2.4.0](https://github.com/silenteer/submodule/compare/v2.3.1...v2.4.0) (2023-03-01)
 
 
