@@ -1,4 +1,5 @@
 import type { A } from "ts-toolbelt"
+import type { WatchOptions } from "chokidar"
 
 export type RouteLike<AdaptorContext = unknown> = {
   handle: (context: AdaptorContext) => unknown | Promise<unknown>
@@ -8,7 +9,8 @@ export type SubmoduleArgs = {
   cwd: string,
   config: string,
   routeDir: string,
-  dev: boolean
+  dev: boolean,
+  nowatch?: string
 }
 
 export type DefaultRouteModule<
@@ -61,6 +63,7 @@ export type Submodule<
       buildNumber?: string
       gitCommit?: string
 
+      chokidarOptions?: WatchOptions
       traceEnabled?: boolean
       otlpUrl?: string
     }

@@ -72,6 +72,29 @@ const submodule = {
         })
 
         console.log('Server is listening at port', port)
+      },
+      async generate() {
+        const { cwd, routeDir } = submoduleArgs
+        const path = await import('path')
+        const fs = await import('fs/promises')
+
+        const currentDirectory = path.relative(process.cwd(), cwd)
+        const routerFile = path.join(currentDirectory, 'submodule.router.ts')
+        
+        let content = ''
+        const envelop = (content: string) => `
+/** ⚠️ This is a generated document, please don't change this manually ⚠️ */
+export declare module TodoRouter { 
+${content}
+}  
+`
+
+        const routeNames = Object.keys(router)
+        routeNames.forEach(routeName => {
+          content += `  type ${routeName.toUpperCase()} = typeof import('${routeDir}/${routeName}') \n`
+        })
+        
+        await fs.writeFile(routerFile, new Uint8Array(Buffer.from(envelop(content))))
       }
     }
   }

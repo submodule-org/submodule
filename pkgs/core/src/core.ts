@@ -39,7 +39,7 @@ export type CreateSubmoduleArgs = {
 
 export async function createSubmodule({ args }: CreateSubmoduleArgs) {
   const resovledCwd = path.resolve(process.cwd(), args.cwd)
-  const loaded = await requireDir(resovledCwd, { recurse: false })
+  const loaded = await requireDir(resovledCwd, { recurse: false, filter: (p) => p.name !== args.config })
 
   let nonValidatedSubmodule = {}
 

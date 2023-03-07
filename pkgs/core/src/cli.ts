@@ -6,13 +6,14 @@ const debugCli = require('debug')('submodule.cli')
 
 if (typeof global['Deno'] === 'undefined') {
   require('esbuild-register')
-} 
+}
 
 import { Command } from "commander"
 
 import type { ArgShape, CommandShape, OptShape, SubmoduleArgs } from "./index"
 import { createSubmodule } from "./core"
 import { z } from "zod"
+import path from "path"
 
 const argSchema = z.object({
   name: z.string(),
@@ -21,7 +22,6 @@ const argSchema = z.object({
   defaultValue: z.string().optional(),
   value: z.string().optional()
 }) satisfies z.ZodType<ArgShape>
-
 
 const optSchema = z.object({
   name: z.string(),
@@ -39,13 +39,14 @@ const commandSchema = z.object({
   opts: z.array(optSchema).optional()
 }) satisfies z.ZodType<CommandShape>
 
-const commandsSchema = z.record(commandSchema)
+const commandsSchema = z.record(commandSchema.or(z.function()))
 
 const program = new Command()
   .option('--cwd <cwd>', 'current working dir', process.cwd())
   .option('-c, --config <config>', 'config file', 'submodule')
   .option('-r, --routeDir <routeDir>', 'route dir', './routes')
   .option('-d, --dev', 'watch for changes automatically', false)
+  .option('--nowatch [file]', 'skip watching on glob, for code generation')
   .argument('[subCommand]', 'subcommand to forward to')
   .passThroughOptions(true)
   .action(async function (subCommand: string, args: SubmoduleArgs, command: Command) {
@@ -54,7 +55,8 @@ const program = new Command()
     if (args.dev && !process.env.SUBMODULE_CHILD) {
       debugCli('Running in dev')
       const chokidar = await import('chokidar')
-      const watcher = chokidar.watch(`${args.cwd}/**/*.{js,ts,json}`)
+      const ignored = args.nowatch && [path.join(args.cwd, args.nowatch)]
+      const watcher = chokidar.watch(`${args.cwd}/**/*.{js,ts,json}`, { ignored })
 
       function delegate() {
         const forked = fork(`${__dirname}/cli.js`, command.args, {
@@ -92,34 +94,48 @@ const program = new Command()
           const commandShape = validatedCommandsShape[commandName]
           debugCli('adding command %s %O', commandName, commandShape)
 
-          const addingCommand = new Command(commandName).action(async function commandHandler() {
-            const refCommand = arguments[arguments.length - 1] as Command
-            commandShape.action({ args: refCommand.args, opts: refCommand.opts() })
-          })
+          if (typeof commandShape !== 'function') {
+            const addingCommand = new Command(commandName).action(async function commandHandler() {
+              const refCommand = arguments[arguments.length - 1] as Command
+              commandShape.action({ args: refCommand.args, opts: refCommand.opts() })
+            })
 
-          commandShape.description && addingCommand.description(commandShape.description)
+            commandShape.description && addingCommand.description(commandShape.description)
 
-          commandShape?.args?.forEach(arg => {
-            const wrapper = () => arg.required ? `<${arg.name}>` : `[${arg.name}]`
-            addingCommand.argument(wrapper(), arg.description, arg.defaultValue)
-          })
+            commandShape?.args?.forEach(arg => {
+              const wrapper = () => arg.required ? `<${arg.name}>` : `[${arg.name}]`
+              addingCommand.argument(wrapper(), arg.description, arg.defaultValue)
+            })
 
-          commandShape?.opts?.forEach(opt => {
-            const shortName = opt.shortName ? `-${opt.shortName}` : ''
-            const fullName = opt.required ? `--${opt.name} <${opt.name}>` : `--${opt.name}`
-            addingCommand.option(`${shortName}, ${fullName}`, opt.description)
-          })
+            commandShape?.opts?.forEach(opt => {
+              const shortName = opt.shortName ? `-${opt.shortName}` : ''
+              const fullName = opt.required ? `--${opt.name} <${opt.name}>` : `--${opt.name}`
+              addingCommand.option(`${shortName}, ${fullName}`, opt.description)
+            })
 
-          command.addCommand(addingCommand)
+            command.addCommand(addingCommand)
+          } else {
+            command.command(commandName)
+              .action(async function commandHandler() {
+                const refCommand = arguments[arguments.length - 1] as Command
+                commandShape({ args: refCommand.args, opts: refCommand.opts() })
+              })
+          }
         }
 
         if (!subCommand) {
+          debugCli('No subcommand found, displaying help')
           return command.help()
         } else {
+          debugCli('Subcommand found, executing')
           await command.parseAsync(command.args, { from: 'user' })
         }
-      } else {
+      } else if (subCommand && router[subCommand]) {
+        debugCli('Subcommand found, executing route in router')
         await router[subCommand]?.handle?.({ config, services })
+      } else {
+        debugCli('Subcommand not found, or path not found, displaying help')
+        return command.help()
       }
     }
   });
