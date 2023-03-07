@@ -67,7 +67,7 @@ export type Submodule<
     }
     createConfig?(): A.Compute<Config> | Promise<A.Compute<Config>>
     createServices?(input: { config: A.Compute<Config> }): A.Compute<Services> | Promise<A.Compute<Services>>
-    createRoute?(input: { config: Config, services: Services, routeModule: RouteModule, routeName: string }): Promise<Route> | Route
+    createRoute?(input: { config:  A.Compute<Config>, services: Services, routeModule:  A.Compute<RouteModule>, routeName: string }): Promise<Route> | Route
     createRouter?(input: { config: A.Compute<Config>, services: A.Compute<Services>, routeModules: Record<string, Route> }): Router | Promise<Router>
-    createCommands?(input: { config: Config, services: A.Compute<Services>, router: Router, subCommand?: string, commandArgs: string[] }): (void | Commands) | Promise<void | Commands>
+    createCommands?(input: { config:  A.Compute<Config>, services: Services, router:  A.Compute<Router>, subCommand?: string, commandArgs: string[], submoduleArgs: A.Compute<SubmoduleArgs> }): (void | Commands) | Promise<void | Commands>
   }>
