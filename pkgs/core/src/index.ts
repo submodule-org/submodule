@@ -37,14 +37,16 @@ export type OptShape = {
   value?: string
 }
 
+export type Action = (input: { subCommand: string, args: string[], opts: Record<string, string> }) => void | Promise<void>
+
 export type CommandShape = {
   description?: string
   args?: A.Compute<Omit<ArgShape, 'value'>>[]
   opts?: A.Compute<Omit<OptShape, 'value'>>[]
-  action: (input: { subCommand: string, args: string[], opts: Record<string, string> }) => void | Promise<void>
+  action: Action
 }
 
-export type Commands = Record<string, CommandShape>
+export type Commands = Record<string, CommandShape | Action>
 
 export type Submodule<
   Config = unknown,
@@ -65,9 +67,9 @@ export type Submodule<
     loaders?: {
       moduleLoader?: (input: { config: Config, submoduleArg: SubmoduleArgs }) => Promise<Record<string, RouteModule>>
     }
-    createConfig?(): A.Compute<Config> | Promise<A.Compute<Config>>
-    createServices?(input: { config: A.Compute<Config> }): A.Compute<Services> | Promise<A.Compute<Services>>
-    createRoute?(input: { config:  A.Compute<Config>, services: Services, routeModule:  A.Compute<RouteModule>, routeName: string }): Promise<Route> | Route
-    createRouter?(input: { config: A.Compute<Config>, services: A.Compute<Services>, routeModules: Record<string, Route> }): Router | Promise<Router>
-    createCommands?(input: { config:  A.Compute<Config>, services: Services, router:  A.Compute<Router>, subCommand?: string, commandArgs: string[], submoduleArgs: A.Compute<SubmoduleArgs> }): (void | Commands) | Promise<void | Commands>
+    createConfig?: () => A.Compute<Config> | Promise<A.Compute<Config>>
+    createServices?: (input: { config: A.Compute<Config> }) => A.Compute<Services> | Promise<A.Compute<Services>>
+    createRoute?: (input: { config:  A.Compute<Config>, services: Services, routeModule:  A.Compute<RouteModule>, routeName: string }) => Promise<Route> | Route
+    createRouter?: (input: { config: A.Compute<Config>, services: A.Compute<Services>, routeModules: Record<string, Route> }) => Router | Promise<Router>
+    createCommands?: (input: { config:  A.Compute<Config>, services: Services, router:  A.Compute<Router>, subCommand?: string, commandArgs: string[], submoduleArgs: A.Compute<SubmoduleArgs> }) => (void | Commands) | Promise<void | Commands>
   }>

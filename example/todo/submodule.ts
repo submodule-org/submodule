@@ -38,7 +38,7 @@ const submodule = {
       async handle(context) {
         debugRuntime('incoming request %O', context.honoContext.req)
         const input = context.honoContext.req.query()
-        
+
         const { default: fn } = routeModule
 
         const result = await fn({ config, services, context, input })
@@ -50,28 +50,32 @@ const submodule = {
     }
   },
 
-  async createCommands({ config, router }) {
-    const port = config.honoConfig?.port || 3000
+  async createCommands({ config, router, submoduleArgs }) {
+    return {
+      async serve() {
+        const port = config.honoConfig?.port || 3000
 
-    const app = new Hono()
+        const app = new Hono()
 
-    for (const routeKey of Object.keys(router)) {
-      const route = router[routeKey]
-      debugSetup('adding new route %O', route)
-      
-      app.on([route?.meta || 'GET'], '/' + routeKey, (context) => route.handle({ honoContext: context}) as any)
+        for (const routeKey of Object.keys(router)) {
+          const route = router[routeKey]
+          debugSetup('adding new route %O', route)
+
+          app.on([route?.meta || 'GET'], '/' + routeKey, (context) => route.handle({ honoContext: context }) as any)
+        }
+
+        app.on(['GET'], '/routes', c => c.text(JSON.stringify(router)))
+
+        serve({
+          fetch: app.fetch,
+          port
+        })
+
+        console.log('Server is listening at port', port)
+      }
     }
-
-    app.on(['GET'], '/routes', c => c.text(JSON.stringify(router)))
-
-    serve({ 
-      fetch: app.fetch,
-      port
-    })
-
-    console.log('Server is listening at port', port)
   }
-  
+
 } satisfies TodoApp.TodoSubmodule
 
 export default submodule

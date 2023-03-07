@@ -1,45 +1,18 @@
 #!/usr/bin/env node
 
-import * as tracing from "./tracing"
 import { fork } from "child_process"
 
-const debugCore = require('debug')('submodule.core')
+const debugCli = require('debug')('submodule.cli')
 
-import { register } from "esbuild-register/dist/node"
-register()
+if (typeof global['Deno'] === 'undefined') {
+  require('esbuild-register')
+} 
 
 import { Command } from "commander"
-import { requireDir } from "./loader";
-import path from "path"
+
+import type { ArgShape, CommandShape, OptShape, SubmoduleArgs } from "./index"
+import { createSubmodule } from "./core"
 import { z } from "zod"
-import { trace, instrument } from "./instrument"
-import fs from "fs"
-
-import type { Submodule, ArgShape, CommandShape, OptShape, SubmoduleArgs } from "./index"
-
-type S = Required<Submodule>
-
-const submoduleConfigSchema = z.object({
-  appName: z.string(),
-  traceEnabled: z.boolean().default(true)
-})
-
-// don't overuse zod to validate function shape, it has performance impact as well as weird interception to the input and result
-const submoduleSchema = z.object({
-  createConfig: z.custom<S['createConfig']>().optional(),
-  createServices: z.custom<S['createServices']>().optional(),
-  createRoute: z.custom<S['createRoute']>().optional(),
-  createRouter: z.custom<S['createRouter']>().optional(),
-  createCommands: z.custom<S['createCommands']>().optional(),
-  submodule: submoduleConfigSchema.default({
-    appName: 'local',
-    traceEnabled: true
-  }).optional()
-})
-
-const routeModuleSchema = z.object({
-  default: z.function()
-})
 
 const argSchema = z.object({
   name: z.string(),
@@ -76,10 +49,10 @@ const program = new Command()
   .argument('[subCommand]', 'subcommand to forward to')
   .passThroughOptions(true)
   .action(async function (subCommand: string, args: SubmoduleArgs, command: Command) {
-    debugCore('submodule starting %O', args)
+    debugCli('submodule starting %O', args)
 
     if (args.dev && !process.env.SUBMODULE_CHILD) {
-      debugCore('Running in dev')
+      debugCli('Running in dev')
       const chokidar = await import('chokidar')
       const watcher = chokidar.watch(`${args.cwd}/**/*.{js,ts,json}`)
 
@@ -96,96 +69,28 @@ const program = new Command()
       let forked = delegate()
 
       watcher.on('change', async (path) => {
-        debugCore('change detected %s. restarting submodule', path)
+        debugCli('change detected %s. restarting submodule', path)
 
         !forked.killed && forked.kill()
         forked = delegate()
       })
 
     } else {
-      const resovledCwd = path.resolve(process.cwd(), args.cwd)
-      const loaded = await requireDir(resovledCwd, { recurse: false })
-
-      let nonValidatedSubmodule = {}
-
-      if (loaded[args.config]) {
-        debugCore('loading custom submodule')
-        nonValidatedSubmodule = loaded[args.config].default || loaded[args.config]
-      } else {
-        debugCore('using default submodule')
-      }
-
-      const submodule = submoduleSchema.parse(nonValidatedSubmodule)
-      const submoduleConfig = submodule.submodule
-
-      debugCore('submodule loaded %O', submoduleConfig)
-
-      // not needed to wait
-      submoduleConfig?.traceEnabled && tracing.init(submoduleConfig)
-
-      const config = await submodule?.createConfig?.() || {}
-      debugCore('config loaded %O', config)
-
-      const services = instrument(await submodule?.createServices?.({ config }) || {}, 1)
-      debugCore('services loaded %O', services)
-
-      debugCore('executing run')
-
-      /** Loading routes dir */
-      async function loadRoutes() {
-        const isRouteDirExist = fs.existsSync(path.join(args.cwd, args.routeDir))
-
-        if (!isRouteDirExist && command.getOptionValueSource('routeDir') === 'default') {
-          return { routes: {}, preparedRoutes: {} }
-        }
-
-        const routes = await requireDir(path.join(args.cwd, args.routeDir))
-        debugCore('routes loaded %O', routes)
-
-        const preparedRoutes = {}
-        const createRoute = submodule.createRoute
-          ? instrument(submodule.createRoute, 1)
-          : instrument(function defaultCreateRoute({ config, services, routeModule }) {
-            const verifiedModule = routeModuleSchema.parse(routeModule)
-
-            return {
-              handle: async function defaultRouteHandler(context: unknown) {
-                return await verifiedModule.default({ config, services, context })
-              }
-            }
-          }, 1)
-
-        for (const routeName of Object.keys(routes)) {
-          const routeModule = routes[routeName]
-          preparedRoutes[routeName] = await createRoute({ config, services, routeModule, routeName })
-        }
-
-        const router = instrument(await submodule?.createRouter?.({ config, services, routeModules: preparedRoutes }) || preparedRoutes, 1)
-        debugCore('router %O', router)
-
-        // trap the route so we know when it is started/ended
-        Object.keys(router).forEach(routeKey => {
-          router[routeKey].handle = trace(routeKey, router[routeKey].handle)
-        })
-
-        return { routes, router }
-      }
-
-      const { router } = await instrument(loadRoutes(), 1)
+      const { config, router, services, submodule } = await createSubmodule({ args })
 
       const commands = await submodule?.createCommands?.({ config, services, router, subCommand, commandArgs: ['submoduleCommand', subCommand, ...command.args], submoduleArgs: args })
       if (submodule.createCommands && commands === undefined) {
-        debugCore('finished processing, expected the createCommands did something already')
+        debugCli('finished processing, expected the createCommands did something already')
         return
       }
 
       if (submodule.createCommands) {
-        debugCore('using %O to create more commands', commands)
+        debugCli('using %O to create more commands', commands)
         const validatedCommandsShape = commandsSchema.parse(commands)
 
         for (const commandName of Object.keys(validatedCommandsShape)) {
           const commandShape = validatedCommandsShape[commandName]
-          debugCore('adding command %s %O', commandName, commandShape)
+          debugCli('adding command %s %O', commandName, commandShape)
 
           const addingCommand = new Command(commandName).action(async function commandHandler() {
             const refCommand = arguments[arguments.length - 1] as Command
@@ -217,7 +122,6 @@ const program = new Command()
         await router[subCommand]?.handle?.({ config, services })
       }
     }
-
   });
 
 program.on('error', function errorHandler() {
@@ -226,3 +130,5 @@ program.on('error', function errorHandler() {
 })
 
 program.parse()
+
+
