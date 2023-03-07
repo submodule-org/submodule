@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.6.0](https://github.com/submodule-js/submodule/compare/v2.5.1...v2.6.0) (2023-03-07)
+
+
+### Features
+
+* added more generate-friendly functions ([591f2a6](https://github.com/submodule-js/submodule/commit/591f2a678d57c4241b9a974d159f77dc7bcf8893))
+
 ### [2.5.1](https://github.com/submodule-js/submodule/compare/v2.5.0...v2.5.1) (2023-03-07)
 
 ## [2.5.0](https://github.com/submodule-js/submodule/compare/v2.4.1...v2.5.0) (2023-03-07)
