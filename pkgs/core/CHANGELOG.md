@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.7.0](https://github.com/submodule-js/submodule/compare/v2.6.1...v2.7.0) (2023-03-09)
+
+
+### Features
+
+* added createClient, access instance out of context ([07f3ca3](https://github.com/submodule-js/submodule/commit/07f3ca352b3f5bc515f9b50e443d469470ca4137))
+
 ### [2.6.1](https://github.com/submodule-js/submodule/compare/v2.6.0...v2.6.1) (2023-03-09)
 
 ## [2.6.0](https://github.com/submodule-js/submodule/compare/v2.5.1...v2.6.0) (2023-03-07)
