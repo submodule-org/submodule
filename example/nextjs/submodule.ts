@@ -2,6 +2,7 @@ import type { Submodule } from "@submodule/cli"
 import next from "next"
 import fastify from "fastify"
 import { parse } from "url"
+import nextConfig from "./next.config"
 
 declare module SubmoduleNext {
   type Config = {
@@ -20,7 +21,7 @@ export default {
   },
 
   async createCommands({ config, router, submoduleArgs }) {
-    const app = next({ dev: submoduleArgs.dev })
+    const app = next({ dev: submoduleArgs.dev, ...nextConfig })
     const handle = app.getRequestHandler()
     await app.prepare()
 

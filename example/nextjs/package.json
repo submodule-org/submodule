@@ -10,6 +10,7 @@
     "@submodule/cli": "workspace:^",
     "@types/react": "^18.0.28",
     "debug": "^4.3.4",
+    "esbuild": "^0.17.11",
     "esbuild-register": "^3.4.2",
     "fastify": "^4.14.1",
     "next": "^13.2.3",
