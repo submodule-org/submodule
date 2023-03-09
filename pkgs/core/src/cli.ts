@@ -45,7 +45,7 @@ const program = new Command()
   .option('--cwd <cwd>', 'current working dir', process.cwd())
   .option('-c, --config <config>', 'config file', 'submodule')
   .option('-r, --routeDir <routeDir>', 'route dir', './routes')
-  .option('-d, --dev', 'watch for changes automatically', false)
+  .option('-d, --dev', 'watch for changes automatically', Boolean(process.env.SUBMODULE_DEV))
   .option('--nowatch [file]', 'skip watching on glob, for code generation')
   .argument('[subCommand]', 'subcommand to forward to')
   .passThroughOptions(true)
@@ -60,7 +60,7 @@ const program = new Command()
 
       function delegate() {
         const forked = fork(`${__dirname}/cli.js`, command.args, {
-          env: { ...process.env, SUBMODULE_CHILD: "true" },
+          env: { ...process.env, SUBMODULE_CHILD: "true", SUBMODULE_DEV: "true" },
           execArgv: [...process.execArgv, '--enable-source-maps']
         });
 

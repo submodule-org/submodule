@@ -2,7 +2,7 @@ import fs from "fs"
 import path from "path"
 import { z } from "zod"
 
-import type { Submodule, SubmoduleArgs } from "./index"
+import type { DefaultRouteModule, RouteLike, Submodule, SubmoduleArgs, SubmoduleInstance } from "./index"
 import { instrument, trace } from "./instrument"
 import { requireDir } from "./loader"
 import * as tracing from "./tracing"
@@ -37,7 +37,14 @@ export type CreateSubmoduleArgs = {
   args: SubmoduleArgs
 }
 
-export async function createSubmodule({ args }: CreateSubmoduleArgs) {
+export const createSubmodule = async <
+  Config = unknown,
+  Services = unknown,
+  Context = unknown,
+  RouteModule = DefaultRouteModule<unknown, unknown, Config, Services, Context>,
+  Route extends RouteLike<Context> = RouteLike<Context>,
+  Router extends Record<string, Route> = Record<string, Route>>({ args }: CreateSubmoduleArgs): Promise<SubmoduleInstance<Config, Services, Context, RouteModule, Route, Router>> => {
+
   const resovledCwd = path.resolve(process.cwd(), args.cwd)
   const loaded = await requireDir(resovledCwd, { recurse: false, filter: (p) => p.name !== args.config })
 
@@ -58,10 +65,10 @@ export async function createSubmodule({ args }: CreateSubmoduleArgs) {
   // not needed to wait
   submoduleConfig?.traceEnabled && tracing.init(submoduleConfig)
 
-  const config = await submodule?.createConfig?.() || {}
+  const config: unknown = await submodule?.createConfig?.() || {}
   debugCore('config loaded %O', config)
 
-  const services = instrument(await submodule?.createServices?.({ config }) || {}, 1)
+  const services = instrument(await submodule?.createServices?.({ config: config as any }) || {}, 1)
   debugCore('services loaded %O', services)
 
   debugCore('executing run')
@@ -108,5 +115,5 @@ export async function createSubmodule({ args }: CreateSubmoduleArgs) {
 
   const { router } = await instrument(loadRoutes(), 1)
 
-  return { config, services, router, submodule }
+  return { config: config as any, services, router, submodule: submodule as any }
 }

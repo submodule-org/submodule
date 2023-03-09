@@ -19,7 +19,7 @@ export type DefaultRouteModule<
   Config = unknown,
   Services = unknown,
   Context = unknown
->  = {
+> = {
   default: (input: A.Compute<{ config: Config, services: Services, context: Context, input: Input }>) => Output | Promise<Output>
 }
 
@@ -70,9 +70,23 @@ export type Submodule<
     loaders?: {
       moduleLoader?: (input: { config: Config, submoduleArg: SubmoduleArgs }) => Promise<Record<string, RouteModule>>
     }
-    createConfig?: () => A.Compute<Config> | Promise<A.Compute<Config>>
-    createServices?: (input: { config: A.Compute<Config> }) => A.Compute<Services> | Promise<A.Compute<Services>>
-    createRoute?: (input: { config:  A.Compute<Config>, services: Services, routeModule:  A.Compute<RouteModule>, routeName: string }) => Promise<Route> | Route
-    createRouter?: (input: { config: A.Compute<Config>, services: A.Compute<Services>, routeModules: Record<string, Route> }) => Router | Promise<Router>
-    createCommands?: (input: { config:  A.Compute<Config>, services: Services, router:  A.Compute<Router>, subCommand?: string, commandArgs: string[], submoduleArgs: A.Compute<SubmoduleArgs> }) => (void | Commands) | Promise<void | Commands>
+    createConfig?: () => Config | Promise<Config>
+    createServices?: (input: { config: Config }) => Services | Promise<Services>
+    createRoute?: (input: { config: Config, services: Services, routeModule: RouteModule, routeName: string }) => Promise<Route> | Route
+    createRouter?: (input: { config: Config, services: Services, routeModules: Record<string, Route> }) => Router | Promise<Router>
+    createCommands?: (input: { config: Config, services: Services, router: Router, subCommand?: string, commandArgs: string[], submoduleArgs: SubmoduleArgs }) => (void | Commands) | Promise<void | Commands>
   }>
+
+export type SubmoduleInstance<
+  Config = unknown,
+  Services = unknown,
+  Context = unknown,
+  RouteModule = DefaultRouteModule<unknown, unknown, Config, Services, Context>,
+  Route extends RouteLike<Context> = RouteLike<Context>,
+  Router extends Record<string, Route> = Record<string, Route>
+> = {
+  config: Config
+  services: Services
+  router: Router
+  submodule: Submodule<Config, Services, Context, RouteModule, Route, Router>
+}
