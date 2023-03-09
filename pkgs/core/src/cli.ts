@@ -57,7 +57,19 @@ const program = new Command()
       debugCli('Running in dev')
       const chokidar = await import('chokidar')
       const ignored = args.nowatch && [path.join(args.cwd, args.nowatch)]
-      const watcher = chokidar.watch(`${args.cwd}/**/*.{js,ts,json}`, { ignored })
+
+      const relativeCwd = path.relative(process.cwd(), args.cwd)
+      const relativeRouteDir = path.relative(relativeCwd, args.routeDir)
+      
+      const parsedConfigPath = path.parse(args.config)
+      const relativeConfigPath = path.relative(process.cwd(), parsedConfigPath.name)
+
+      debugCli('watching, cwd: %s, routeDir: %s, config: %s', relativeCwd, relativeRouteDir, relativeConfigPath)
+
+      const watcher = chokidar.watch([
+        `${relativeRouteDir}/*.{js,ts}`,
+        `${relativeConfigPath}.{js,ts}`
+      ], { ignored })
 
       function delegate() {
         const forked = fork(`${__dirname}/cli.js`, command.args, {
@@ -81,7 +93,7 @@ const program = new Command()
     } else {
       const { config, router, services, submodule } = await createSubmodule({ args })
       setClient({ config, router, services, submodule })
-      
+
       const commands = await submodule?.createCommands?.({ config, services, router, subCommand, commandArgs: ['submoduleCommand', subCommand, ...command.args], submoduleArgs: args })
       if (submodule.createCommands && commands === undefined) {
         debugCli('finished processing, expected the createCommands did something already')
