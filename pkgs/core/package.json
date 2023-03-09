@@ -42,7 +42,8 @@
       "src/tracing.ts",
       "src/cli.ts",
       "src/core.ts",
-      "src/loader.ts"
+      "src/loader.ts",
+      "src/client.ts"
     ],
     "minify": false,
     "treeshake": false,

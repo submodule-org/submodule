@@ -1,6 +1,8 @@
 import type { A } from "ts-toolbelt"
 import type { WatchOptions } from "chokidar"
 
+export { getClient } from "./client"
+
 export type RouteLike<AdaptorContext = unknown> = {
   handle: (context: AdaptorContext) => unknown | Promise<unknown>
 }

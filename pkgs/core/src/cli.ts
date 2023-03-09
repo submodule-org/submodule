@@ -12,6 +12,7 @@ import { Command } from "commander"
 
 import type { ArgShape, CommandShape, OptShape, SubmoduleArgs } from "./index"
 import { createSubmodule } from "./core"
+import { setClient } from "./client"
 import { z } from "zod"
 import path from "path"
 
@@ -79,7 +80,8 @@ const program = new Command()
 
     } else {
       const { config, router, services, submodule } = await createSubmodule({ args })
-
+      setClient({ config, router, services, submodule })
+      
       const commands = await submodule?.createCommands?.({ config, services, router, subCommand, commandArgs: ['submoduleCommand', subCommand, ...command.args], submoduleArgs: args })
       if (submodule.createCommands && commands === undefined) {
         debugCli('finished processing, expected the createCommands did something already')
