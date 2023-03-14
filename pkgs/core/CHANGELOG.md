@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.8.0](https://github.com/submodule-js/submodule/compare/v2.7.1...v2.8.0) (2023-03-14)
+
+
+### Features
+
+* added createCaller API to call from outside ([6ccb4c0](https://github.com/submodule-js/submodule/commit/6ccb4c04c3ce6a089051f115029a234caeebdcce))
+
 ### [2.7.1](https://github.com/submodule-js/submodule/compare/v2.7.0...v2.7.1) (2023-03-09)
 
 ## [2.7.0](https://github.com/submodule-js/submodule/compare/v2.6.1...v2.7.0) (2023-03-09)

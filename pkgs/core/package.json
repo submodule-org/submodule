@@ -1,6 +1,6 @@
 {
   "name": "@submodule/cli",
-  "version": "2.7.1",
+  "version": "2.8.0",
   "engines": {
     "node": ">=16.0.0"
   },
@@ -25,16 +25,12 @@
   "scripts": {
     "dev": "yarn run -T tsup --watch",
     "core:dev": "yarn dev",
-
     "build": "yarn run -T tsup",
     "core:build": "yarn build",
-
     "preview": "yarn run -T standard-version --path . --dry-run",
     "core:preview": "yarn preview",
-
     "bump": "yarn run -T standard-version --path .",
     "core:bump": "yarn bump",
-
     "release": "git push --follow-tags origin main && npm publish --access public",
     "core:release": "yarn release"
   },
