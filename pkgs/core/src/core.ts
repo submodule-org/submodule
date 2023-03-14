@@ -6,6 +6,7 @@ import type { DefaultRouteModule, RouteLike, Submodule, SubmoduleArgs, Submodule
 import { instrument, trace } from "./instrument"
 import { requireDir } from "./loader"
 import * as tracing from "./tracing"
+import { INSTANCE_KEY } from "./client"
 
 const debugCore = require('debug')('submodule.core')
 
@@ -114,6 +115,8 @@ export const createSubmodule = async <
   }
 
   const { router } = await instrument(loadRoutes(), 1)
-
-  return { config: config as any, services, router, submodule: submodule as any }
+  const submoduleInstance = { config: config as any, services, router, submodule: submodule as any }
+  global[INSTANCE_KEY] = submoduleInstance
+  
+  return submoduleInstance
 }

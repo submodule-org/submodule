@@ -25,10 +25,18 @@
   "scripts": {
     "dev": "yarn run -T tsup --watch",
     "core:dev": "yarn dev",
+
     "build": "yarn run -T tsup",
+    "core:build": "yarn build",
+
     "preview": "yarn run -T standard-version --path . --dry-run",
+    "core:preview": "yarn preview",
+
     "bump": "yarn run -T standard-version --path .",
-    "release": "git push --follow-tags origin main && npm publish --access public"
+    "core:bump": "yarn bump",
+
+    "release": "git push --follow-tags origin main && npm publish --access public",
+    "core:release": "yarn release"
   },
   "bin": {
     "submodule": "dist/cli.js"

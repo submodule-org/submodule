@@ -4,15 +4,10 @@ import { fork } from "child_process"
 
 const debugCli = require('debug')('submodule.cli')
 
-if (typeof global['Deno'] === 'undefined') {
-  require('esbuild-register')
-}
-
 import { Command } from "commander"
 
 import type { ArgShape, CommandShape, OptShape, SubmoduleArgs } from "./index"
 import { createSubmodule } from "./core"
-import { setClient } from "./client"
 import { z } from "zod"
 import path from "path"
 
@@ -92,7 +87,34 @@ const program = new Command()
 
     } else {
       const { config, router, services, submodule } = await createSubmodule({ args })
-      setClient({ config, router, services, submodule })
+
+      const generateTypes = async (target: string) => {
+        const path = await import('path')
+        const fs = await import('fs/promises')
+
+        const relativeCwd = path.relative(process.cwd(), args.cwd)
+        const relativeTypefile = path.relative(relativeCwd, target)
+        const relativeRouteDir = path.relative(relativeCwd, args.routeDir)
+
+        debugCli('generating types to %s', relativeTypefile)
+        let content = ''
+
+        const envelop = (input: { content: string }) => `
+/** ⚠️ This is a generated document, please don't change this manually ⚠️ */
+export type Router = {
+  
+${input.content}
+}
+`
+        const routeNames = Object.keys(router)
+        routeNames.forEach(routeName => {
+          content += `  ${routeName}: typeof import('./${relativeRouteDir}/${routeName}') \n`
+        })
+        
+        await fs.writeFile(relativeTypefile, new Uint8Array(Buffer.from(envelop({ content }))))
+      };
+      
+      await generateTypes('submodule.router.ts')
 
       const commands = await submodule?.createCommands?.({ config, services, router, subCommand, commandArgs: ['submoduleCommand', subCommand, ...command.args], submoduleArgs: args })
       if (submodule.createCommands && commands === undefined) {

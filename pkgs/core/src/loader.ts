@@ -1,6 +1,7 @@
 import { glob } from "glob"
 import path, { ParsedPath } from "path"
 import debug from "debug"
+require('esbuild-register')
 
 const debugLoader = debug('submodule.loader')
 
@@ -17,7 +18,7 @@ export async function requireDir(dir: string, opts?: RequireDirOpts): Promise<Re
   debugLoader('loader in %s mode', globExp)
 
   const candidates = glob.sync(globExp, { cwd: dir, nodir: true })
-  debugLoader('loaded candidates %O', candidates)
+  debugLoader('loading candidates %O', candidates)
   // result in format of
   // [filename], no dir, as dir is set to cwd
 
@@ -25,18 +26,20 @@ export async function requireDir(dir: string, opts?: RequireDirOpts): Promise<Re
   
   for (const candidate of candidates) {
     const file = path.parse(candidate)
-
+    
     const filtered = opts?.filter?.(file) || false
-
+    
     debugLoader('parsing candidate %s -> %s', candidate, file)
     if (!filtered) {
       result[file.name] = candidate
+    } else {
+      debugLoader('filtered candidates %O', candidate)
     }
   }
 
   debugLoader('loaded modulePaths %O', result)
 
-  for (const moduleName of Object.keys(result)) {
+  for (const moduleName in result) {
     const modulePath = path.join(dir, moduleName)
 
     debugLoader('loading module path %s', modulePath)

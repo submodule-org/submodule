@@ -1,7 +1,7 @@
 import type { A } from "ts-toolbelt"
 import type { WatchOptions } from "chokidar"
 
-export { getClient } from "./client"
+export { createCaller } from "./client"
 
 export type RouteLike<AdaptorContext = unknown> = {
   handle: (context: AdaptorContext) => unknown | Promise<unknown>
@@ -62,15 +62,10 @@ export type Submodule<
     submodule?: {
       appName?: string
       appVersion?: string
-      buildNumber?: string
-      gitCommit?: string
 
-      chokidarOptions?: WatchOptions
+      chokidarOptions?: A.Compute<WatchOptions>
       traceEnabled?: boolean
       otlpUrl?: string
-    }
-    loaders?: {
-      moduleLoader?: (input: { config: Config, submoduleArg: SubmoduleArgs }) => Promise<Record<string, RouteModule>>
     }
     createConfig?: () => Config | Promise<Config>
     createServices?: (input: { config: Config }) => Services | Promise<Services>
@@ -78,6 +73,17 @@ export type Submodule<
     createRouter?: (input: { config: Config, services: Services, routeModules: Record<string, Route> }) => Router | Promise<Router>
     createCommands?: (input: { config: Config, services: Services, router: Router, subCommand?: string, commandArgs: string[], submoduleArgs: SubmoduleArgs }) => (void | Commands) | Promise<void | Commands>
   }>
+
+export type inferSubmodule<S> = S extends Submodule<infer Config, infer Services, infer Context, infer RouteModule, infer Route, infer Router>
+  ? {
+    config: Config
+    services: Services
+    context: Context
+    routeModule: RouteModule
+    route: Route
+    router: Router
+  }
+  : never
 
 export type SubmoduleInstance<
   Config = unknown,
