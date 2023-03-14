@@ -2,7 +2,7 @@
 const nextConfig = {
   /* config options here */
   experimental: {
-    appDir: true
+    serverComponentsExternalPackages: ['@submodule/cli']
   }
 };
 

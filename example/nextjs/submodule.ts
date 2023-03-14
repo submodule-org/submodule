@@ -1,15 +1,7 @@
-import type { Submodule } from "@submodule/cli"
 import next from "next"
 import fastify from "fastify"
 import { parse } from "url"
-import nextConfig from "./next.config"
-
-declare module SubmoduleNext {
-  type Config = {
-    port: number
-    apiPath: string
-  }
-}
+import { SubmoduleNext } from "./submodule.def"
 
 export default {
 
@@ -21,11 +13,12 @@ export default {
   },
 
   async createCommands({ config, router, submoduleArgs }) {
-    const app = next({ dev: submoduleArgs.dev, ...nextConfig })
+    const app = next({ dev: submoduleArgs.dev })
     const handle = app.getRequestHandler()
     await app.prepare()
 
-    const server = fastify({})
+    const server = fastify({
+    })
 
     for (const routePath in router) {
       server.get(`${config.apiPath}${routePath}`, async (req, rep) => {
@@ -41,5 +34,8 @@ export default {
     })
 
     server.listen({ port: config.port })
+    console.log('server is listening at port', config.port)
   }
-} satisfies Submodule<SubmoduleNext.Config>
+} satisfies SubmoduleNext.SubmoduleDef
+
+
