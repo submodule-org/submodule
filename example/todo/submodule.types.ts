@@ -1,4 +1,6 @@
 import type { Submodule, DefaultRouteModule, RouteLike } from "@submodule/cli"
+import type { RestSubmodule } from "@submodule/receipe-rest"
+
 import { Level } from "level"
 import type { LevelConfig } from "./services/level.client"
 import type { TodoService } from "./services/todo.service"
@@ -19,12 +21,13 @@ export declare module TodoApp {
     honoContext: HonoContext
   }
 
-  type RouteMeta = 'GET' | 'POST' | 'PUT'
+  type CallContext = { context: Context, services: Services}
 
-  type RouteModule<Input = unknown, Output = unknown> = DefaultRouteModule<Input, Output, Config, Services, Context> & { meta?: RouteMeta }
-  type Route = RouteLike<Context> & { meta?: RouteMeta }
+  type Definition<Input = unknown, Output = unknown> = RestSubmodule.RestRouteModule<CallContext, Input, Output>
+
+  type RouteModule<Input = unknown, Output = unknown> = {
+    default: Definition<Input, Output>
+  }
   
-  type RouteFn<Input = unknown, Output = unknown> = RouteModule<Input, Output>['default']
-
-  type TodoSubmodule = Submodule<Config, Services, Context, RouteModule, Route>
+  type TodoSubmodule = Submodule<Config, Services, Context, RouteModule>
 }

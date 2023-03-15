@@ -3,6 +3,7 @@
 export type Router = {
   
   add: typeof import('./routes/add') 
+  error: typeof import('./routes/error') 
   list: typeof import('./routes/list') 
   toggle: typeof import('./routes/toggle') 
 

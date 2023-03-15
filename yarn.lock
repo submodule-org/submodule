@@ -1255,6 +1255,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@submodule/receipe-cli@workspace:pkgs/receipes/cli":
+  version: 0.0.0-use.local
+  resolution: "@submodule/receipe-cli@workspace:pkgs/receipes/cli"
+  languageName: unknown
+  linkType: soft
+
+"@submodule/receipe-rest@workspace:^, @submodule/receipe-rest@workspace:pkgs/receipes/rest":
+  version: 0.0.0-use.local
+  resolution: "@submodule/receipe-rest@workspace:pkgs/receipes/rest"
+  dependencies:
+    "@submodule/cli": "workspace:^"
+  languageName: unknown
+  linkType: soft
+
 "@swc/helpers@npm:0.4.14":
   version: 0.4.14
   resolution: "@swc/helpers@npm:0.4.14"
@@ -6803,6 +6817,7 @@ __metadata:
   dependencies:
     "@hono/node-server": ^0.2.4
     "@submodule/cli": "workspace:^"
+    "@submodule/receipe-rest": "workspace:^"
     commander: ^10.0.0
     debug: ^4.3.4
     express: ^4.18.2

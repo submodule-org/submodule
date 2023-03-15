@@ -7,13 +7,11 @@ export const args: CliApp.RouteModule['args'] = [
   { name: 'right', required: true, description: 'Right side of the equation'},
 ]
 
-const fn: CliApp.RouteFn = ({ context }) => {
+export default (({ context }) => {
   const args = context.args
 
   const left = args[0]
   const right = args[1]
   
   return Number(left) + Number(right)
-}
-
-export default fn
+}) satisfies CliApp.RouteFn

@@ -33,70 +33,56 @@ const submodule = {
     }
   },
 
-  async createRoute({ config, services, routeModule }) {
+  async createRoute({ services, routeModule, routeName }) {
     return {
       async handle(context) {
         debugRuntime('incoming request %O', context.honoContext.req)
         const input = context.honoContext.req.query()
 
-        const { default: fn } = routeModule
+        const { default: route } = routeModule as TodoApp.RouteModule
 
-        const result = await fn({ config, services, context, input })
+        const result = await route.handle({ services, context, input })
         debugRuntime('actualized value %O', result)
 
+        // error will likely to be handled by hono
         return context.honoContext.json(result)
       },
-      meta: routeModule.meta
+      routeModule,
+      routeName
     }
   },
 
-  async createCommands({ config, router, submoduleArgs }) {
-    return {
-      async serve() {
-        const port = config.honoConfig?.port || 3000
+  async createCommands({ config, router }) {
+    const port = config.honoConfig?.port || 3000
 
-        const app = new Hono()
+    const app = new Hono()
 
-        for (const routeKey of Object.keys(router)) {
-          const route = router[routeKey]
-          debugSetup('adding new route %O', route)
+    for (const routeKey in router) {
+      const route = router[routeKey]
+      debugSetup('adding new route %s, %O', route.routeName, route?.routeModule.default.meta?.method || 'GET')
 
-          app.on([route?.meta || 'GET'], '/' + routeKey, (context) => route.handle({ honoContext: context }) as any)
+      const method = !route?.routeModule.default.meta?.method
+        ? undefined
+        : Array.isArray(route?.routeModule.default.meta?.method)
+          ? route?.routeModule.default.meta?.method
+          : [route?.routeModule.default.meta?.method]
+
+      app.on(
+        method || ['GET'],
+        '/' + route.routeName,
+        (context) => {
+          debugRuntime('incoming request %O', context)
+          return route.handle({ honoContext: context }) as any
         }
-
-        app.on(['GET'], '/routes', c => c.text(JSON.stringify(router)))
-
-        serve({
-          fetch: app.fetch,
-          port
-        })
-
-        console.log('Server is listening at port', port)
-      },
-      async generate() {
-        const { cwd, routeDir } = submoduleArgs
-        const path = await import('path')
-        const fs = await import('fs/promises')
-
-        const currentDirectory = path.relative(process.cwd(), cwd)
-        const routerFile = path.join(currentDirectory, 'submodule.router.ts')
-        
-        let content = ''
-        const envelop = (content: string) => `
-/** ⚠️ This is a generated document, please don't change this manually ⚠️ */
-export declare module TodoRouter { 
-${content}
-}  
-`
-
-        const routeNames = Object.keys(router)
-        routeNames.forEach(routeName => {
-          content += `  type ${routeName.toUpperCase()} = typeof import('${routeDir}/${routeName}') \n`
-        })
-        
-        await fs.writeFile(routerFile, new Uint8Array(Buffer.from(envelop(content))))
-      }
+      )
     }
+
+    serve({
+      fetch: app.fetch,
+      port
+    })
+
+    console.log('Server is listening at port', port)
   }
 
 } satisfies TodoApp.TodoSubmodule
