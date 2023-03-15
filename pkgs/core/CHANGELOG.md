@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.9.0](https://github.com/submodule-js/submodule/compare/v2.8.0...v2.9.0) (2023-03-15)
+
+
+### Features
+
+* auto carry shape of routeModule to the router, less code for createRoute ([5ee2cb8](https://github.com/submodule-js/submodule/commit/5ee2cb8e055d96e7248edcef737338fc0a6828da))
+
 ## [2.8.0](https://github.com/submodule-js/submodule/compare/v2.7.1...v2.8.0) (2023-03-14)
 
 
