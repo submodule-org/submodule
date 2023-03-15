@@ -39,7 +39,7 @@ export function trace<Fn extends AnyFn>(name: string, fn: Fn, spanOptions: SpanO
   } as Fn
 }
 
-export function instrument(input: any, maxLevel = 1, currentLevel = 0) {
+export function instrument<T>(input: T, maxLevel = 1, currentLevel = 0): T {
   if (input === null || input === undefined) return input
   if (currentLevel > maxLevel) return input
   

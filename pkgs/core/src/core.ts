@@ -43,7 +43,7 @@ export const createSubmodule = async <
   Services = unknown,
   Context = unknown,
   RouteModule = DefaultRouteModule<unknown, unknown, Config, Services, Context>,
-  Route extends RouteLike<Context> = RouteLike<Context>,
+  Route extends RouteLike<Context, RouteModule> = RouteLike<Context, RouteModule>,
   Router extends Record<string, Route> = Record<string, Route>>({ args }: CreateSubmoduleArgs): Promise<SubmoduleInstance<Config, Services, Context, RouteModule, Route, Router>> => {
 
   const resovledCwd = path.resolve(process.cwd(), args.cwd)
@@ -85,31 +85,57 @@ export const createSubmodule = async <
     const routes = await requireDir(path.join(args.cwd, args.routeDir))
     debugCore('routes loaded %O', routes)
 
-    const preparedRoutes = {}
-    const createRoute = submodule.createRoute
+    const routeModules = {}
+    const createRoute: S['createRoute'] = submodule.createRoute
       ? instrument(submodule.createRoute, 1)
-      : instrument(function defaultCreateRoute({ config, services, routeModule }) {
+      : instrument(function defaultCreateRoute({ config, services, routeModule, routeName }) {
         const verifiedModule = routeModuleSchema.parse(routeModule)
 
         return {
           handle: async function defaultRouteHandler(context: unknown) {
             return await verifiedModule.default({ config, services, context })
-          }
+          },
+          routeModule: routeModule,
+          routeName: routeName
         }
       }, 1)
 
-    for (const routeName of Object.keys(routes)) {
+    for (const routeName in routes) {
       const routeModule = routes[routeName]
-      preparedRoutes[routeName] = await createRoute({ config, services, routeModule, routeName })
+
+      const createRouteResult = await createRoute({ config, services, routeModule, routeName })
+
+      if (createRouteResult === undefined) {
+        debugCore('skipping routeName: %s, as createRoute returned undefined', routeName)
+        continue
+      }
+      
+      if (Array.isArray(createRouteResult)) {
+        debugCore('additional routes detected in path %s', routeName)
+        for (const routeResult of createRouteResult) {
+          debugCore('adding route %s', routeName)
+          routeModules[routeResult.routeName] = routeResult
+        }
+        continue
+      }
+      
+      debugCore('adding route %s', routeName)
+      routeModules[createRouteResult.routeName] = createRouteResult
     }
 
-    const router = instrument(await submodule?.createRouter?.({ config, services, routeModules: preparedRoutes }) || preparedRoutes, 1)
+    const createRouter: S['createRouter'] = submodule.createRouter
+      ? instrument(submodule.createRouter, 1)
+      : instrument(function defaultCreateRouter({ routeModules }) {
+        return routeModules
+      })
+
+    const router: Router = await createRouter({ config, services, routeModules }) as any
     debugCore('router %O', router)
 
     // trap the route so we know when it is started/ended
-    Object.keys(router).forEach(routeKey => {
+    for (const routeKey in router) {
       router[routeKey].handle = trace(routeKey, router[routeKey].handle)
-    })
+    }
 
     return { routes, router }
   }
@@ -118,5 +144,5 @@ export const createSubmodule = async <
   const submoduleInstance = { config: config as any, services, router, submodule: submodule as any }
   global[INSTANCE_KEY] = submoduleInstance
   
-  return submoduleInstance
+  return submoduleInstance as any
 }

@@ -3,8 +3,10 @@ import type { WatchOptions } from "chokidar"
 
 export { createCaller } from "./client"
 
-export type RouteLike<AdaptorContext = unknown> = {
+export type RouteLike<AdaptorContext = unknown, RouteModule = unknown> = {
   handle: (context: AdaptorContext) => unknown | Promise<unknown>
+  routeModule: RouteModule
+  routeName: string
 }
 
 export type SubmoduleArgs = {
@@ -15,6 +17,8 @@ export type SubmoduleArgs = {
   nowatch?: string
 }
 
+export type DefaultHandleFn<CallContext = unknown, Input = unknown, Output = unknown> = (input: A.Compute<CallContext & { input: Input }>) => Output | Promise<Output>
+
 export type DefaultRouteModule<
   Input = unknown,
   Output = unknown,
@@ -22,7 +26,7 @@ export type DefaultRouteModule<
   Services = unknown,
   Context = unknown
 > = {
-  default: (input: A.Compute<{ config: Config, services: Services, context: Context, input: Input }>) => Output | Promise<Output>
+  default: DefaultHandleFn<{ config: Config, services: Services, context: Context}, Input, Output>
 }
 
 export type ArgShape = {
@@ -57,7 +61,7 @@ export type Submodule<
   Services = unknown,
   Context = unknown,
   RouteModule = DefaultRouteModule<unknown, unknown, Config, Services, Context>,
-  Route extends RouteLike<Context> = RouteLike<Context>,
+  Route extends RouteLike<Context, RouteModule> = RouteLike<Context, RouteModule>,
   Router extends Record<string, Route> = Record<string, Route>> = A.Compute<{
     submodule?: {
       appName?: string
@@ -69,7 +73,7 @@ export type Submodule<
     }
     createConfig?: () => Config | Promise<Config>
     createServices?: (input: { config: Config }) => Services | Promise<Services>
-    createRoute?: (input: { config: Config, services: Services, routeModule: RouteModule, routeName: string }) => Promise<Route> | Route
+    createRoute?: (input: { config: Config, services: Services, routeModule: RouteModule, routeName: string }) => Promise<Route | Route[] | undefined> | (Route | Route[] | undefined)
     createRouter?: (input: { config: Config, services: Services, routeModules: Record<string, Route> }) => Router | Promise<Router>
     createCommands?: (input: { config: Config, services: Services, router: Router, subCommand?: string, commandArgs: string[], submoduleArgs: SubmoduleArgs }) => (void | Commands) | Promise<void | Commands>
   }>
@@ -90,7 +94,7 @@ export type SubmoduleInstance<
   Services = unknown,
   Context = unknown,
   RouteModule = DefaultRouteModule<unknown, unknown, Config, Services, Context>,
-  Route extends RouteLike<Context> = RouteLike<Context>,
+  Route extends RouteLike<Context, RouteModule> = RouteLike<Context, RouteModule>,
   Router extends Record<string, Route> = Record<string, Route>
 > = {
   config: Config

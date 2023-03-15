@@ -42,12 +42,8 @@
   "tsup": {
     "entry": [
       "src/index.ts",
-      "src/instrument.ts",
-      "src/tracing.ts",
       "src/cli.ts",
-      "src/core.ts",
-      "src/loader.ts",
-      "src/client.ts"
+      "src/core.ts"
     ],
     "minify": false,
     "treeshake": false,

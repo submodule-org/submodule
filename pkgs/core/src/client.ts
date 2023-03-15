@@ -23,7 +23,7 @@ function getInstance<
   Services = unknown,
   Context = unknown,
   RouteModule = DefaultRouteModule<unknown, unknown, Config, Services, Context>,
-  Route extends RouteLike<Context> = RouteLike<Context>,
+  Route extends RouteLike<Context, RouteModule> = RouteLike<Context, RouteModule>,
   Router extends Record<string, Route> = Record<string, Route>
 >(): SubmoduleInstance<Config, Services, Context, RouteModule, Route, Router> {
   debug('trying to retrieve instance')

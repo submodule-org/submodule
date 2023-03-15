@@ -106,10 +106,9 @@ export type Router = {
 ${input.content}
 }
 `
-        const routeNames = Object.keys(router)
-        routeNames.forEach(routeName => {
+        for (const routeName in router) {
           content += `  ${routeName}: typeof import('./${relativeRouteDir}/${routeName}') \n`
-        })
+        }
         
         await fs.writeFile(relativeTypefile, new Uint8Array(Buffer.from(envelop({ content }))))
       };
@@ -126,7 +125,7 @@ ${input.content}
         debugCli('using %O to create more commands', commands)
         const validatedCommandsShape = commandsSchema.parse(commands)
 
-        for (const commandName of Object.keys(validatedCommandsShape)) {
+        for (const commandName in validatedCommandsShape) {
           const commandShape = validatedCommandsShape[commandName]
           debugCli('adding command %s %O', commandName, commandShape)
 
