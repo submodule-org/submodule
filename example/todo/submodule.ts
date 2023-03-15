@@ -37,7 +37,15 @@ const submodule = {
     return {
       async handle(context) {
         debugRuntime('incoming request %O', context.honoContext.req)
-        const input = context.honoContext.req.query()
+        
+        const body = await context.honoContext.req.json()
+        const query = context.honoContext.req.queries()
+
+        // non-optimized implementation, very idiomatic, JSON oriented
+        const input = {
+          ...body,
+          ...query
+        }
 
         const { default: route } = routeModule as TodoApp.RouteModule
 
@@ -71,7 +79,7 @@ const submodule = {
         method || ['GET'],
         '/' + route.routeName,
         (context) => {
-          debugRuntime('incoming request %O', context)
+          debugRuntime('incoming request to path %s', context.req.url)
           return route.handle({ honoContext: context }) as any
         }
       )
