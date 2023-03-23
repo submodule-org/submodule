@@ -1,7 +1,7 @@
 import { Submodule } from "@submodule/cli"
 
-export default <Submodule> {
-  async configFn() {
+export default {
+  async createConfig() {
     throw new Error('config threw exception')
   }
-}
+} satisfies Submodule

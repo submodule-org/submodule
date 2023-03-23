@@ -18,6 +18,9 @@
     "pkgs/receipes/*",
     "example/*"
   ],
+  "scripts": {
+    "test": "yarn workspaces foreach run test"
+  },
   "devDependencies": {
     "@types/shimmer": "^1.0.2"
   }

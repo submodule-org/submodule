@@ -5,11 +5,12 @@ import { Hono } from "hono"
 import { serve } from '@hono/node-server'
 
 import type { TodoApp } from "./submodule.types"
+import type { Submodule } from "@submodule/cli"
 
 const debugRuntime = require('debug')('todo.runtime')
 const debugSetup = require('debug')('todo.setup')
 
-const submodule = {
+export default {
   createConfig() {
     const config = {
       levelConfig: {
@@ -35,10 +36,10 @@ const submodule = {
 
   async createRoute({ services, routeModule, routeName }) {
     return {
-      async handle(context) {
+      async handle(context: TodoApp.Context) {
         debugRuntime('incoming request %O', context.honoContext.req)
         
-        const body = await context.honoContext.req.json()
+        const body = context.honoContext.req.body && await context.honoContext.req.json()
         const query = context.honoContext.req.queries()
 
         // non-optimized implementation, very idiomatic, JSON oriented
@@ -92,7 +93,5 @@ const submodule = {
 
     console.log('Server is listening at port', port)
   }
-
+// } satisfies TodoApp.TodoSubmodule
 } satisfies TodoApp.TodoSubmodule
-
-export default submodule

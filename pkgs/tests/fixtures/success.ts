@@ -1,12 +1,10 @@
 import { Submodule } from "@submodule/cli"
 
 export default {
-  async configFn() {
-    const asyncConfig = await Promise.resolve(2)
-    return { syncConfig: 1, asyncConfig }
+  async createConfig() {
+    return { config: 'config' }
   },
-  async preparedContextFn() {
-    const asyncContext = await Promise.resolve(2)
-    return { syncContext: 1, asyncContext }
+  async createServices() {
+    return { services: 'services' }
   }
 } satisfies Submodule

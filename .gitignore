@@ -18,3 +18,4 @@ node_modules
 
 # submodule specific
 **/.submodule
+**/submodule.router.ts
