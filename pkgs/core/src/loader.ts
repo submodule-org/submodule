@@ -12,8 +12,8 @@ export type RequireDirOpts = {
 
 export async function requireDir(dir: string, opts?: RequireDirOpts): Promise<Record<string, any>> {
   const globExp = opts?.recurse
-    ? '**/*.{js,ts}'
-    : '*.{js,ts}'
+    ? '**/*.{js,ts,jsx,tsx}'
+    : '*.{js,ts,jsx,tsx}'
 
   debugLoader('loader in %s mode', globExp)
 

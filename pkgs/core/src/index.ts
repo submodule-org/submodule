@@ -10,11 +10,10 @@ export type RouteLike<AdaptorContext = unknown, RouteModule = unknown> = {
 }
 
 export type SubmoduleArgs = {
-  cwd: string,
-  config: string,
-  routeDir: string,
-  dev: boolean,
-  nowatch?: string
+  cwd: string
+  config: string
+  routeDir: string
+  isDev: boolean
 }
 
 export type DefaultHandleFn<CallContext = unknown, Input = unknown, Output = unknown> = (input: A.Compute<CallContext & { input: Input }>) => Output | Promise<Output>
