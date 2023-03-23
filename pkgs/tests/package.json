@@ -1,6 +1,10 @@
 {
   "name": "tests",
   "packageManager": "yarn@3.3.0",
+  "scripts": {
+    "test": "vitest run",
+    "tests:test": "yarn test"
+  },
   "dependencies": {
     "@submodule/cli": "workspace:^",
     "chalk": "^5.2.0",

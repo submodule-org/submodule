@@ -1,7 +1,7 @@
 import { Submodule } from "@submodule/cli"
 
-export default <Submodule> {
-  async handlerFn() {
+export default {
+  async createRoute() {
     throw new Error('handler threw exception')
   }
-}
+} satisfies Submodule
