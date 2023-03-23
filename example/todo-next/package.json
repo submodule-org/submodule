@@ -1,7 +1,0 @@
-{
-  "name": "todo-next",
-  "packageManager": "yarn@3.3.0",
-  "dependencies": {
-    "example-todo": "workspace:^"
-  }
-}

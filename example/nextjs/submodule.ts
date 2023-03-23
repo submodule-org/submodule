@@ -13,7 +13,7 @@ export default {
   },
 
   async createCommands({ config, router, submoduleArgs }) {
-    const app = next({ dev: submoduleArgs.dev })
+    const app = next({ dev: submoduleArgs.isDev, quiet: submoduleArgs.isDev })
     const handle = app.getRequestHandler()
     await app.prepare()
 

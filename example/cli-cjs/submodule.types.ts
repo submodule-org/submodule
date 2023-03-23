@@ -8,9 +8,7 @@ export declare namespace CliApp {
   type RouteModule<Input = unknown, Output = unknown> = DefaultRouteModule<Input, Output, Config, Services, Context> 
     & { args?: ArgShape[], options?: OptShape[], description?: string }
     
-  type Route = RouteLike<Context> & { args?: ArgShape[], options?: OptShape[], description?: string }
-
   type RouteFn = RouteModule['default']
 
-  type CliSubmodule = Submodule<Config, Services, Context, RouteModule, Route>
+  type CliSubmodule = Submodule<Config, Services, Context, RouteModule>
 }
