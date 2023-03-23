@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0](https://github.com/submodule-js/submodule/compare/v2.9.0...v3.0.0) (2023-03-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* added tsup to bundle, added dev command, added build command
+
+### Features
+
+* added tsup to bundle, added dev command, added build command ([81b3c65](https://github.com/submodule-js/submodule/commit/81b3c65023cb8be371b778368e94666fc4762dba))
+
 ## [2.9.0](https://github.com/submodule-js/submodule/compare/v2.8.0...v2.9.0) (2023-03-15)
 
 
