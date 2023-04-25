@@ -26,7 +26,7 @@ export const createExecutable = withControllerUnit(function _createExecutable<
 ): <
   Query extends keyof Routes,
   IO extends Extractor & { routeModule: Routes[Query] } = Extractor & { routeModule: Routes[Query] }
->(query: Query | Exclude<string, Query>, input: IO['input']) => Promise<IO['output']> {
+>(query: Query | Omit<string, Query>, input: IO['input']) => Promise<IO['output']> {
   let cached: { config: any, services: any, initArgs: any } | undefined = undefined
   const routeModules = new Map()
 

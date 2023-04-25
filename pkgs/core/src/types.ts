@@ -31,7 +31,7 @@ export type ExecutableSubmodule<
   loadRouteModule?: (loadRouteModuleParams: { 
     initArgs: InitArgs,
     config: Config,
-    query: string
+    query: string,
   }) => RouteModule | Promise<RouteModule> | undefined
 
   execute: (executeParams: {
@@ -138,7 +138,7 @@ export class TypeBuilder<
     routeModule: RouteModule
   }
 
-  defineRouteFn(routeFn: RouteModule[RouteFnKey]) { return routeFn }
+  defineRouteFn<RouteFn extends RouteModule[RouteFnKey]>(routeFn: RouteFn): RouteFn { return routeFn }
 }
 
 export const typeBuilder = new TypeBuilder()
