@@ -1,0 +1,9 @@
+{
+  "name": "with-server",
+  "packageManager": "yarn@3.3.0",
+  "dependencies": {
+    "@submodule/core": "workspace:^",
+    "fastify": "^4.15.0",
+    "tsx": "^3.12.6"
+  }
+}

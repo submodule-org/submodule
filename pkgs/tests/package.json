@@ -6,7 +6,7 @@
     "tests:test": "yarn test"
   },
   "dependencies": {
-    "@submodule/cli": "workspace:^",
+    "@submodule/core": "workspace:^",
     "chalk": "^5.2.0",
     "execa": "^6.1.0",
     "vitest": "^0.27.1"

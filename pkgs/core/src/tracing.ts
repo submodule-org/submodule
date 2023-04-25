@@ -1,4 +1,4 @@
-import { ConsoleSpanExporter, SimpleSpanProcessor } from "@opentelemetry/sdk-trace-base";
+import { SimpleSpanProcessor } from "@opentelemetry/sdk-trace-base";
 import { Resource } from "@opentelemetry/resources";
 import { SemanticResourceAttributes } from "@opentelemetry/semantic-conventions";
 import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";

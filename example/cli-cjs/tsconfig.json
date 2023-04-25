@@ -1,8 +1,0 @@
-{
-	"extends": "@sindresorhus/tsconfig",
-  "compilerOptions": {
-    "module": "ESNext",
-    "jsx": "react"
-  },
-  "include": ["*/**/*.tsx", "*/**/*.ts"]
-}
