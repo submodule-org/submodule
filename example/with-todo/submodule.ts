@@ -1,16 +1,56 @@
 import { createDb } from "./services/level.client"
 import { createService } from "./services/todo.service"
 
-import { serve } from "@submodule/core"
 import { Hono } from "hono"
 import { serve as honoServe } from '@hono/node-server'
-
-import type { Submodule } from "./submodule.types"
 
 const debugRuntime = require('debug')('todo.runtime')
 const debugSetup = require('debug')('todo.setup')
 
-const submodule = {
+import { ExtractRouteFn, builder } from "@submodule/core"
+
+import { Level } from "level"
+import type { LevelConfig } from "./services/level.client"
+import type { TodoService } from "./services/todo.service"
+import type { Context as HonoContext } from "hono"
+
+type Config = {
+  levelConfig: LevelConfig
+  honoConfig?: { port: number }
+}
+
+type Services = {
+  db: Level
+  todoService: TodoService
+}
+
+type Context = {
+  honoContext: HonoContext
+}
+
+type RouteModule<Input = any, Output = unknown> = {
+  handle: (context: Services, input: Input) => Promise<Output>
+  meta?: {
+    path?: string
+    method?: 'POST' | 'GET' | 'PUT' | 'DELETE'
+    isWebsocket?: boolean
+  }
+}
+
+interface RouteFnExtractor extends ExtractRouteFn<RouteModule> {
+  routeFn: this['routeModule']['handle']
+}
+
+const sb = builder()
+  .config<Config>()
+  .services<Services>()
+  .context<Context>()
+  .routeModule<RouteModule, RouteFnExtractor>()
+
+export const defineRoute = sb.defineRouteFn
+export const defineMeta = (meta: RouteModule['meta']) => meta
+
+sb.serve({
   createConfig() {
     const config = {
       levelConfig: {
@@ -27,7 +67,8 @@ const submodule = {
   async loadRouteModules() {
     return {
       add: await import('./routes/add'),
-      list: await import('./routes/list')
+      list: await import('./routes/list'),
+      toggle: await import('./routes/toggle')
     }
   },
 
@@ -45,13 +86,12 @@ const submodule = {
     return {
       async handle(context) {
         debugRuntime('incoming request %O', context.honoContext.req)
-        
-        const body = context.honoContext.req.body && await context.honoContext.req.json()
+
         const query = context.honoContext.req.queries()
 
         // non-optimized implementation, very idiomatic, JSON oriented
         const input = {
-          ...body,
+          ...context.honoContext.req.body,
           ...query
         }
 
@@ -96,6 +136,4 @@ const submodule = {
 
     console.log('Server is listening at port', port)
   }
-} satisfies Submodule
-
-serve(submodule)
+})

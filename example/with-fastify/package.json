@@ -1,0 +1,24 @@
+{
+  "name": "with-server",
+  "packageManager": "yarn@3.3.0",
+  "dependencies": {
+    "@submodule/core": "workspace:^",
+    "fastify": "^4.15.0"
+  },
+  "devDependencies": {
+    "tsx": "^3.12.6"
+  },
+  "tsup": {
+    "entry": [
+      "submodule.ts"
+    ],
+    "minify": true,
+    "treeshake": true,
+    "splitting": false,
+    "sourcemap": true,
+    "clean": true
+  },
+  "scripts": {
+    "build": "yarn run -T tsup"
+  }
+}

@@ -6,6 +6,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^0.2.4",
+    "@submodule/cli": "workspace:^",
     "@submodule/core": "workspace:^",
     "commander": "^10.0.0",
     "debug": "^4.3.4",

@@ -1244,6 +1244,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@submodule/cli@workspace:^, @submodule/cli@workspace:pkgs/cli":
+  version: 0.0.0-use.local
+  resolution: "@submodule/cli@workspace:pkgs/cli"
+  dependencies:
+    "@submodule/core": "workspace:^"
+    cleye: ^1.3.2
+    tsx: ^3.12.6
+  bin:
+    submodule: tsx src/index.ts
+  languageName: unknown
+  linkType: soft
+
 "@submodule/client@workspace:^, @submodule/client@workspace:pkgs/client":
   version: 0.0.0-use.local
   resolution: "@submodule/client@workspace:pkgs/client"
@@ -2160,6 +2172,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"cleye@npm:^1.3.2":
+  version: 1.3.2
+  resolution: "cleye@npm:1.3.2"
+  dependencies:
+    terminal-columns: ^1.4.1
+    type-flag: ^3.0.0
+  checksum: 3cf8795d53f5cde9f464f604c2dcc0fd897ef51243695af23b9a7a9c7dd83bcb327ce6133134c8b48d551010e257d0171808129bfea735d64d12dc77f1eb5019
+  languageName: node
+  linkType: hard
+
 "cli-truncate@npm:^3.1.0":
   version: 3.1.0
   resolution: "cli-truncate@npm:3.1.0"
@@ -2262,6 +2284,13 @@ __metadata:
   version: 10.0.0
   resolution: "commander@npm:10.0.0"
   checksum: 9f6495651f878213005ac744dd87a85fa3d9f2b8b90d1c19d0866d666bda7f735adfd7c2f10dfff345782e2f80ea258f98bb4efcef58e4e502f25f883940acfd
+  languageName: node
+  linkType: hard
+
+"commander@npm:^10.0.1":
+  version: 10.0.1
+  resolution: "commander@npm:10.0.1"
+  checksum: 436901d64a818295803c1996cd856621a74f30b9f9e28a588e726b2b1670665bccd7c1a77007ebf328729f0139838a88a19265858a0fa7a8728c4656796db948
   languageName: node
   linkType: hard
 
@@ -3258,6 +3287,7 @@ __metadata:
   resolution: "example-todo@workspace:example/with-todo"
   dependencies:
     "@hono/node-server": ^0.2.4
+    "@submodule/cli": "workspace:^"
     "@submodule/core": "workspace:^"
     commander: ^10.0.0
     debug: ^4.3.4
@@ -6935,6 +6965,7 @@ __metadata:
   dependencies:
     "@changesets/cli": ^2.26.0
     "@types/shimmer": ^1.0.2
+    commander: ^10.0.1
     dotenv: ^16.0.3
     esbuild: ^0.16.13
     esbuild-register: ^3.4.2
@@ -6943,6 +6974,7 @@ __metadata:
     shimmer: ^1.2.1
     standard-version: ^9.5.0
     tsup: ^6.5.0
+    tsx: ^3.12.6
   languageName: unknown
   linkType: soft
 
@@ -7016,6 +7048,13 @@ __metadata:
   version: 2.2.1
   resolution: "term-size@npm:2.2.1"
   checksum: 1ed981335483babc1e8206f843e06bd2bf89b85f0bf5a9a9d928033a0fcacdba183c03ba7d91814643015543ba002f1339f7112402a21da8f24b6c56b062a5a9
+  languageName: node
+  linkType: hard
+
+"terminal-columns@npm:^1.4.1":
+  version: 1.4.1
+  resolution: "terminal-columns@npm:1.4.1"
+  checksum: 54a3d625963fa9cb2110bd2af982f31865438c7cf3dfe95d8e9c453c3cd67b7352fa4a78e8b31dc6f4955ccd9fe2ab8ac8224c5b1db61c6226364a12150739bc
   languageName: node
   linkType: hard
 
@@ -7365,6 +7404,13 @@ __metadata:
   version: 0.8.1
   resolution: "type-fest@npm:0.8.1"
   checksum: d61c4b2eba24009033ae4500d7d818a94fd6d1b481a8111612ee141400d5f1db46f199c014766b9fa9b31a6a7374d96fc748c6d688a78a3ce5a33123839becb7
+  languageName: node
+  linkType: hard
+
+"type-flag@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "type-flag@npm:3.0.0"
+  checksum: 50afaf2dde8c4910303039ea3c757d0628e4b7adb933e9f643b8283778f93a643318902d647415180bebbd05f1f7b9905698c438d2e44b1f9b56551b5c5c8ecd
   languageName: node
   linkType: hard
 
@@ -7836,6 +7882,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"with-cleye@workspace:example/with-commander":
+  version: 0.0.0-use.local
+  resolution: "with-cleye@workspace:example/with-commander"
+  dependencies:
+    "@submodule/core": "workspace:^"
+    cleye: ^1.3.2
+    commander: ^10.0.1
+    tsx: ^3.12.6
+  languageName: unknown
+  linkType: soft
+
 "with-nextjs@workspace:example/with-nextjs":
   version: 0.0.0-use.local
   resolution: "with-nextjs@workspace:example/with-nextjs"
@@ -7849,9 +7906,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"with-server@workspace:example/with-server":
+"with-server@workspace:example/with-fastify":
   version: 0.0.0-use.local
-  resolution: "with-server@workspace:example/with-server"
+  resolution: "with-server@workspace:example/with-fastify"
   dependencies:
     "@submodule/core": "workspace:^"
     fastify: ^4.15.0

@@ -1,6 +1,6 @@
 import createDebug from "debug"
-
-export class SubmoduleController {}
+import utils from "util"
+export class SubmoduleController { }
 export type ControllerSignal = SubmoduleController | Promise<SubmoduleController>
 
 class DisplayHelp extends SubmoduleController {
@@ -47,21 +47,29 @@ export function withControllerUnit<Fn extends AnyFn>(fn: Fn): Fn {
   return function () {
     const that = this
     const args = arguments
+    const result = fn.apply(that, args)
+    if (result === undefined) {
+      return
+    } else if (utils.types.isPromise(result)) {
+      return result
+        .then(next => {
+          return next
+        })
+        .catch(e => {
+          if (e instanceof DisplayHelp) {
+            console.log(e.helpMessage)
+            process.exit(e.exitCode)
+          }
 
-    try {
-      return fn.apply(that, args)
-    } catch (e) {
-      if (e instanceof DisplayHelp) {
-        console.log(e.helpMessage)
-        process.exit(e.exitCode)
-      }
+          if (!(e instanceof StopWithError)) {
+            e = new StopWithError('runtime', 1, 'Unexpected exception', e)
+          }
 
-      if (!(e instanceof StopWithError)) {
-        e = new StopWithError('runtime', 1, 'Unexpected exception', e)
-      }
-
-      console.log('Caught an exception %s', e)
-      process.exit(e.exitCode)
+          console.log('Caught an exception %s', e)
+          process.exit(e.exitCode)
+        })
+    } else {
+      return result
     }
   } as Fn
 }

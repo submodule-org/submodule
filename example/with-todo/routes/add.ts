@@ -1,4 +1,4 @@
-import { defineRoute } from "../submodule.types"
+import { defineRoute } from "../submodule"
 import type { Todo } from "../services/todo.service"
 
 export const handle = defineRoute(async (services, input: Omit<Todo, 'id'>) => {

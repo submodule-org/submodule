@@ -1,4 +1,4 @@
-import type { ExecutableSubmodule, ServerSubmodule } from "./types"
+import type { ExecutableSubmodule, ServerSubmodule } from "./core"
 
 const defaultSubmodule = {
   async init() {
