@@ -2,27 +2,15 @@
   "name": "submodule-parent",
   "packageManager": "yarn@3.3.0",
   "dependencies": {
-    "@changesets/cli": "^2.26.0",
-    "commander": "^10.0.1",
-    "dotenv": "^16.0.3",
-    "esbuild": "^0.16.13",
-    "esbuild-register": "^3.4.2",
-    "nats": "^2.10.2",
-    "pino": "^8.8.0",
-    "shimmer": "^1.2.1",
     "standard-version": "^9.5.0",
     "tsup": "^6.5.0",
     "tsx": "^3.12.6"
   },
   "workspaces": [
     "pkgs/*",
-    "pkgs/receipes/*",
     "example/*"
   ],
   "scripts": {
     "test": "yarn workspaces foreach run test"
-  },
-  "devDependencies": {
-    "@types/shimmer": "^1.0.2"
   }
 }
