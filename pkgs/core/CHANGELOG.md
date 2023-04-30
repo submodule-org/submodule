@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.0.4](https://github.com/submodule-js/submodule/compare/v1.0.3...v1.0.4) (2023-04-30)
+
+
+### Bug Fixes
+
+* reduce the use of this ([4874ce3](https://github.com/submodule-js/submodule/commit/4874ce3504af8356f11fada4df8eb7a0870ba90f))
+
 ### [1.0.3](https://github.com/submodule-js/submodule/compare/v1.0.2...v1.0.3) (2023-04-30)
 
 ### [1.0.2](https://github.com/submodule-js/submodule/compare/v1.0.1...v1.0.2) (2023-04-30)
