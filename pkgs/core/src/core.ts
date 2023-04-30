@@ -421,7 +421,7 @@ class SubmoduleBuilder<
     queries: keyof Routes;
   };
 
-  defineRouteFn<RouteFnType extends this["types"]["routeFn"]>(
+  defineRouteFn<RouteFnType extends RouteFn>(
     routeFn: RouteFnType
   ): RouteFnType {
     return routeFn;
@@ -435,7 +435,14 @@ class SubmoduleBuilder<
   }
 
   createExecutable<Extractor extends IOExtractor>(
-    submoduleDef: this["executableSubmodule"],
+    submoduleDef: ExecutableSubmodule<
+      InitArgs,
+      Config,
+      Services,
+      RouteModule,
+      unknown,
+      unknown
+    >,
     initArgs?: InitArgs
   ) {
     return createExecutable<Extractor, Routes>(submoduleDef, initArgs);
@@ -443,11 +450,32 @@ class SubmoduleBuilder<
   // #endregion
 
   // #region server
-  defineServer(submoduleDef: this["serverSubmodule"]) {
+  defineServer(
+    submoduleDef: ServerSubmodule<
+      InitArgs,
+      Config,
+      Services,
+      Context,
+      RouteModule,
+      Route,
+      Record<string, Route>
+    >
+  ) {
     return submoduleDef;
   }
 
-  serve(submoduleDef: this["serverSubmodule"], initArgs?: InitArgs) {
+  serve(
+    submoduleDef: ServerSubmodule<
+      InitArgs,
+      Config,
+      Services,
+      Context,
+      RouteModule,
+      Route,
+      Record<string, Route>
+    >,
+    initArgs?: InitArgs
+  ) {
     return serve(submoduleDef, initArgs);
   }
   // #endregion
