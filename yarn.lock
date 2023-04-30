@@ -6616,6 +6616,7 @@ __metadata:
   dependencies:
     "@submodule/core": "workspace:^"
     fastify: ^4.15.0
+    ts-toolbelt: ^9.6.0
     tsx: ^3.12.6
   languageName: unknown
   linkType: soft

@@ -3,7 +3,8 @@
   "packageManager": "yarn@3.3.0",
   "dependencies": {
     "@submodule/core": "workspace:^",
-    "fastify": "^4.15.0"
+    "fastify": "^4.15.0",
+    "ts-toolbelt": "^9.6.0"
   },
   "devDependencies": {
     "tsx": "^3.12.6"
@@ -19,6 +20,8 @@
     "clean": true
   },
   "scripts": {
-    "build": "yarn run -T tsup"
+    "dev": "tsx watch submodule",
+    "build": "yarn run -T tsup",
+    "start": "node dist/submodule"
   }
 }

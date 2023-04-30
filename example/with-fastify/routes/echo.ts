@@ -1,14 +1,12 @@
 import { defineMeta, defineRoute } from "../submodule";
 
-export default defineRoute(({ rep, req }) => {
-  return { 
+export default defineRoute(({ req }) => {
+  return {
     method: req.method,
     headers: req.headers,
+    body: req.body,
     query: req.query,
-    body: req.body
-  }
-})
+  };
+});
 
-export const meta = defineMeta({
-  methods: ['GET', 'POST', 'DELETE']
-})
+export const meta = defineMeta({ methods: ["COPY", "GET", "POST", "PUT"] });
