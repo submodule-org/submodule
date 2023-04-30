@@ -1,5 +1,5 @@
 import createDebug from "debug";
-import type { Any, O } from "ts-toolbelt";
+import type { Any } from "ts-toolbelt";
 import { withControllerUnit } from "./controller";
 import { debug, instrument, trace } from "./instrument";
 
@@ -77,17 +77,15 @@ export type ServerSubmodule<
         config: Config;
       }) => Record<string, RouteModule> | Promise<Record<string, RouteModule>>;
 
-      createRoute: <
-        OptionalRoute extends O.Optional<Route, "routeName" | "routeModule">
-      >(createRouteParams: {
+      createRoute: (createRouteParams: {
         initArgs: InitArgs;
         config: Config;
         services: Services;
         routeModule: RouteModule;
         routeName: string;
       }) =>
-        | Promise<OptionalRoute | OptionalRoute[] | undefined>
-        | (OptionalRoute | OptionalRoute[] | undefined);
+        | Promise<Route | Route[] | undefined>
+        | (Route | Route[] | undefined);
 
       createRouter?: (createRouterParams: {
         initArgs: InitArgs;
@@ -115,12 +113,6 @@ export type ServerSubmodule<
     },
     "flat"
   >;
-
-export type GetRouteModules<
-  S extends ServerSubmodule<any, any, any, any, any, any>
-> = S["loadRouteModules"] extends (...args: any[]) => infer T
-  ? Awaited<T>
-  : never;
 
 export class SubmoduleController {}
 export type ControllerSignal =
@@ -260,17 +252,17 @@ export const serve = withControllerUnit(
 
 // #endregion
 
-export type DefaultRouteModule<CallContext = {}, Output = unknown> = {
+export type DefaultRouteModule<CallContext, Output = unknown> = {
   default: (callContext: CallContext) => Output | Promise<Output>;
 };
 
-export interface DefaultRouteFnExtractor
-  extends ExtractRouteFn<DefaultRouteModule> {
-  routeFn: this["routeModule"];
+export interface DefaultRouteFnExtractor<CallContext>
+  extends ExtractRouteFn<DefaultRouteModule<CallContext>> {
+  routeFn: this["routeModule"]["default"];
 }
 
 export interface DefaultInputOutputExtractor<
-  RouteModule extends DefaultRouteModule
+  RouteModule extends DefaultRouteModule<any>
 > extends IOExtractor<RouteModule> {
   input: Parameters<this["routeModule"]["default"]>[0] extends {
     input: infer Input;
@@ -298,43 +290,6 @@ class SubmoduleBuilder<
   Routes = unknown,
   InputOutputExtractor extends IOExtractor = IOExtractor
 > {
-  defaults(): SubmoduleBuilder<
-    InitArgs,
-    Config,
-    Services,
-    Context,
-    DefaultRouteModule<{
-      config: Config;
-      services: Services;
-      context: Context;
-    }>,
-    RouteLike<
-      Context,
-      DefaultRouteModule<{
-        config: Config;
-        services: Services;
-        context: Context;
-      }>
-    >,
-    (DefaultRouteFnExtractor & {
-      routeModule: DefaultRouteModule<{
-        config: Config;
-        services: Services;
-        context: Context;
-      }>;
-    })["routeFn"],
-    Routes,
-    DefaultInputOutputExtractor<
-      DefaultRouteModule<{
-        config: Config;
-        services: Services;
-        context: Context;
-      }>
-    >
-  > {
-    return this as any;
-  }
-
   routes<Routes>(): SubmoduleBuilder<
     InitArgs,
     Config,
@@ -419,7 +374,9 @@ class SubmoduleBuilder<
     (Extractor & { routeModule: RouteModuleType })["routeFn"],
     Routes,
     ExtractInputOut
-  > {
+  >;
+
+  routeModule() {
     return this as any;
   }
 
@@ -464,7 +421,7 @@ class SubmoduleBuilder<
     queries: keyof Routes;
   };
 
-  defineRouteFn<RouteFnType extends RouteFn>(
+  defineRouteFn<RouteFnType extends Any.Compute<this["types"]["routeFn"]>>(
     routeFn: RouteFnType
   ): RouteFnType {
     return routeFn;
@@ -478,7 +435,7 @@ class SubmoduleBuilder<
   }
 
   createExecutable<Extractor extends IOExtractor>(
-    submoduleDef: ExecutableSubmodule<InitArgs, Config, Services, RouteModule>,
+    submoduleDef: this["executableSubmodule"],
     initArgs?: InitArgs
   ) {
     return createExecutable<Extractor, Routes>(submoduleDef, initArgs);
@@ -486,28 +443,11 @@ class SubmoduleBuilder<
   // #endregion
 
   // #region server
-  defineServer(
-    submoduleDef: ServerSubmodule<
-      InitArgs,
-      Config,
-      Services,
-      Context,
-      RouteModule
-    >
-  ) {
+  defineServer(submoduleDef: this["serverSubmodule"]) {
     return submoduleDef;
   }
 
-  serve(
-    submoduleDef: ServerSubmodule<
-      InitArgs,
-      Config,
-      Services,
-      Context,
-      RouteModule
-    >,
-    initArgs?: InitArgs
-  ) {
+  serve(submoduleDef: this["serverSubmodule"], initArgs?: InitArgs) {
     return serve(submoduleDef, initArgs);
   }
   // #endregion
@@ -515,7 +455,7 @@ class SubmoduleBuilder<
 
 export const builder = () => new SubmoduleBuilder();
 
-const defaultSubmoduleDef = builder().defaults();
+const defaultSubmoduleDef = builder();
 
 type DefaultServerSubmodule = typeof defaultSubmoduleDef.serverSubmodule;
 type DefaultExecutableSubmodule =
