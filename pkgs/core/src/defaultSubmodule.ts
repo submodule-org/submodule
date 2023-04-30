@@ -1,48 +1,46 @@
-import type { ExecutableSubmodule, ServerSubmodule } from "./core"
+import type { ExecutableSubmodule, ServerSubmodule } from "./core";
 
 const defaultSubmodule = {
-  async init() {
-    return {}
-  },
-
   async createConfig() {
-    return {}
+    return {};
   },
 
   async createServices() {
-    return {}
+    return {};
   },
 
   async loadRouteModule() {
-    return undefined
+    return undefined;
   },
 
   async loadRouteModules() {
-    return {}
+    return {};
   },
 
   /** Best effort to figure out what is the handle */
   async createRoute() {
-    return undefined
+    return undefined;
   },
 
   async createRouter({ routes }) {
-    return routes
+    return routes;
   },
 
   async execute() {
-    throw new Error('not yet implemented')
+    throw new Error("not yet implemented");
   },
 
   async serve() {
-    throw new Error('not yet implemented')
+    throw new Error("not yet implemented");
   },
 
   async createInnerClient({ startPromise }) {
-    await startPromise
-    return () => { throw new Error('not yet implemented') }
-  }
+    await startPromise;
+    return () => {
+      throw new Error("not yet implemented");
+    };
+  },
+} satisfies ExecutableSubmodule<any, any, any, any, any, any> &
+  ServerSubmodule<any, any, any, any, any, any, any>;
 
-} satisfies ExecutableSubmodule & ServerSubmodule
-
-export { defaultSubmodule }
+export { defaultSubmodule };

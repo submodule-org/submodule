@@ -1,7 +1,6 @@
 {
   "name": "@submodule/core",
   "version": "1.0.0",
-
   "description": "Structural way to build node and deno application",
   "author": "Lagz0ne <duke@silentium.io>",
   "repository": {
@@ -19,7 +18,6 @@
   ],
   "license": "MIT",
   "homepage": "https://submodule.js.org",
-
   "engines": {
     "node": ">=16.0.0"
   },
