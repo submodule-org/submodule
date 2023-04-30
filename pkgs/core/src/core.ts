@@ -421,7 +421,7 @@ class SubmoduleBuilder<
     queries: keyof Routes;
   };
 
-  defineRouteFn<RouteFnType extends Any.Compute<this["types"]["routeFn"]>>(
+  defineRouteFn<RouteFnType extends this["types"]["routeFn"]>(
     routeFn: RouteFnType
   ): RouteFnType {
     return routeFn;
