@@ -1,0 +1,27 @@
+{
+  "name": "@submodule/receipes",
+  "packageManager": "yarn@3.3.0",
+  "peerDependencies": {
+    "@submodule/core": "workspace:^"
+  },
+  "types": "dist/index.d.ts",
+  "tsup": {
+    "entry": [
+      "src/index.ts"
+    ],
+    "minify": false,
+    "treeshake": false,
+    "splitting": false,
+    "sourcemap": true,
+    "clean": true,
+    "dts": true
+  },
+  "scripts": {
+    "dev": "yarn run -T tsup --watch",
+    "test": "vitest run",
+    "build": "yarn run -T tsup",
+    "preview": "yarn run -T standard-version --path . --dry-run",
+    "bump": "yarn run -T standard-version --path .",
+    "release": "git push --follow-tags origin main && npm publish --access public"
+  }
+}
