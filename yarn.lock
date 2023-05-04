@@ -1018,6 +1018,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@submodule/receipes@workspace:^, @submodule/receipes@workspace:pkgs/receipes":
+  version: 0.0.0-use.local
+  resolution: "@submodule/receipes@workspace:pkgs/receipes"
+  peerDependencies:
+    "@submodule/core": "workspace:^"
+  languageName: unknown
+  linkType: soft
+
 "@swc/helpers@npm:0.5.0":
   version: 0.5.0
   resolution: "@swc/helpers@npm:0.5.0"
@@ -6597,12 +6605,27 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"with-nextjs-using-exec@workspace:example/with-nextjs-using-exec":
+  version: 0.0.0-use.local
+  resolution: "with-nextjs-using-exec@workspace:example/with-nextjs-using-exec"
+  dependencies:
+    "@submodule/client": "workspace:^"
+    "@submodule/core": "workspace:^"
+    "@submodule/receipes": "workspace:^"
+    "@types/react": 18.0.38
+    next: ^13.3.1
+    react: ^18.2.0
+    react-dom: ^18.2.0
+  languageName: unknown
+  linkType: soft
+
 "with-nextjs@workspace:example/with-nextjs":
   version: 0.0.0-use.local
   resolution: "with-nextjs@workspace:example/with-nextjs"
   dependencies:
     "@submodule/client": "workspace:^"
     "@submodule/core": "workspace:^"
+    "@submodule/receipes": "workspace:^"
     "@types/react": 18.0.38
     next: ^13.3.1
     react: ^18.2.0
@@ -6615,6 +6638,7 @@ __metadata:
   resolution: "with-server@workspace:example/with-fastify"
   dependencies:
     "@submodule/core": "workspace:^"
+    "@submodule/receipes": "workspace:^"
     fastify: ^4.15.0
     ts-toolbelt: ^9.6.0
     tsx: ^3.12.6
