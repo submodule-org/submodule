@@ -1,15 +1,12 @@
 {
   "name": "@submodule/client",
+  "version": "1.0.0",
   "packageManager": "yarn@3.3.0",
   "dependencies": {
     "ts-toolbelt": "^9.6.0"
   },
   "devDependencies": {
     "tsd": "^0.28.1"
-  },
-  "scripts": {
-    "build": "yarn run -T tsup",
-    "client:build": "yarn build"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -23,5 +20,14 @@
     "sourcemap": true,
     "clean": true,
     "dts": true
+  },
+  "scripts": {
+    "dev": "yarn run -T tsup --watch",
+    "test": "vitest run",
+    "build": "yarn run -T tsup",
+    "preview": "yarn run -T standard-version --path . -t @submodule/client --dry-run",
+    "bump": "yarn run -T standard-version --path . -t @submodule/client",
+    "release": "git push --follow-tags origin main && npm publish --access public",
+    "client:build": "yarn build"
   }
 }
