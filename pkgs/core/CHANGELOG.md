@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.1.1](https://github.com/submodule-js/submodule/compare/@submodule/core1.1.0...@submodule/core1.1.1) (2023-05-04)
+
+
+### Features
+
+* bundle ts-toolbelt ([10cb739](https://github.com/submodule-js/submodule/commit/10cb739521575d30039c0098b2eed80beb700f52))
+
 ## 1.1.0 (2023-05-04)
 
 
