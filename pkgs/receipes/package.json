@@ -1,6 +1,6 @@
 {
   "name": "@submodule/receipes",
-  "version": "2.0.0",
+  "version": "1.0.0",
   "packageManager": "yarn@3.3.0",
   "peerDependencies": {
     "@submodule/core": "workspace:^"
@@ -21,8 +21,8 @@
     "dev": "yarn run -T tsup --watch",
     "test": "vitest run",
     "build": "yarn run -T tsup",
-    "preview": "yarn run -T standard-version --path . --dry-run",
-    "bump": "yarn run -T standard-version --path .",
+    "preview": "yarn run -T standard-version --path . -t @submodule/receipes --dry-run",
+    "bump": "yarn run -T standard-version --path . -t @submodule/receipes",
     "release": "git push --follow-tags origin main && npm publish --access public",
     "receipes:build": "yarn build"
   }

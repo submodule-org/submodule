@@ -4,11 +4,6 @@ All notable changes to this project will be documented in this file. See [standa
 
 ## 1.0.0 (2023-05-04)
 
-
-### ⚠ BREAKING CHANGES
-
-* prepare for a very big change
-
 ### Features
 
 * added receipes package to cover common patterns ([00fcf2d](https://github.com/submodule-js/submodule/commit/00fcf2d9309a49c8fa2aa281d6a891035fa78fc8))
