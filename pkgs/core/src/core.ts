@@ -3,7 +3,7 @@ import type { Any } from "ts-toolbelt";
 import { withControllerUnit } from "./controller";
 import { debug, instrument, trace } from "./instrument";
 
-export interface IOExtractor<T = unknown> {
+export interface ExtractInputOutput<T = unknown> {
   routeModule: T;
   input: unknown;
   output: unknown;
@@ -40,17 +40,16 @@ export type ExecutableSubmodule<
         preloadedRoutes?: any;
       }) => RouteModule | Promise<RouteModule> | undefined | Promise<undefined>;
 
-      execute: (executeParams: {
-        initArgs: InitArgs;
-        config: Config;
-        services: Services;
-        route: RouteModule;
-        query?: string;
-        input?: Input;
-      }) => Promise<Output>;
-    },
-    "flat"
-  >;
+  execute: (executeParams: {
+    initArgs: InitArgs,
+    config: Config,
+    services: Services,
+    route: RouteModule,
+    query?: string,
+    input: Input
+  }) => Promise<Output>
+
+}, 'flat'>
 
 export type RouteLike<Context = unknown, RouteModule = unknown> = {
   handle: (context: Context) => unknown | Promise<unknown>;
@@ -122,7 +121,7 @@ export type ControllerSignal =
 // #region executable
 
 export const createExecutable = function <
-  Extractor extends IOExtractor,
+  Extractor extends ExtractInputOutput,
   Routes = unknown
 >(
   submoduleDef: ExecutableSubmodule<any, any, any, any>,
@@ -166,16 +165,40 @@ export const createExecutable = function <
           query: queryString,
         });
 
-    return await submodule.execute({
-      initArgs,
-      config,
-      services,
-      query: queryString,
-      input,
-      route: routeModule,
-    });
-  });
-};
+    return await submodule.execute({ initArgs, config, services, query: queryString, input, route: routeModule })
+  })
+}
+
+type Executable<InitArgs, Config, Services, Input, Output> = (executableParam: { config: Config, services: Services, input: Input extends undefined ? undefined : Input, initArgs: InitArgs }) => Output | Promise<Output>
+
+export const prepareExecutable = function <
+  InitArgs, Config, Services
+>(
+  submoduleDef: ExecutableSubmodule<InitArgs, Config, Services, Executable<InitArgs, Config, Services, any, any>>,
+  initArgs: InitArgs,
+): <Input, Output>(executable: Executable<InitArgs, Config, Services, Input, Output>, input?: Input) => Promise<Output> {
+  let cached: { config: any, services: any } | undefined = undefined
+
+  const submodule = { ...defaultSubmodule, ...submoduleDef }
+  instrument(submodule, debug)
+  instrument(submodule, trace)
+
+  async function load() {
+    if (!cached) {
+      const config = await submodule.createConfig({ initArgs }) as any
+      const services = await submodule.createServices({ config, initArgs })
+      cached = { config, services }
+    }
+
+    return cached
+  }
+
+  return async (caller, input) => {
+    const { config, services } = await load()
+
+    return submodule.execute({ initArgs, config, services, route: caller, input }) as any
+  }
+}
 
 export interface ExtractRouteFn<RouteModule = unknown> {
   routeModule: RouteModule;
@@ -263,7 +286,7 @@ export interface DefaultRouteFnExtractor<CallContext>
 
 export interface DefaultInputOutputExtractor<
   RouteModule extends DefaultRouteModule<any>
-> extends IOExtractor<RouteModule> {
+> extends ExtractInputOutput<RouteModule> {
   input: Parameters<this["routeModule"]["default"]>[0] extends {
     input: infer Input;
   }
@@ -288,96 +311,31 @@ class SubmoduleBuilder<
   >,
   RouteFn = unknown,
   Routes = unknown,
-  InputOutputExtractor extends IOExtractor = IOExtractor
+  Extractor extends ExtractInputOutput = ExtractInputOutput
 > {
-  routes<Routes>(): SubmoduleBuilder<
-    InitArgs,
-    Config,
-    Services,
-    Context,
-    RouteModule,
-    Route,
-    RouteFn,
-    Routes,
-    InputOutputExtractor
-  > {
-    return this as any;
+
+  routes<Routes>(): SubmoduleBuilder<InitArgs, Config, Services, Context, RouteModule, Route, RouteFn, Routes, Extractor> {
+    return this as any
   }
 
-  init<InitType>(): SubmoduleBuilder<
-    InitType,
-    Config,
-    Services,
-    Context,
-    RouteModule,
-    Route,
-    RouteFn,
-    Routes,
-    InputOutputExtractor
-  > {
-    return this as any;
-  }
+  init<InitType>(): SubmoduleBuilder<InitType, Config, Services, Context, RouteModule, Route, RouteFn, Routes, Extractor> { return this as any }
 
-  config<ConfigType>(): SubmoduleBuilder<
-    InitArgs,
-    ConfigType,
-    Services,
-    Context,
-    RouteModule,
-    Route,
-    RouteFn,
-    Routes,
-    InputOutputExtractor
-  > {
-    return this as any;
-  }
+  config<ConfigType>(): SubmoduleBuilder<InitArgs, ConfigType, Services, Context, RouteModule, Route, RouteFn, Routes, Extractor> { return this as any }
 
-  services<ServicesType>(): SubmoduleBuilder<
-    InitArgs,
-    Config,
-    ServicesType,
-    Context,
-    RouteModule,
-    Route,
-    RouteFn,
-    Routes,
-    InputOutputExtractor
-  > {
-    return this as any;
-  }
+  services<ServicesType>(): SubmoduleBuilder<InitArgs, Config, ServicesType, Context, RouteModule, Route, RouteFn, Routes, Extractor> { return this as any }
 
-  context<ContextType>(): SubmoduleBuilder<
-    InitArgs,
-    Config,
-    Services,
-    ContextType,
-    RouteModule,
-    RouteLike<ContextType, RouteModule>,
-    RouteFn,
-    Routes,
-    InputOutputExtractor
-  > {
-    return this as any;
-  }
+  context<ContextType>(): SubmoduleBuilder<InitArgs, Config, Services, ContextType, RouteModule, RouteLike<ContextType, RouteModule>, RouteFn, Routes, Extractor> { return this as any }
 
-  routeModule<
-    RouteModuleType,
-    Extractor extends ExtractRouteFn,
-    ExtractInputOut extends IOExtractor<RouteModuleType>
-  >(): SubmoduleBuilder<
+  routeModule<RouteModuleType, RouteFnExtractor extends ExtractRouteFn>(): SubmoduleBuilder<
     InitArgs,
     Config,
     Services,
     Context,
     RouteModuleType,
-    RouteLike<Context, RouteModuleType>,
-    (Extractor & { routeModule: RouteModuleType })["routeFn"],
+    RouteLike<Context, RouteModuleType>, (RouteFnExtractor & { routeModule: RouteModuleType })['routeFn'],
     Routes,
-    ExtractInputOut
-  >;
-
-  routeModule() {
-    return this as any;
+    Extractor> {
+    return this as any
   }
 
   route<RouteType extends RouteLike<Context, RouteModule>>(): SubmoduleBuilder<
@@ -389,9 +347,12 @@ class SubmoduleBuilder<
     RouteType,
     RouteFn,
     Routes,
-    InputOutputExtractor
-  > {
-    return this as any;
+    Extractor> {
+    return this as any
+  }
+
+  extractor<ExtractorType extends ExtractInputOutput>(): SubmoduleBuilder<InitArgs, Config, Services, Context, RouteModule, Route, RouteFn, Routes, ExtractorType> {
+    return this as any
   }
 
   declare serverSubmodule: ServerSubmodule<
@@ -434,19 +395,22 @@ class SubmoduleBuilder<
     return submoduleDef;
   }
 
-  createExecutable<Extractor extends IOExtractor>(
-    submoduleDef: ExecutableSubmodule<
-      InitArgs,
-      Config,
-      Services,
-      RouteModule,
-      unknown,
-      unknown
-    >,
+  createExecutable(
+    submoduleDef: ExecutableSubmodule<InitArgs, Config, Services, RouteModule>,
     initArgs?: InitArgs
   ) {
     return createExecutable<Extractor, Routes>(submoduleDef, initArgs);
   }
+
+  prepareExecutable(
+    submoduleDef: ExecutableSubmodule<InitArgs, Config, Services, Executable<InitArgs, Config, Services, any, any>>,
+    initArgs: InitArgs
+  ) {
+    return prepareExecutable<InitArgs, Config, Services>(
+      submoduleDef, initArgs
+    )
+  }
+
   // #endregion
 
   // #region server
