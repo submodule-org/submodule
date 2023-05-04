@@ -29,6 +29,7 @@
     "@opentelemetry/sdk-trace-base": "^1.8.0",
     "@opentelemetry/sdk-trace-node": "^1.8.0",
     "@opentelemetry/semantic-conventions": "^1.8.0",
+    "ts-toolbelt": "^9.6.0",
     "debug": "^4.3.4",
     "zod": "^3.20.2"
   },
@@ -64,7 +65,7 @@
     "@types/glob": "^8.1.0",
     "@types/node": "^18.11.18",
     "esbuild": "^0.16.13",
-    "ts-toolbelt": "^9.6.0",
+    
     "tsup": "^6.7.0",
     "typescript": "^4.9.5",
     "vitest": "^0.29.7"
