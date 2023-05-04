@@ -22,6 +22,7 @@
     "build": "yarn run -T tsup",
     "preview": "yarn run -T standard-version --path . --dry-run",
     "bump": "yarn run -T standard-version --path .",
-    "release": "git push --follow-tags origin main && npm publish --access public"
+    "release": "git push --follow-tags origin main && npm publish --access public",
+    "receipes:build": "yarn build"
   }
 }

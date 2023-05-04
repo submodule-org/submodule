@@ -11,5 +11,10 @@
   },
   "devDependencies": {
     "@types/react": "18.0.38"
+  },
+  "scripts": {
+    "dev": "next",
+    "build": "next build",
+    "start": "next start"
   }
 }

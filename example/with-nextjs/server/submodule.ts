@@ -29,7 +29,7 @@ export const caller = sb.createExecutable({
   async loadRouteModule({ initArgs, query }) {
     return initArgs[query]
   },
-
+  
   async execute({ route: promiseRoute, input, services }) {
     const route = await promiseRoute
     return route.default(services, input)
