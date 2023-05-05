@@ -1,15 +1,8 @@
-import { builder } from "@submodule/core";
-import { todoService, TodoService } from "./services/todo.service"
+import { prepareExecutable } from "@submodule/core";
+import { todoService } from "./services/todo.service"
 
-type Services = { todoService: TodoService }
-
-export const exec = builder()
-  .services<Services>()
-  .prepareExecutable({
-    createServices() {
-      return { todoService }
-    },
-    async execute({ route, config, services, initArgs, input }) {
-      return route({ config, services, initArgs, input })
-    }
-  }, undefined)
+export const { execute } = prepareExecutable({
+  async createServices() {
+    return { todoService }
+  },
+})

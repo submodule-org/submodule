@@ -1,5 +1,5 @@
-import { defineRoute } from "../submodule"
+import { route } from "../submodule"
 
-export const handle = defineRoute(async (services) => {
-  return services.todoService.listTodos()
+export const handle = route(async ({ services }, context) => {
+  return context.json(await services.todoService.listTodos())
 })

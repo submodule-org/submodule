@@ -1,6 +1,6 @@
 import { GetServerSideProps } from "next"
 import { Todo } from "../server/services/todo.service"
-import { exec } from "../server/submodule"
+import { execute } from "../server/submodule"
 
 type HomeProps = {
   todos: Todo[]
@@ -11,7 +11,7 @@ export default function Home(props: HomeProps) {
 }
 
 export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
-  const todos = await exec(({ services }) => {
+  const todos = await execute(({ services }) => {
     return services.todoService.list()
   })
 
