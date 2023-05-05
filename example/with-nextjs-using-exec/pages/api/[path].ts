@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { exec } from "../../server/submodule";
+import { execute } from "../../server/submodule";
 
 export default async function handle(req: NextApiRequest, res: NextApiResponse) {
   const queries = req.query
@@ -9,7 +9,7 @@ export default async function handle(req: NextApiRequest, res: NextApiResponse) 
   
   res.setHeader('content-type', 'application-json')
   
-  await exec(async ({ services }) => {
+  await execute(async ({ services }) => {
     if (services.todoService[query]) {
       res.send(await services.todoService[query](input))
     } else {
