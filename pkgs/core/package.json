@@ -9,6 +9,7 @@
     "directory": "pkgs/core"
   },
   "keywords": [
+    "ioc",
     "configuration",
     "structure",
     "composition",
@@ -18,20 +19,9 @@
   ],
   "license": "MIT",
   "homepage": "https://submodule.js.org",
-  "engines": {
-    "node": ">=16.0.0"
-  },
   "dependencies": {
-    "@opentelemetry/api": ">=1.0.0 <1.4.0",
-    "@opentelemetry/exporter-trace-otlp-http": "^0.34.0",
-    "@opentelemetry/resource-detector-docker": "^0.1.2",
-    "@opentelemetry/resources": "^1.8.0",
-    "@opentelemetry/sdk-trace-base": "^1.8.0",
-    "@opentelemetry/sdk-trace-node": "^1.8.0",
-    "@opentelemetry/semantic-conventions": "^1.8.0",
     "ts-toolbelt": "^9.6.0",
-    "debug": "^4.3.4",
-    "zod": "^3.20.2"
+    "debug": "^4.3.4"
   },
   "scripts": {
     "dev": "yarn run -T tsup --watch",
@@ -62,7 +52,6 @@
   },
   "devDependencies": {
     "@types/debug": "^4.1.7",
-    "@types/glob": "^8.1.0",
     "@types/node": "^18.11.18",
     "esbuild": "^0.16.13",
     "tsup": "^6.7.0",
