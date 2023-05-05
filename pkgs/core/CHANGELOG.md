@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0](https://github.com/submodule-js/submodule/compare/@submodule/core1.1.1...@submodule/core2.0.0) (2023-05-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* made core way simpler
+
+### Features
+
+* made core way simpler ([c128d43](https://github.com/submodule-js/submodule/commit/c128d43a609116be8d8ee8d0d9e609a9803fd5e4))
+
 ### [1.1.1](https://github.com/submodule-js/submodule/compare/@submodule/core1.1.0...@submodule/core1.1.1) (2023-05-04)
 
 
