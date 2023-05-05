@@ -9,13 +9,11 @@ export default async function handle(req: NextApiRequest, res: NextApiResponse) 
   
   res.setHeader('content-type', 'application-json')
   
-  const result = await exec(({ services, input }) => {
-    return services.todoService.add(input)
-  }, { value: '123456' })
-
-  if (result) {
-    res.send(JSON.stringify(result))
-  } else {
-    res.end()
-  }
+  await exec(async ({ services }) => {
+    if (services.todoService[query]) {
+      res.send(await services.todoService[query](input))
+    } else {
+      res.status(404).send(`cannot find path of ${query}`)
+    }
+  })
 }

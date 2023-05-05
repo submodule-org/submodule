@@ -2,11 +2,12 @@
   "name": "example-todo",
   "packageManager": "yarn@3.3.0",
   "scripts": {
-    "start": "submodule"
+    "dev": "tsx watch main",
+    "build": "yarn run -T tsup",
+    "start": "node dist/main"
   },
   "dependencies": {
     "@hono/node-server": "^0.2.4",
-    "@submodule/cli": "workspace:^",
     "@submodule/core": "workspace:^",
     "commander": "^10.0.0",
     "debug": "^4.3.4",
@@ -14,6 +15,17 @@
     "hono": "^3.0.2",
     "level": "^8.0.0",
     "tsx": "^3.12.6"
+  },
+  "tsup": {
+    "entry": [
+      "./main.ts"
+    ],
+    "minify": true,
+    "treeshake": true,
+    "splitting": false,
+    "sourcemap": true,
+    "clean": true,
+    "dts": false
   },
   "types": "submodule.router.ts"
 }

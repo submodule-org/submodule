@@ -1,11 +1,10 @@
-import { Todo } from "../services/todo.service"
-import { defineRoute, defineMeta } from "../submodule"
+import { defineMeta, route } from "../submodule"
 
-export const handle = defineRoute(async (services, input: Todo) => {
-  await services.todoService.toggleTodo(input.id)
-  return services.todoService.getTodo(input.id)
+export const handle = route(async ({ services }, context) => {
+  const id = context.req.query('id')
+
+  await services.todoService.toggleTodo(id as string)
+  return context.json(await services.todoService.getTodo(id as string))
 })
 
-export const meta = defineMeta({ 
-  method: 'PUT'
-})
+export const meta = defineMeta({ methods: ['POST'] })
