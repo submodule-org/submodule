@@ -1,11 +1,11 @@
-import { Route, execute } from "./submodule"
+import { Route, configor } from "./submodule"
 import { Hono } from "hono"
 import { serve as honoServe } from '@hono/node-server'
 import createDebug from "debug"
 
 const debugRuntime = createDebug('todo.runtime')
 
-execute(async ({ config }) => {
+configor.execute(async ({ config }) => {
   const port = config.honoConfig?.port || 3000
 
   const app = new Hono()

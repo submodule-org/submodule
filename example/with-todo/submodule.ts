@@ -6,7 +6,7 @@ import { Context } from "hono"
 const debugSetup = createDebug('todo.setup')
 import { prepareExecutable } from "@submodule/core"
 
-export const { execute, prepare } = prepareExecutable({
+export const configor = prepareExecutable({
   createConfig() {
     const config = {
       levelConfig: {
@@ -18,24 +18,31 @@ export const { execute, prepare } = prepareExecutable({
     }
     debugSetup('actual config value %O', config)
     return config
-  },
+  }
+})
 
-  async createServices({ config }) {
-    const db = await createDb(config.levelConfig)
-    const todoService = createService({ db })
-
-    debugSetup('actual services %O', { db, todoService })
-    return {
-      db, todoService
-    }
+export const levelDb = prepareExecutable({
+  async createServices({ initArgs }) {
+    return await createDb(initArgs.levelConfig)
   },
-}, { eager: false, initArgs: undefined })
+}, { 
+  initArgs: configor.config 
+})
+
+export const todo = prepareExecutable({
+
+  async createServices({ initArgs: db }) {
+    return createService({ db })
+  },
+}, { 
+  initArgs: levelDb.services 
+})
 
 type Meta = {
   methods?: ['GET' | 'POST' | 'PUT']
 }
 
-export const route = prepare<Context, Response>
+export const route = todo.prepare<Context, Response>
 export const defineMeta = (meta: Meta) => { return meta }
 
 export type Route = {
