@@ -7,6 +7,9 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Features
 
+* added instrument option, each function can be wrapped and instrumented
+* initArgs can be added using an async function, that helps with function composition
+* added config() and services() to retrieve config and services directly
 * change for 2.1 ([0f54ba4](https://github.com/submodule-js/submodule/commit/0f54ba4722ee4d2b723a6bfed631b0c39ff9abd7))
 
 ## [2.0.0](https://github.com/submodule-js/submodule/compare/@submodule/core1.1.1...@submodule/core2.0.0) (2023-05-05)
