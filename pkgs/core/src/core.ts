@@ -1,22 +1,20 @@
-import type { Any, O } from "ts-toolbelt";
-import { debug, instrument } from "./instrument";
+import type { Any } from "ts-toolbelt";
+import { debug, instrument, InstrumentFunction } from "./instrument";
 import createDebug from 'debug'
 
 const d = createDebug('submodule.core')
 
 export type Submodule<InitArgs = {}, Config = {}, Services = {}> = Any.Compute<{
-  createConfig?: (createConfigParams?: {
+  createConfig?: (createConfigParams: {
     initArgs: InitArgs;
   }) => Config | Promise<Config>;
 
   createServices?: (createServiceParams: {
-    initArgs: InitArgs;
-    config: Config;
+    initArgs: InitArgs
+    config: Config
   }) => Services | Promise<Services>;
 
-},
-  "flat"
->;
+}, "flat">;
 
 type Executable<InitArgs, Config, Services, Input, Output> = (
   executableParam: {
@@ -26,8 +24,9 @@ type Executable<InitArgs, Config, Services, Input, Output> = (
   }, input: Input) => Output | Promise<Output>
 
 export type ExecutableOptions<InitArgs> = {
-  eager: boolean,
-  initArgs: InitArgs | undefined
+  eager?: boolean,
+  initArgs?: () => (InitArgs | Promise<InitArgs>),
+  instrument?: InstrumentFunction
 }
 
 const defaultSubmodule = {
@@ -40,51 +39,72 @@ const defaultSubmodule = {
   },
 } satisfies Submodule
 
-export const prepareExecutable = function <InitArgs = {}, Config = {}, Services = {}>(
-  submoduleDef: Submodule<InitArgs, Config, Services>,
-  options: ExecutableOptions<InitArgs> = { eager: false, initArgs: undefined }
-): {
+const defaultExecutableOptions: ExecutableOptions<any> = {
+  eager: true,
+  initArgs: undefined
+}
+
+export type Executor<InitArgs, Config, Services> = {
   execute: <Input extends any, Output> (executable: Executable<InitArgs, Config, Services, Input, Output>, input?: Input) => Promise<Output>
   prepare: <Input extends any, Output> (executable: Executable<InitArgs, Config, Services, Input, Output>) => (input: Input) => Promise<Output>
-} {
-  let cached: { config: any, services: any } | undefined = undefined
+  config(): Promise<Config>
+  services(): Promise<Services>
+}
+
+export const prepareExecutable = function <InitArgs = {}, Config = {}, Services = {}>(
+  submoduleDef: Submodule<InitArgs, Config, Services>,
+  options?: ExecutableOptions<InitArgs>
+): Executor<InitArgs, Config, Services> {
+  let cached: Promise<{ config: any, services: any }> | undefined = undefined
+
+  const opts = { ...defaultExecutableOptions, ...options }
 
   const submodule = { ...defaultSubmodule, ...submoduleDef }
   instrument(submodule, debug)
 
-  async function load() {
-    if (cached === undefined) {
-      d('loading cache %S', cached)
-      
-      const config = await submodule.createConfig({ initArgs: options.initArgs as any }) as any
-      const services = await submodule.createServices({ config, initArgs: options.initArgs as any })
-      cached = { config, services }
-      d('cache resolved %S', cached)
-    }
-
-    return cached
+  if (opts.instrument) {
+    instrument(submodule, opts.instrument)
   }
 
-  if (options.eager) {
+  async function load() {
+    const initArgs = await options?.initArgs?.()
+    const config = await submodule.createConfig({ initArgs: initArgs as any }) as any
+    const services = await submodule.createServices({ config, initArgs: initArgs as any })
+    return { config, services }
+  }
+
+  async function get() {
+    if (cached == undefined) {
+      d('cache is uninitialized, initializing ...')
+      cached = load()
+    }
+    return await cached
+  }
+
+  if (opts.eager && cached == undefined) {
     d('eager loading, cache status %S', cached)
-    load()
+    get()
   }
 
   return {
     async execute(caller, input) {
-      d('using cache on execute, cache status %S', cached)
-      const { config, services } = await load()
-      
-      return await caller({ initArgs: options.initArgs as any, config, services }, input as any)
+      const { config, services } = await get()
+
+      return await caller({ initArgs: opts.initArgs as any, config, services }, input as any)
     },
     prepare(caller) {
       return async (input) => {
-        d('using cache on prepare, cache status %S', cached)
-        const { config, services } = await load()
-        return await caller({ initArgs: options.initArgs as any, config, services }, input as any)
+        const { config, services } = await get()
+        return await caller({ initArgs: opts.initArgs as any, config, services }, input as any)
       }
+    },
+    async config() {
+      const { config } = await get()
+      return config
+    },
+    async services() {
+      const { services } = await get()
+      return services
     }
   }
 }
-
-

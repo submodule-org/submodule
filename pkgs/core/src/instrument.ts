@@ -1,9 +1,9 @@
 import utils from "util"
 import createDebug from "debug"
 
-type AnyFn = (...args: any[]) => any
+export type AnyFn = (...args: any[]) => any
 
-type InstrumentFunction = <X extends AnyFn>(name: string, fn: X) => X 
+export type InstrumentFunction = <X extends AnyFn>(name: string, fn: X) => X 
 
 export function debug<Fn extends AnyFn>(name: string, fn: Fn): Fn {
   const _debugger = createDebug(`submodule.runtime.${name}`)
