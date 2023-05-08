@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0](https://github.com/submodule-js/submodule/compare/@submodule/core2.1.0...@submodule/core3.0.0) (2023-05-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* completely oversimplified API
+
+### Features
+
+* completely oversimplified API ([5a4d721](https://github.com/submodule-js/submodule/commit/5a4d7216689d04270cdb05165a6a016290f91ced))
+
 ## [2.1.0](https://github.com/submodule-js/submodule/compare/@submodule/core2.0.0...@submodule/core2.1.0) (2023-05-06)
 
 
