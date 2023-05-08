@@ -11,8 +11,8 @@ export default function Home(props: HomeProps) {
 }
 
 export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
-  const todos = await execute(({ services }) => {
-    return services.todoService.list()
+  const todos = await execute(services => {
+    return services.list()
   })
 
   return {

@@ -9,9 +9,9 @@ export default async function handle(req: NextApiRequest, res: NextApiResponse) 
   
   res.setHeader('content-type', 'application-json')
   
-  await execute(async ({ services }) => {
-    if (services.todoService[query]) {
-      res.send(await services.todoService[query](input))
+  await execute(async services => {
+    if (services[query]) {
+      res.send(await services[query](input))
     } else {
       res.status(404).send(`cannot find path of ${query}`)
     }
