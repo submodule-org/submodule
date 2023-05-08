@@ -36,11 +36,6 @@ export const prepareExecutable = function <Services, Dependent>(
   const opts = { ...defaultExecutableOptions, ...options }
 
   const submodule = { ...submoduleDef }
-  instrument(submodule, debug)
-
-  if (opts.instrument) {
-    instrument(submodule, opts.instrument)
-  }
 
   async function load() {
     const initArgs = (options?.initArgs !== undefined && typeof options?.initArgs === 'function')
@@ -64,7 +59,7 @@ export const prepareExecutable = function <Services, Dependent>(
     get()
   }
 
-  return {
+  const executor: Executor<Services> = {
     async execute(caller, param) {
       const { services } = await get()
 
@@ -90,4 +85,24 @@ export const prepareExecutable = function <Services, Dependent>(
       return services
     }
   }
+
+  instrument(executor, debug)
+
+  if (opts.instrument) {
+    instrument(executor, opts.instrument)
+  }
+
+  return executor
+}
+
+type inferExecutor<T> = T extends Executor<infer S> ? S : never
+
+export const compose = function<L extends Record<string, Executor<any>>>(layout: L): Executor<{ [key in keyof L]: inferExecutor<L[key]>}> {
+  return prepareExecutable(async (layout) => {
+    const result = {}
+    for (const [key, value] of Object.entries(layout)) {
+      result[key] = await value.get()
+    }
+    return result as any 
+  }, { initArgs: layout })
 }
