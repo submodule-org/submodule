@@ -5,7 +5,7 @@ import createDebug from "debug"
 
 const debugRuntime = createDebug('todo.runtime')
 
-configor.execute(async ({ config }) => {
+configor.execute(async (config) => {
   const port = config.honoConfig?.port || 3000
 
   const app = new Hono()

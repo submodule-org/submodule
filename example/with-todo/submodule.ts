@@ -6,36 +6,24 @@ import { Context } from "hono"
 const debugSetup = createDebug('todo.setup')
 import { prepareExecutable } from "@submodule/core"
 
-export const configor = prepareExecutable({
-  createConfig() {
-    const config = {
-      levelConfig: {
-        name: 'todo.level'
-      },
-      honoConfig: {
-        port: 3000
-      }
+export const configor = prepareExecutable(() => {
+  const config = {
+    levelConfig: {
+      name: 'todo.level'
+    },
+    honoConfig: {
+      port: 3000
     }
-    debugSetup('actual config value %O', config)
-    return config
   }
+  debugSetup('actual config value %O', config)
+  return config
 })
 
-export const levelDb = prepareExecutable({
-  async createServices({ initArgs }) {
-    return await createDb(initArgs.levelConfig)
-  },
-}, { 
-  initArgs: configor.config 
-})
+export const levelDb = prepareExecutable((config) => createDb(config.levelConfig), { initArgs: configor.get })
 
-export const todo = prepareExecutable({
-
-  async createServices({ initArgs: db }) {
-    return createService({ db })
-  },
-}, { 
-  initArgs: levelDb.services 
+export const todo = prepareExecutable(
+  db => createService({ db }), { 
+  initArgs: levelDb.get
 })
 
 type Meta = {

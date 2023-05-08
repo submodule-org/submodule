@@ -1,6 +1,6 @@
 import { defineMeta, route } from "../submodule"
 
-export const handle = route(async ({ services }, context) => {
+export const handle = route(async (services, context) => {
   const id = context.req.query('id')
 
   await services.toggleTodo(id as string)
