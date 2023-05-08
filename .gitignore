@@ -11,11 +11,6 @@
 # Documentation here: https://yarnpkg.com/features/zero-installs
 .yarn/cache
 
-site/.yarn/*
-site/.yarn/cache
-
 node_modules
 
-# submodule specific
-**/.submodule
-**/submodule.router.ts
+**/coverage/
