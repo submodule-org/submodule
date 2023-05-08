@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0](https://github.com/submodule-js/submodule/compare/@submodule/core3.0.0...@submodule/core3.1.0) (2023-05-08)
+
+
+### Features
+
+* added compose api ([9ca937c](https://github.com/submodule-js/submodule/commit/9ca937c9e35c953dc7ea1f17e7bde4e355861a18))
+
 ## [3.0.0](https://github.com/submodule-js/submodule/compare/@submodule/core2.1.0...@submodule/core3.0.0) (2023-05-08)
 
 
