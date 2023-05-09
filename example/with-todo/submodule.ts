@@ -19,11 +19,11 @@ export const configor = prepareExecutable(() => {
   return config
 })
 
-export const levelDb = prepareExecutable((config) => createDb(config.levelConfig), { initArgs: configor.get })
+export const levelDb = prepareExecutable((config) => createDb(config.levelConfig), { initArgs: configor })
 
 export const todo = prepareExecutable(
   db => createService({ db }), { 
-  initArgs: levelDb.get
+  initArgs: levelDb
 })
 
 type Meta = {

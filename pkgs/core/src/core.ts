@@ -4,7 +4,13 @@ import createDebug from 'debug'
 const d = createDebug('submodule.core')
 
 type Provider<O> = (() => O | Promise<O>)
-type inferProvider<T> = T extends Provider<infer V> ? Awaited<V> : T
+type inferProvider<T> = T extends undefined | null 
+  ? undefined 
+  : T extends Provider<infer V> 
+    ? Awaited<V> 
+    : T extends { get: () => any } 
+      ? Awaited<ReturnType<T['get']>> 
+      : T
 
 export type Submodule<Provide, Dependent> = (dependent: Dependent) => Provide | Promise<Provide>
 
@@ -35,14 +41,20 @@ export const prepareExecutable = function <Services, Dependent>(
 
   const opts = { ...defaultExecutableOptions, ...options }
 
-  const submodule = { ...submoduleDef }
-
   async function load() {
-    const initArgs = (options?.initArgs !== undefined && typeof options?.initArgs === 'function')
-      ? await options.initArgs()
-      : options?.initArgs
+    let initArgs: Dependent | undefined = undefined
 
-    const services = await submoduleDef(initArgs)
+    if (options?.initArgs === undefined || options.initArgs === null) {
+      initArgs = undefined
+    } else if(typeof options.initArgs === 'function') {
+      initArgs = await options.initArgs()
+    } else if (typeof options.initArgs['get'] === 'function') {
+      initArgs = await options.initArgs['get']()
+    } else {
+      initArgs = options.initArgs
+    }
+
+    const services = await submoduleDef(initArgs as any)
     return { initArgs, services }
   }
 

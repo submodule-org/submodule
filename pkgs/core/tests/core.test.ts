@@ -35,6 +35,7 @@ test('eager must load things at max once', () => {
 })
 
 test('initArgs can be passed using various forms', async () => {
+  const otherExec = prepareExecutable(() => 'c')
   const fna = vi.fn().mockReturnValue('a')
   await prepareExecutable(fna, { initArgs: () => '1', eager: true }).get()
   expect(fna.mock.lastCall).toEqual(['1'])
@@ -44,6 +45,9 @@ test('initArgs can be passed using various forms', async () => {
   
   await prepareExecutable(fna, { initArgs: '3', eager: true }).get()
   expect(fna.mock.lastCall).toEqual(['3'])
+  
+  await prepareExecutable(fna, { initArgs: otherExec, eager: true }).get()
+  expect(fna.mock.lastCall).toEqual(['c'])
 })
 
 test('compose should work', async () => {
