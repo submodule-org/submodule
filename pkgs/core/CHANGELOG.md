@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0](https://github.com/submodule-js/submodule/compare/@submodule/core3.1.0...@submodule/core3.2.0) (2023-05-09)
+
+
+### Features
+
+* api update, executor can also be used as initArgs ([0d2b698](https://github.com/submodule-js/submodule/commit/0d2b698340fb095e996285ed5e34494a42d35c3f))
+
 ## [3.1.0](https://github.com/submodule-js/submodule/compare/@submodule/core3.0.0...@submodule/core3.1.0) (2023-05-08)
 
 
