@@ -1,5 +1,5 @@
 import { vi, expect, test } from "vitest"
-import { compose, prepareExecutable } from "../src/core"
+import { compose, prepareExecutable } from "../src"
 
 test('submodule should work', async () => {
   const a = prepareExecutable(() => 'a' as const)
