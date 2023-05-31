@@ -1,118 +1,71 @@
 import { vi, expect, test } from "vitest"
-import { compose, prepareExecutable } from "../src"
+import { from, combine, createProvider, create } from "../src"
 
 test('submodule should work', async () => {
-  const a = prepareExecutable(() => 'a' as const)
-  expect(await a.get()).toMatch('a')
+  const a = create(() => 'a' as const)
+  expect(await a.execute()).toMatch('a')
   
-  const b = prepareExecutable(async () => 'b' as const)
-  expect(await b.get()).toMatch('b')
+  const b = create(async () => 'b' as const)
+  expect(await b.execute()).toMatch('b')
 })
 
-test('eager must work', async () => {
-  const fna = vi.fn().mockReturnValue('a')
-  const a = prepareExecutable(fna, { eager: false })
+test('submodule can be used as dependencies', async () => {
+  const a = create(() => 'a')
+  const b = from(a).provide((x) => x)
 
-  expect(fna).toBeCalledTimes(0)
-  await a.get()
+  const result = await b.execute()
+  expect(result).eq('a')
+})
+
+test('create should not be eager', async () => {
+  const fn = vi.fn(() => 'a')
   
-  expect(fna).toBeCalledTimes(1)
-  await a.get()
-  expect(fna).toBeCalledTimes(1)
+  const a = create(fn)
+  process.nextTick(async () => {
+    expect(fn).toBeCalledTimes(0)
+    await a.execute()
+    expect(fn).toBeCalledTimes(1)
+  })
 })
 
-test('eager must load things at max once', () => {
-  const fna = vi.fn().mockReturnValue('a')
-  const fnb = vi.fn().mockReturnValue(Promise.resolve('b'))
+test('combine should work', async () => {
+  const fnA = vi.fn(() => 'a')
+  const lazyA = create(fnA)
 
-  const a = prepareExecutable(fna, { eager: true })
-  const b = prepareExecutable(fnb, { eager: true })
+  const fnB = vi.fn(() => 'b')
+  const eagerB = create(fnB)
 
-  const c = prepareExecutable(() => {}, { initArgs: [a, b], eager: true })
-
-  expect(fna).toBeCalledTimes(1)
-  expect(fnb).toBeCalledTimes(1)
+  const ab = combine({ a: lazyA, b: eagerB })
+  const result = await ab.execute()
+  expect(result).toEqual({ a: 'a', b: 'b'})
 })
 
-test('initArgs can be passed using various forms', async () => {
-  const otherExec = prepareExecutable(() => 'c')
-  const fna = vi.fn().mockReturnValue('a')
-  await prepareExecutable(fna, { initArgs: () => '1', eager: true }).get()
-  expect(fna.mock.lastCall).toEqual(['1'])
-  
-  await prepareExecutable(fna, { initArgs: () => Promise.resolve('2'), eager: true }).get()
-  expect(fna.mock.lastCall).toEqual(['2'])
-  
-  await prepareExecutable(fna, { initArgs: '3', eager: true }).get()
-  expect(fna.mock.lastCall).toEqual(['3'])
-  
-  await prepareExecutable(fna, { initArgs: otherExec, eager: true }).get()
-  expect(fna.mock.lastCall).toEqual(['c'])
+test('should only executed one even in combine', async () => {
+  const fnA = vi.fn(() => 'a')
+  const lazyA = create(fnA)
+
+  const fnB = vi.fn(() => 'b')
+  const eagerB = create(fnB)
+
+  const ab = combine({ a: lazyA, b: eagerB })
+
+  await ab.execute()
+
+  expect(fnA).toBeCalledTimes(1)
+  expect(fnB).toBeCalledTimes(1)
 })
 
-test('compose should work', async () => {
-  const a = prepareExecutable(() => 'a' as const)
-  const b = prepareExecutable(() => 'b' as const)
-  const ab = compose({ a, b })
+test('submodule can be chained', async () => {
+  type Req = { a: string }
 
-  const value = await ab.get()
-  expect(value).toEqual({ a: 'a', b: 'b'})  
-})
+  const transform = create(() => {
+    return (req: Req) => ({ b: req.a })
+  })
 
-test('execute should work', async () => {
-  const a = prepareExecutable(() => 'a' as const)
-  const cb = vi.fn().mockReturnValue('b')
+  const fn = await transform.execute()
 
-  let result = await a.execute(cb, 'c')
-  expect(cb.mock.lastCall).toEqual(['a', 'c'])
-  expect(result).toEqual('b')
-})
+  const result = fn({ a: 'x' })
 
-test('execute param can be used in various forms', async () => {
-  const a = prepareExecutable(() => 'a' as const)
-  const cb = vi.fn().mockReturnValue('b')
+  expect(result).toEqual({ b: 'x'})
 
-  await a.execute(cb, 'c')
-  expect(cb.mock.lastCall).toEqual(['a', 'c'])
-  
-  await a.execute(cb, () => 'c')
-  expect(cb.mock.lastCall).toEqual(['a', 'c'])
-  
-  await a.execute(cb, () => Promise.resolve('c'))
-  expect(cb.mock.lastCall).toEqual(['a', 'c'])
-})
-
-test('prepare should work', async () => {
-  const a = prepareExecutable(() => 'a' as const)
-  const cb = vi.fn().mockReturnValue('b')
-
-  let fn = a.prepare(cb)
-  let result = await fn('abc')
-
-  expect(cb.mock.lastCall).toEqual(['a', 'abc'])
-  expect(result).toEqual('b')
-})
-
-test('prepare param can be used in various forms', async () => {
-  const a = prepareExecutable(() => 'a' as const)
-  const cb = vi.fn().mockReturnValue('b')
-
-  let fn = a.prepare(cb)
-
-  await fn('abc')
-  expect(cb.mock.lastCall).toEqual(['a', 'abc'])
-  
-  await fn(() => 'c')
-  expect(cb.mock.lastCall).toEqual(['a', 'c'])
-
-  await fn(() => Promise.resolve('promise'))
-  expect(cb.mock.lastCall).toEqual(['a', 'promise'])
-})
-
-test('instrument options should work', async () => {
-  const cb = vi.fn((name: string, fn: () => unknown) => fn as any)
-  const a = prepareExecutable(() => 'a' as const, { instrument: cb })
-  await a.get()
-
-  expect(cb).toBeCalledTimes(3)
 })
