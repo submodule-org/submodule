@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.1.0](https://github.com/submodule-js/submodule/compare/@submodule/core4.0.0...@submodule/core4.1.0) (2023-05-31)
+
+
+### Features
+
+* added runing mode, added hijack to test dependencies ([937c074](https://github.com/submodule-js/submodule/commit/937c074399b7c4d28d4fc574f62d3cb663e9c472))
+
 ## [4.0.0](https://github.com/submodule-js/submodule/compare/@submodule/core3.2.0...@submodule/core4.0.0) (2023-05-31)
 
 
