@@ -9,13 +9,18 @@ type Provider<Provide, Input = unknown> =
 
 export type ProviderOption = {
   instrument?: InstrumentFunction
+  mode: 'prototype' | 'singleton'
 }
 
-export const defaultProviderOptions: ProviderOption = {}
+export const defaultProviderOptions: ProviderOption = {
+  mode: 'singleton'
+}
 
 export type Executor<Provide> = {
   execute(): Promise<Provide>
 }
+
+export type Hijacked<Dependent> = (executor: Executor<Dependent>) => void
 
 export function create<Provide, Dependent = unknown>(
   provider: Provider<Provide, Dependent>,
@@ -25,25 +30,37 @@ export function create<Provide, Dependent = unknown>(
   const opts = { ...defaultProviderOptions, ...options }
 
   let cached: Promise<{ provide: Provide }> | undefined = undefined
+  let dependentRef: Executor<Dependent> | undefined = dependent
 
   async function load() {
-    const actualized = dependent
-      ? await dependent.execute()
+    const actualized = dependentRef
+      ? await dependentRef.execute()
       : undefined
 
     const provide = await provider(actualized as Dependent)
     return { provide }
   }
 
-  async function execute(): Promise<Provide> {
-    if (cached == undefined) {
-      d('cache is uninitialized, initializing ...')
+  function init() {
+    if (opts.mode === 'prototype') {
       cached = load()
+    } else {
+      if (cached === undefined) {
+        cached = load()
+      }
     }
-    return (await cached).provide
+
+    return cached
   }
 
-  const executor = { execute }
+  async function execute(): Promise<Provide> {
+    const { provide } = await init()
+    return provide
+  }
+  
+  const _inject: Hijacked<Dependent> = async (executor) => { dependentRef = executor }
+  
+  const executor = { execute, _inject }
 
   instrument(executor, debug)
 
@@ -59,7 +76,7 @@ export const value = <Provide>(value: Provide) => create(() => value)
 
 export const from = <Dependent>(executor: Executor<Dependent>) => {
   return {
-    provide: <Provide>(provider: Provider<Provide, Dependent>) => create(provider, executor),
+    provide: <Provide>(provider: Provider<Provide, Dependent>, opts: ProviderOption = defaultProviderOptions) => create(provider, executor, opts),
     execute: async (executable: (Dependent: Dependent) => any) => {
       return executable(await executor.execute())
     }

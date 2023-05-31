@@ -1,5 +1,6 @@
 import { vi, expect, test } from "vitest"
-import { from, combine, createProvider, create } from "../src"
+import { from, combine, create, value } from "../src"
+import { defaultProviderOptions } from "../dist"
 
 test('submodule should work', async () => {
   const a = create(() => 'a' as const)
@@ -7,6 +8,9 @@ test('submodule should work', async () => {
   
   const b = create(async () => 'b' as const)
   expect(await b.execute()).toMatch('b')
+
+  const d = await from(b).execute(c => c)
+  expect(d).toBe('b')
 })
 
 test('submodule can be used as dependencies', async () => {
@@ -68,4 +72,40 @@ test('submodule can be chained', async () => {
 
   expect(result).toEqual({ b: 'x'})
 
+})
+
+test('submodule can be executed in prototype mode', async () => {
+  const fnA = vi.fn(() => 'a')
+  const exA = create(fnA, undefined, { mode: 'prototype' })
+
+  expect(fnA).toBeCalledTimes(0)
+  await exA.execute()
+  expect(fnA).toBeCalledTimes(1)
+  await exA.execute()
+  expect(fnA).toBeCalledTimes(2)
+})
+
+test('mode can be mixed', async () => {
+  const fnA = vi.fn(() => 'a')
+  const exA = create(fnA, undefined, { mode: 'singleton' })
+
+  const fnB = vi.fn(() => 'b')
+  const exB = from(exA).provide(fnB, { mode: 'prototype' })
+
+  await exB.execute()
+  await exB.execute()
+  await exB.execute()
+
+  expect(fnB).toBeCalledTimes(3)
+  expect(fnA).toBeCalledTimes(1)
+
+})
+
+test('can be tested using _inject', async () => {
+  const a = value('a')
+
+  const b = from(a).provide(a => a)
+  b._inject(value('c'))
+
+  expect(await b.execute()).toBe('c')
 })
