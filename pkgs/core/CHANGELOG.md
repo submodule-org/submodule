@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.0.0](https://github.com/submodule-js/submodule/compare/@submodule/core3.2.0...@submodule/core4.0.0) (2023-05-31)
+
+
+### ⚠ BREAKING CHANGES
+
+* simplify api surface
+
+### Features
+
+* simplify api surface ([9e76b20](https://github.com/submodule-js/submodule/commit/9e76b20f50c1370e4bd933cef5254b56ffd22b4d))
+
 ## [3.2.0](https://github.com/submodule-js/submodule/compare/@submodule/core3.1.0...@submodule/core3.2.0) (2023-05-09)
 
 
