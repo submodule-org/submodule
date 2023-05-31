@@ -3,10 +3,11 @@ import { createService } from "./services/todo.service"
 import createDebug from "debug"
 
 import { Context } from "hono"
-const debugSetup = createDebug('todo.setup')
-import { prepareExecutable } from "@submodule/core"
+import { combine, create, from, inferProvide } from "@submodule/core"
 
-export const configor = prepareExecutable(() => {
+const debugSetup = createDebug('todo.setup')
+
+export const config = create(() => {
   const config = {
     levelConfig: {
       name: 'todo.level'
@@ -19,18 +20,35 @@ export const configor = prepareExecutable(() => {
   return config
 })
 
-export const levelDb = prepareExecutable((config) => createDb(config.levelConfig), { initArgs: configor })
+export const levelDb = create(
+  (config) => createDb(config.levelConfig), 
+  config
+)
 
-export const todo = prepareExecutable(
-  db => createService({ db }), { 
-  initArgs: levelDb
-})
+export const todo = create(db => createService({ db }), levelDb)
+
+export const services = combine({ levelDb, todo })
+export type Services = inferProvide<typeof services>
+
+type Handler = (services: Services, ctx: Context) => Promise<Response>
+
+export const createRoute = from(services)
+  .provide((services) => {
+    return (handler: Handler) => {
+      return (ctx: Context) => {
+        return handler(services, ctx)
+      }
+    }
+  })
+
+export const route = (handler: Handler) => {
+  return from(createRoute).provide((x) => x(handler))
+}
 
 type Meta = {
   methods?: ['GET' | 'POST' | 'PUT']
 }
 
-export const route = todo.prepare<Context, Response>
 export const defineMeta = (meta: Meta) => { return meta }
 
 export type Route = {

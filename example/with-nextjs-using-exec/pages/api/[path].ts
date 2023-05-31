@@ -6,9 +6,9 @@ export default async function handle(req: NextApiRequest, res: NextApiResponse) 
 
   const query = queries.path as string
   const input = { ...queries, ...req.body }
-  
+
   res.setHeader('content-type', 'application-json')
-  
+
   await execute(async services => {
     if (services[query]) {
       res.send(await services[query](input))

@@ -6,5 +6,5 @@ export const handle = route(async (services, context) => {
 
   const todo: Omit<Todo, 'id'> = { value }
 
-  return context.json(await services.addTodo(todo))
+  return context.json(await services.todo.addTodo(todo))
 })
