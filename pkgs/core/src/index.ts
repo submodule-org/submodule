@@ -1,7 +1,4 @@
 import { debug, instrument, InstrumentFunction } from "./instrument";
-import createDebug from 'debug'
-
-const d = createDebug('submodule.core')
 
 type Provider<Provide, Input = unknown> =
   | (() => Provide | Promise<Provide>)
@@ -42,7 +39,7 @@ export function create<Provide, Dependent = unknown>(
     return { provide }
   }
 
-  function init() {
+  async function init() {
     if (opts.mode === 'prototype') {
       cached = load()
     } else {
