@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [4.2.1](https://github.com/submodule-js/submodule/compare/@submodule/core4.2.0...@submodule/core4.2.1) (2023-06-05)
+
+
+### Bug Fixes
+
+* wrong build ([b15cb6a](https://github.com/submodule-js/submodule/commit/b15cb6a226f53be10abb36b9ca3715ff23070f06))
+
 ## [4.2.0](https://github.com/submodule-js/submodule/compare/@submodule/core4.1.0...@submodule/core4.2.0) (2023-06-05)
 
 
