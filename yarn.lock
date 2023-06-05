@@ -814,7 +814,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@submodule/client@workspace:^, @submodule/client@workspace:pkgs/client":
+"@submodule/client@workspace:pkgs/client":
   version: 0.0.0-use.local
   resolution: "@submodule/client@workspace:pkgs/client"
   dependencies:
@@ -823,7 +823,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@submodule/core@workspace:^, @submodule/core@workspace:pkgs/core":
+"@submodule/core@^4.1.0, @submodule/core@workspace:^, @submodule/core@workspace:pkgs/core":
   version: 0.0.0-use.local
   resolution: "@submodule/core@workspace:pkgs/core"
   dependencies:
@@ -6040,12 +6040,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"with-nextjs-using-exec@workspace:example/with-nextjs-using-exec":
+"with-nextjs-using-exec@workspace:example/with-nextjs":
   version: 0.0.0-use.local
-  resolution: "with-nextjs-using-exec@workspace:example/with-nextjs-using-exec"
+  resolution: "with-nextjs-using-exec@workspace:example/with-nextjs"
   dependencies:
-    "@submodule/client": "workspace:^"
-    "@submodule/core": "workspace:^"
+    "@submodule/core": ^4.1.0
     "@types/react": 18.0.38
     next: ^13.3.1
     react: ^18.2.0

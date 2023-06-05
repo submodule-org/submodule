@@ -17,7 +17,8 @@ export const defaultProviderOptions: ProviderOption = {
 }
 
 export type Executor<Provide> = {
-  execute(): Promise<Provide>
+  execute<Output>(executable: Provider<Output, Provide>): Promise<Output>
+  get(): Promise<Provide>
 }
 
 export type Hijacked<Dependent> = (executor: Executor<Dependent>) => void
@@ -34,7 +35,7 @@ export function create<Provide, Dependent = unknown>(
 
   async function load() {
     const actualized = dependentRef
-      ? await dependentRef.execute()
+      ? await dependentRef.get()
       : undefined
 
     const provide = await provider(actualized as Dependent)
@@ -53,14 +54,19 @@ export function create<Provide, Dependent = unknown>(
     return cached
   }
 
-  async function execute(): Promise<Provide> {
+  async function execute<Output>(provider: Provider<Output, Provide>): Promise<Output> {
+    const { provide } = await init()
+    return provider(provide)
+  }
+
+  async function get(): Promise<Provide> {
     const { provide } = await init()
     return provide
   }
   
   const _inject: Hijacked<Dependent> = async (executor) => { dependentRef = executor }
   
-  const executor = { execute, _inject }
+  const executor = { execute, get, _inject }
 
   instrument(executor, debug)
 
@@ -77,8 +83,8 @@ export const value = <Provide>(value: Provide) => create(() => value)
 export const from = <Dependent>(executor: Executor<Dependent>) => {
   return {
     provide: <Provide>(provider: Provider<Provide, Dependent>, opts: ProviderOption = defaultProviderOptions) => create(provider, executor, opts),
-    execute: async (executable: (Dependent: Dependent) => any) => {
-      return executable(await executor.execute())
+    execute: async <Output>(executable: Provider<Output, Dependent>): Promise<Output> => {
+      return executable(await executor.get())
     }
   }
 }
@@ -89,7 +95,7 @@ export const combine = function <L extends Record<string, Executor<any>>>(layout
   return create(async () => {
     const result = {}
     for (const [key, value] of Object.entries(layout)) {
-      result[key] = await value.execute()
+      result[key] = await value.get()
     }
     return result as any
   })
