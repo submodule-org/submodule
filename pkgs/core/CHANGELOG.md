@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.2.0](https://github.com/submodule-js/submodule/compare/@submodule/core4.1.0...@submodule/core4.2.0) (2023-06-05)
+
+
+### Features
+
+* change API to get and execute (from execute like get) ([d6669b4](https://github.com/submodule-js/submodule/commit/d6669b4bb0078d85456aa343c50e30d0741d561d))
+
 ## [4.1.0](https://github.com/submodule-js/submodule/compare/@submodule/core4.0.0...@submodule/core4.1.0) (2023-05-31)
 
 
