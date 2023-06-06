@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.3.0](https://github.com/submodule-js/submodule/compare/@submodule/core4.2.1...@submodule/core4.3.0) (2023-06-06)
+
+
+### Features
+
+* added prepare function ([938b719](https://github.com/submodule-js/submodule/commit/938b719ea08632ef4fa0718fd9cc15cf4b8a4b6d))
+* added prepare to from result ([59a5af9](https://github.com/submodule-js/submodule/commit/59a5af9b85b939d41b6099de5bbb464ac5b6e457))
+
 ### [4.2.1](https://github.com/submodule-js/submodule/compare/@submodule/core4.2.0...@submodule/core4.2.1) (2023-06-05)
 
 
