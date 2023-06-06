@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.4.0](https://github.com/submodule-js/submodule/compare/@submodule/core4.3.0...@submodule/core4.4.0) (2023-06-06)
+
+
+### Features
+
+* magic function can accept variadic arguments ([9432bf5](https://github.com/submodule-js/submodule/commit/9432bf58443ada3fad34631e0e91291700a4e0f3))
+
 ## [4.3.0](https://github.com/submodule-js/submodule/compare/@submodule/core4.2.1...@submodule/core4.3.0) (2023-06-06)
 
 
