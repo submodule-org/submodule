@@ -63,14 +63,14 @@ export function create<Provide, Dependent = unknown>(
   }
 
   function prepare<Input>(provider: (provide: Provide, input: Input) => any): (input: Input) => Promise<Awaited<ReturnType<typeof provider>>> {
-    return async function(input) {
+    return async function (input) {
       const { provide } = await init()
       return provider(provide, input)
     }
   }
-  
+
   const _inject: Hijacked<Dependent> = async (executor) => { dependentRef = executor }
-  
+
   const executor = { execute, get, prepare, _inject }
 
   instrument(executor, debug)
@@ -88,9 +88,8 @@ export const value = <Provide>(value: Provide) => create(() => value)
 export const from = <Dependent>(executor: Executor<Dependent>) => {
   return {
     provide: <Provide>(provider: Provider<Provide, Dependent>, opts: ProviderOption = defaultProviderOptions) => create(provider, executor, opts),
-    execute: async <Output>(executable: Provider<Output, Dependent>): Promise<Output> => {
-      return executable(await executor.get())
-    }
+    execute: async <Output>(executable: Provider<Output, Dependent>): Promise<Output> => executor.execute(executable),
+    prepare: <Input>(provider: (provide: Dependent, input: Input) => any): (input: Input) => Promise<Awaited<ReturnType<typeof provider>>> => executor.prepare(provider)
   }
 }
 
