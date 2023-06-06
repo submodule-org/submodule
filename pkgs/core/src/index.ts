@@ -16,7 +16,7 @@ export const defaultProviderOptions: ProviderOption = {
 export type Executor<Provide> = {
   execute<Output>(executable: Provider<Output, Provide>): Promise<Output>
   get(): Promise<Provide>
-  prepare<Input>(provider: (provide: Provide, input: Input) => any): (input: Input) => Promise<Awaited<ReturnType<typeof provider>>>
+  prepare<Input extends Array<any>>(provider: (provide: Provide, ...input: Input) => any): (...input: Input) => Promise<Awaited<ReturnType<typeof provider>>>
 }
 
 export type Hijacked<Dependent> = (executor: Executor<Dependent>) => void
@@ -62,10 +62,10 @@ export function create<Provide, Dependent = unknown>(
     return provide
   }
 
-  function prepare<Input>(provider: (provide: Provide, input: Input) => any): (input: Input) => Promise<Awaited<ReturnType<typeof provider>>> {
-    return async function (input) {
+  function prepare<Input extends Array<any>>(provider: (provide: Provide, ...input: Input) => any): (...input: Input) => Promise<Awaited<ReturnType<typeof provider>>> {
+    return async function () {
       const { provide } = await init()
-      return provider(provide, input)
+      return provider.call(this, provide, ...arguments)
     }
   }
 
