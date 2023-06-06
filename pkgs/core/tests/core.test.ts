@@ -108,3 +108,28 @@ test('can be tested using _inject', async () => {
 
   expect(await b.get()).toBe('c')
 })
+
+test('magic function', async () => {
+  const demand = async (fn: (x: string) => string | Promise<string>): Promise<string> => {
+    return await fn('a')
+  }
+
+  const b = value('b')
+  const c = await demand(b.prepare((v, i) => {
+    return v + i
+  }))
+
+  expect(c).toEqual('ba')
+})
+
+test('magic function 2', async () => {
+  const demand = async (fn: (x: string) => string | Promise<string>): Promise<string> => {
+    return await fn('a')
+  }
+
+  const b = value('b')
+  const c = b.prepare<string>((v, i) => v + i)
+
+  const d = await demand(c)
+  expect(d).toEqual('ba')
+})
