@@ -32,28 +32,28 @@ export function debug<Fn extends AnyFn>(name: string, fn: Fn): Fn {
   } as Fn
 }
 
-export function instrument<T>(input: T, instrumentFn: InstrumentFunction, maxLevel = 1, currentLevel = 0): T {
-  if (input === null || input === undefined) return input
-  if (currentLevel > maxLevel) return input
+export function instrument<T>(container: T, instrumentFn: InstrumentFunction, maxLevel = 1, currentLevel = 0): T {
+  if (container === null || container === undefined) return container
+  if (currentLevel > maxLevel) return container
   
   if ( // there can be more
-    typeof input !== 'object' ||
-    Array.isArray(input) ||
+    typeof container !== 'object' ||
+    Array.isArray(container) ||
 
     // built-in objects like date, bytearray etc
-    utils.types.isDate(input)
+    utils.types.isDate(container)
   ) {
-    return input
+    return container
   }
 
-  Object.keys(input).forEach(key => {
-    const instance = input[key]
+  Object.keys(container).forEach(key => {
+    const instance = container[key]
     if (typeof instance === 'function') {
-      input[key] = instrumentFn(key, instance)
+      container[key] = instrumentFn(key, instance)
     } else {
-      input[key] = instrument(input[key], instrumentFn, maxLevel, currentLevel + 1)
+      container[key] = instrument(container[key], instrumentFn, maxLevel, currentLevel + 1)
     }
   })
 
-  return input
+  return container
 }

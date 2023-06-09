@@ -128,7 +128,7 @@ test('magic function 2', async () => {
   }
 
   const b = value('b')
-  const c = b.prepare<[string]>((v, i) => v + i)
+  const c = b.prepare<[string], string>((v, i) => v + i)
 
   const d = await demand(c)
   expect(d).toEqual('ba')
@@ -153,7 +153,7 @@ test('magic function 4', async () => {
   }
 
   const b = value('b')
-  const c = b.prepare<[string, number]>((v, i1, i2) => v + i1 + i2)
+  const c = b.prepare<[string, number], string>((v, i1, i2) => v + i1 + i2)
 
   const d = await demand(c)
   expect(d).toEqual('ba2')
