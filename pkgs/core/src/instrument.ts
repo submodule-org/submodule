@@ -33,14 +33,14 @@ export type InstrumentHandler = {
   onPromiseError?: (context: Fn & CallContext & PromiseErrorState) => void | PromiseErrorState | PromiseNormalState
 }
 
-export type CreateInstrumentHandler = InstrumentHandler | ((fn: Fn['fn'], name?: string) => InstrumentHandler)
+export type CreateInstrumentHandler = InstrumentHandler | (() => InstrumentHandler)
 
 export function createInstrumentor(opts: CreateInstrumentHandler): InstrumentFunction {
   return function (fn, fnName) {
     let name = opts?.name || fnName || fn.name
     
     const handler = typeof opts === 'function'
-      ? opts(fn, fnName)
+      ? opts()
       : opts
 
     return function () {

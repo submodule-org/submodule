@@ -1,4 +1,4 @@
-import { instrument, InstrumentFunction, createInstrumentor, CreateInstrumentHandler } from "./instrument";
+import { instrument, InstrumentFunction, createInstrumentor, CreateInstrumentHandler, InstrumentHandler } from "./instrument";
 
 type Provider<Provide, Input = unknown> =
   | (() => Provide | Promise<Provide>)
@@ -19,7 +19,7 @@ export function setInstrument(inst: CreateInstrumentHandler) {
   const mixin: InstrumentFunction = (fn, name) => {
     const instrumented = prev?.(fn, name) || fn
     const next = typeof inst === 'function'
-      ? inst(instrumented, name)
+      ? inst()
       : inst
     return createInstrumentor(next)(instrumented, name)
   } 
@@ -117,4 +117,4 @@ export const combine = function <L extends Record<string, Executor<any>>>(layout
   })
 }
 
-export { createInstrumentor }
+export { createInstrumentor, CreateInstrumentHandler, InstrumentHandler }
