@@ -1,88 +1,85 @@
-import { defaultProviderOptions } from "@submodule/core"
-import utils from "util"
-
+import { setInstrument, CreateInstrumentHandler, composeInstrument } from "@submodule/core"
+import { InstrumentFunction } from "@submodule/core/src/instrument"
 import { AsyncLocalStorage } from "async_hooks"
 
-const asyncStore = new AsyncLocalStorage<ShellContext>()
+const store = new AsyncLocalStorage<FlowContext>()
 
-type Fn = {
-  name: string
-  fn: (...args: any) => any
+export function getFlowContext(): FlowContext | undefined {
+  return store.getStore()
 }
 
-type CallContext = {
-  that: unknown
-  args: IArguments
-}
+// scoped plugin
+setInstrument({
+  onExecute({ fn, name }) {
+    const ctx = store.getStore()
+    if (!ctx?.instrument) return
 
-type CallResult = { state: 'execute' }
-  | { state: 'error', error: unknown }
-  | { state: 'result', result: unknown }
-  | { state: 'promiseResult', result: unknown }
-  | { state: 'promiseError', error: unknown }
-
-type InstrumentHandler = {
-  onExecute?: (context: Fn & CallContext & Extract<CallResult, { state: 'execute' }>) => void
-  onError?: (context: Fn & CallContext & Extract<CallResult, { state: 'error' }>) => void
-  onResult?: (context: Fn & CallContext & Extract<CallResult, { state: 'result' }>) => void
-  onPromiseResult?: (context: Fn & CallContext & Extract<CallResult, { state: 'promiseResult' }>) => void
-  onPromiseError?: (context: Fn & CallContext & Extract<CallResult, { state: 'promiseError' }>) => void
-}
-
-function wrap<F extends  Fn['fn']>(name: string, fn: F, opts: InstrumentHandler | (() => InstrumentHandler)): F {
-  const handler = typeof opts === 'function'
-    ? opts()
-    : opts
-  
-  return function () {
-    const that = this
-    const args = arguments
-    try {
-      handler.onExecute?.({ name, fn, that, args, state: 'execute' })
-      const result = fn.apply(that, args)
-      if (result === undefined) {
-        handler.onResult?.({ name, fn, that, args, state: 'result', result: undefined })
-        return
-      } else if (utils.types.isPromise(result)) {
-        return result
-          .then(next => {
-            handler.onPromiseResult?.({ name, fn, that, args, state: 'promiseResult', result: next })
-            return next
-          })
-          .catch(error => {
-            handler.onPromiseError?.({ name, fn, that, args, state: 'promiseError', error })
-            throw error
-          })
-      } else {
-        handler.onResult?.({ name, fn, that, args, state: 'result', result: result })
-        return result
-      }
-    } catch (error) {
-      handler.onError?.({ name, fn, that, args, error, state: 'error' })
-      throw error
+    return {
+      fn: ctx.instrument(fn, name)
     }
-  } as typeof fn
-}
-
-defaultProviderOptions.instrument = (name, fn) => wrap(name, fn, () => {
-  return {}
+  }
 })
 
-type ShellContext = {
+type FlowOptions = {
+  id?: string
+  plugins?: CreateInstrumentHandler[]
+}
+
+type FlowContext = {
   id: string
+  instrument?: InstrumentFunction
 }
 
 let globalId = 0
 
-type ShellSetting = {
-  id?: string
-  instrument?: InstrumentHandler 
+type FlowResult<Data> = {
+  state: 'success'
+  data: Data
+  context: FlowContext
+} | {
+  state: 'error'
+  error: unknown
+  context: FlowContext
 }
 
-export async function shell(executor: () => any, shellSetting?: ShellSetting): Promise<ShellContext & { data: Awaited<ReturnType<typeof executor>> }> {
-  const id = globalId++
-  const context = { id: shellSetting?.id || String(id) }
-  const data = await asyncStore.run(context, executor)
+type AnyFn = (...args: any[]) => any
 
-  return { ...context, data }
+export async function execute(
+  script: AnyFn, ctx?: FlowOptions
+): Promise<Pick<FlowContext, 'id'> & FlowResult<Promise<Awaited<ReturnType<typeof script>>>>> {
+  const instrument = composeInstrument(...ctx?.plugins || [])
+
+  const context: FlowContext = {
+    id: ctx?.id || String(++globalId),
+    instrument
+  }
+
+  try {
+    const result = await store.run(context, () => {
+      return script()
+    })
+    return {
+      id: context.id,
+      state: 'success',
+      data: result,
+      context
+    }
+  } catch (error) {
+    return {
+      id: context.id,
+      state: 'error',
+      error,
+      context
+    }
+  }
+}
+
+export const use = (ctx: FlowOptions) => ({
+  execute(script: AnyFn) {
+    return execute(script, ctx)
+  }
+})
+
+export const flow = {
+  use, execute
 }

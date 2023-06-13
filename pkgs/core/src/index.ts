@@ -1,12 +1,13 @@
-import { instrument, InstrumentFunction, createInstrumentor, CreateInstrumentHandler, InstrumentHandler } from "./instrument";
+import { instrument, InstrumentFunction, createInstrumentor, CreateInstrumentHandler, InstrumentHandler, nextInstrument, composeInstrument, createInstrument } from "./instrument";
 
 type Provider<Provide, Input = unknown> =
   | (() => Provide | Promise<Provide>)
   | ((input: Input) => Provide | Promise<Provide>)
 
 export type ProviderOption = {
+  name?: string
   instrument?: InstrumentFunction
-  mode: 'prototype' | 'singleton'
+  mode?: 'prototype' | 'singleton'
 }
 
 export const defaultProviderOptions: ProviderOption = {
@@ -15,16 +16,7 @@ export const defaultProviderOptions: ProviderOption = {
 }
 
 export function setInstrument(inst: CreateInstrumentHandler) {
-  const prev = defaultProviderOptions.instrument
-  const mixin: InstrumentFunction = (fn, name) => {
-    const instrumented = prev?.(fn, name) || fn
-    const next = typeof inst === 'function'
-      ? inst()
-      : inst
-    return createInstrumentor(next)(instrumented, name)
-  } 
-
-  defaultProviderOptions.instrument = mixin
+  defaultProviderOptions.instrument = nextInstrument(defaultProviderOptions.instrument, inst)
 }
 
 export type Executor<Provide> = {
@@ -41,6 +33,8 @@ export function create<Provide, Dependent = unknown>(
   options: ProviderOption = defaultProviderOptions,
 ) {
   const opts = { ...defaultProviderOptions, ...options }
+
+  const name = opts?.name || provider.name || 'anonymous'
 
   let cached: Promise<{ provide: Provide }> | undefined = undefined
   let dependentRef: Executor<Dependent> | undefined = dependent
@@ -87,6 +81,21 @@ export function create<Provide, Dependent = unknown>(
 
   const executor = { execute, get, prepare, _inject }
 
+  Object.defineProperty(executor.get, 'name', {
+    value: `${name}.get`,
+    writable: false
+  });
+
+  Object.defineProperty(executor.execute, 'name', {
+    value: `${name}.execute`,
+    writable: false
+  });
+
+  Object.defineProperty(executor.prepare, 'name', {
+    value: `${name}.prepare`,
+    writable: false
+  });
+
   if (opts.instrument) {
     instrument(executor, opts.instrument)
   }
@@ -117,4 +126,4 @@ export const combine = function <L extends Record<string, Executor<any>>>(layout
   })
 }
 
-export { createInstrumentor, CreateInstrumentHandler, InstrumentHandler }
+export { CreateInstrumentHandler, InstrumentHandler, composeInstrument, createInstrument }

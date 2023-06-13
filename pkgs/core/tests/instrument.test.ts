@@ -5,7 +5,7 @@ test('basic instrumentation', async () => {
 
   const fn = vi.fn(function () { })
   setInstrument({
-    onPromiseResult: fn
+    onResult: fn
   })
 
   const a = create(() => 'a')
@@ -20,9 +20,9 @@ test('basic instrumentation', async () => {
 
 test('instrument can change data', async () => {
   setInstrument({
-    onPromiseResult() {
+    onResult() {
       return {
-        state: 'promiseResult',
+        state: 'result',
         result: 1
       }
     }
@@ -35,9 +35,9 @@ test('instrument can change data', async () => {
 
 test('instrument can recover error', async () => {
   setInstrument({
-    onPromiseError() {
+    onError() {
       return {
-        state: 'promiseResult',
+        state: 'result',
         result: 1
       }
     }

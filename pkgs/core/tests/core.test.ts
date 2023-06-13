@@ -170,3 +170,14 @@ test('magic function 5', async () => {
   const d = await demand(c)
   expect(d).toEqual('ba2')
 })
+
+test('could set name', async () => {
+  const execute = create(() => 'a', undefined, { name: 'test' })
+  expect(execute.get.name).toBe('test.get')
+
+  const named = create(function config() {
+    return 'a'
+  })
+
+  expect(named.get.name).toBe('config.get')
+})
