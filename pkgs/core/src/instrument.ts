@@ -15,35 +15,29 @@ type CallContext = {
 type ExecuteState = { state: 'execute' }
 type ErrorState = { state: 'error', error: unknown } 
 type NormalState = { state: 'result', result: unknown }
-type PromiseNormalState = { state: 'promiseResult', result: unknown }
-type PromiseErrorState = { state: 'promiseError', error: unknown }
 
 export type CallResult = ExecuteState
   | ErrorState
   | NormalState
-  | PromiseNormalState
-  | PromiseErrorState
 
 export type InstrumentHandler = {
   name?: string
   onExecute?: (context: Fn & CallContext & ExecuteState) => void | Partial<CallContext & Fn & ExecuteState>
-  onError?: (context: Fn & CallContext & ErrorState) => void | ErrorState | NormalState
-  onResult?: (context: Fn & CallContext & NormalState) => void | ErrorState | NormalState
-  onPromiseResult?: (context: Fn & CallContext & PromiseNormalState) => void | PromiseErrorState | PromiseNormalState
-  onPromiseError?: (context: Fn & CallContext & PromiseErrorState) => void | PromiseErrorState | PromiseNormalState
+  onError?: (context: Fn & CallContext & ErrorState & { isPromise: boolean }) => void | ErrorState | NormalState
+  onResult?: (context: Fn & CallContext & NormalState & { isPromise: boolean }) => void | ErrorState | NormalState
 }
 
 export type CreateInstrumentHandler = InstrumentHandler | (() => InstrumentHandler)
 
 export function createInstrumentor(opts: CreateInstrumentHandler): InstrumentFunction {
   return function (fn, fnName) {
-    let name = opts?.name || fnName || fn.name
+    let name = opts?.name || fn.name || fnName || 'anonymous'
     
     const handler = typeof opts === 'function'
       ? opts()
       : opts
 
-    return function () {
+    const f = function () {
       let that = this
       let args = arguments
       let func = fn
@@ -58,48 +52,37 @@ export function createInstrumentor(opts: CreateInstrumentHandler): InstrumentFun
         }
         
         let result = func.apply(that, args)
-        if (result === undefined) {
-          const resultState = handler.onResult?.({ name, fn: func, that, args, state: 'result', result: undefined })
-          
-          if (resultState?.state === 'error') {
-            throw resultState.error
-          }  
-          
-          if (resultState?.state === 'result') {
-            return resultState.result
-          }
-
-          return
-        } else if (isPromise(result)) {
+        
+        if (isPromise(result)) {
           return result
             .then((next: unknown) => {
-              const promiseResultState = handler.onPromiseResult?.({ name, fn: func, that, args, state: 'promiseResult', result: next })
+              const promiseResultState = handler.onResult?.({ name, fn: func, that, args, state: 'result', result: next, isPromise: true })
               
-              if (promiseResultState?.state === 'promiseResult') {
+              if (promiseResultState?.state === 'result') {
                 return promiseResultState.result
               } 
               
-              if (promiseResultState?.state === 'promiseError') {
+              if (promiseResultState?.state === 'error') {
                 throw promiseResultState.error
               }
 
               return next
             })
             .catch((error: unknown) => {
-              const promiseErrorState = handler.onPromiseError?.({ name, fn: func, that, args, state: 'promiseError', error })
+              const errorState = handler.onError?.({ name, fn: func, that, args, error, state: 'error', isPromise: true })
 
-              if (promiseErrorState?.state === 'promiseError') {
-                throw promiseErrorState.error
+              if (errorState?.state === 'error') {
+                throw errorState.error
               }
 
-              if (promiseErrorState?.state === 'promiseResult') {
-                return promiseErrorState.result
+              if (errorState?.state === 'result') {
+                return errorState.result
               }
 
               throw error
             })
         } else {
-          const resultState = handler.onResult?.({ name, fn: func, that, args, state: 'result', result: result })
+          const resultState = handler.onResult?.({ name, fn: func, that, args, state: 'result', result: undefined, isPromise: false })
           
           if (resultState?.state === 'error') {
             throw resultState.error
@@ -112,7 +95,7 @@ export function createInstrumentor(opts: CreateInstrumentHandler): InstrumentFun
           return result
         }
       } catch (error) {
-        const errorState = handler.onError?.({ name, fn: func, that, args, error, state: 'error' })
+        const errorState = handler.onError?.({ name, fn: func, that, args, error, state: 'error', isPromise: false })
 
         if (errorState?.state === 'error') {
           throw errorState.error
@@ -125,6 +108,13 @@ export function createInstrumentor(opts: CreateInstrumentHandler): InstrumentFun
         throw error
       }
     } as typeof fn
+
+    Object.defineProperty(f, 'name', {
+      value: name,
+      writable: false
+    });
+
+    return f
   }
 }
 

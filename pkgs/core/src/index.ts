@@ -5,8 +5,9 @@ type Provider<Provide, Input = unknown> =
   | ((input: Input) => Provide | Promise<Provide>)
 
 export type ProviderOption = {
+  name?: string
   instrument?: InstrumentFunction
-  mode: 'prototype' | 'singleton'
+  mode?: 'prototype' | 'singleton'
 }
 
 export const defaultProviderOptions: ProviderOption = {
@@ -41,6 +42,8 @@ export function create<Provide, Dependent = unknown>(
   options: ProviderOption = defaultProviderOptions,
 ) {
   const opts = { ...defaultProviderOptions, ...options }
+
+  const name = opts?.name || provider.name || 'anonymous'
 
   let cached: Promise<{ provide: Provide }> | undefined = undefined
   let dependentRef: Executor<Dependent> | undefined = dependent
@@ -86,6 +89,21 @@ export function create<Provide, Dependent = unknown>(
   const _inject: Hijacked<Dependent> = async (executor) => { dependentRef = executor }
 
   const executor = { execute, get, prepare, _inject }
+
+  Object.defineProperty(executor.get, 'name', {
+    value: `${name}.get`,
+    writable: false
+  });
+
+  Object.defineProperty(executor.execute, 'name', {
+    value: `${name}.execute`,
+    writable: false
+  });
+
+  Object.defineProperty(executor.prepare, 'name', {
+    value: `${name}.prepare`,
+    writable: false
+  });
 
   if (opts.instrument) {
     instrument(executor, opts.instrument)
