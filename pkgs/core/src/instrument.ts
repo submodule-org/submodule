@@ -29,6 +29,12 @@ export type InstrumentHandler = {
 
 export type CreateInstrumentHandler = InstrumentHandler | (() => InstrumentHandler)
 
+export const createInstrument = (opts: CreateInstrumentHandler): InstrumentHandler => {
+  return typeof opts === 'function'
+    ? opts()
+    : opts
+}
+
 export function createInstrumentor(opts: CreateInstrumentHandler): InstrumentFunction {
   return function (fn, fnName) {
     let name = opts?.name || fn.name || fnName || 'anonymous'
@@ -141,4 +147,21 @@ export function instrument<T>(container: T, instrumentFn: InstrumentFunction, ma
   })
 
   return container
+}
+
+export function nextInstrument(prev: InstrumentFunction | undefined, inst: CreateInstrumentHandler) {
+  const next = createInstrumentor(createInstrument(inst))
+
+  const mixin: InstrumentFunction = (fn, name) => {
+    const instrumented = prev?.(fn, name) || fn
+    return next(instrumented, name)
+  }
+
+  return mixin
+}
+
+export function composeInstrument(...ins: CreateInstrumentHandler[]) {
+  return ins.reduceRight((prev, next) => {
+    return nextInstrument(prev, next)
+  }, undefined as InstrumentFunction | undefined)
 }
