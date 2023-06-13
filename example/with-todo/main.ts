@@ -28,9 +28,8 @@ from(config)
         async (context) => {
           debugRuntime('incoming request to path %s - %s', context.req.method, context.req.url)
 
-          const routeHandler = await route.handle.execute()
-
-          return routeHandler(context)
+          const handler = await route.handle.get() 
+          return handler(context)
         }
       )
     }
