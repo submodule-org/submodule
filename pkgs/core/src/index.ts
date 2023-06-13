@@ -1,4 +1,4 @@
-import { debug, instrument, InstrumentFunction } from "./instrument";
+import { instrument, InstrumentFunction, createInstrumentor, CreateInstrumentHandler } from "./instrument";
 
 type Provider<Provide, Input = unknown> =
   | (() => Provide | Promise<Provide>)
@@ -10,7 +10,21 @@ export type ProviderOption = {
 }
 
 export const defaultProviderOptions: ProviderOption = {
-  mode: 'singleton'
+  mode: 'singleton',
+  instrument: createInstrumentor({})
+}
+
+export function setInstrument(inst: CreateInstrumentHandler) {
+  const prev = defaultProviderOptions.instrument
+  const mixin: InstrumentFunction = (fn, name) => {
+    const instrumented = prev?.(fn, name) || fn
+    const next = typeof inst === 'function'
+      ? inst(instrumented, name)
+      : inst
+    return createInstrumentor(next)(instrumented, name)
+  } 
+
+  defaultProviderOptions.instrument = mixin
 }
 
 export type Executor<Provide> = {
@@ -73,8 +87,6 @@ export function create<Provide, Dependent = unknown>(
 
   const executor = { execute, get, prepare, _inject }
 
-  instrument(executor, debug)
-
   if (opts.instrument) {
     instrument(executor, opts.instrument)
   }
@@ -104,3 +116,5 @@ export const combine = function <L extends Record<string, Executor<any>>>(layout
     return result as any
   })
 }
+
+export { createInstrumentor }

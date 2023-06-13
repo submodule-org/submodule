@@ -19,9 +19,6 @@
   ],
   "license": "MIT",
   "homepage": "https://submodule.js.org",
-  "dependencies": {
-    "debug": "^4.3.4"
-  },
   "scripts": {
     "dev": "yarn run -T tsup --watch",
     "core:dev": "yarn dev",
