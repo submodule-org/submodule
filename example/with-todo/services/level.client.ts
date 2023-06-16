@@ -1,14 +1,11 @@
-import { DatabaseOptions, Level } from "level"
+import { create } from "@submodule/core"
+import { Level } from "level"
 
-export type LevelConfig = {
-  name: string
-  config?: DatabaseOptions<string, string>
-}
+import { config } from "../config"
 
-
-export async function createDb({ name, config }: LevelConfig): Promise<Level> {
-  const db = new Level(name, config)
+export const level = create(async config => {
+  const db = new Level(config.levelConfig.name)
   await db.open({ createIfMissing: true })
   
   return db
-}
+}, config)

@@ -1,4 +1,4 @@
-import { route } from "../submodule"
+import { route } from "../router"
 import type { Todo } from "../services/todo.service"
 
 export const handle = route(async (services, context) => {

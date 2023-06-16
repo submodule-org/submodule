@@ -1,10 +1,5 @@
-import { type Level } from "level"
-
-type TodoServiceOpts = {
-  db: Level
-}
-
-export type TodoService = ReturnType<typeof createService>
+import { level } from "./level.client"
+import { create } from "@submodule/core"
 
 export type Todo = {
   id: string
@@ -12,8 +7,7 @@ export type Todo = {
   done?: boolean
 }
 
-export function createService({ db }: TodoServiceOpts) {
-  
+export const todo = create(async (db) => {
   function nextId(length: number = 6) {
     let result = '';
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -57,4 +51,4 @@ export function createService({ db }: TodoServiceOpts) {
   }
 
   return { addTodo, getTodo, toggleTodo, listTodos }
-}
+}, level)

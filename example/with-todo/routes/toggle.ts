@@ -1,4 +1,4 @@
-import { defineMeta, route } from "../submodule"
+import { defineMeta, route } from "../router"
 
 export const handle = route(async (services, context) => {
   const id = context.req.query('id')
