@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.6.0](https://github.com/submodule-js/submodule/compare/@submodule/core4.4.2...@submodule/core4.6.0) (2023-06-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* clean up `from` API
+
+### Features
+
+* clean up `from` API ([c97e506](https://github.com/submodule-js/submodule/commit/c97e5066b6417601a25c7867d8be83d187a0cf9f))
+* finalized instrument api ([5807e1e](https://github.com/submodule-js/submodule/commit/5807e1e7ca0888f018cc865de25645b13e0ecdaa))
+* prepare to release new instrument api ([854d15b](https://github.com/submodule-js/submodule/commit/854d15b9acf62473e0a8b15ee77b6d154a86a723))
+
 ## [4.5.0](https://github.com/submodule-js/submodule/compare/@submodule/core4.4.2...@submodule/core4.5.0) (2023-06-13)
 
 
