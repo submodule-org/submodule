@@ -1,5 +1,5 @@
 import { vi, expect, test } from "vitest"
-import { from, combine, create, value } from "../src"
+import { execute, prepare, combine, create, value } from "../src"
 
 test('submodule should work', async () => {
   const a = create(() => 'a' as const)
@@ -8,13 +8,13 @@ test('submodule should work', async () => {
   const b = create(async () => 'b' as const)
   expect(await b.get()).toMatch('b')
 
-  const d = await from(b).execute(c => c)
+  const d = await execute(c => c, b)
   expect(d).toBe('b')
 })
 
 test('submodule can be used as dependencies', async () => {
   const a = create(() => 'a')
-  const b = from(a).provide((x) => x)
+  const b = create((x) => x, a)
 
   const result = await b.get()
   expect(result).eq('a')
@@ -89,7 +89,7 @@ test('mode can be mixed', async () => {
   const exA = create(fnA, undefined, { mode: 'singleton' })
 
   const fnB = vi.fn(() => 'b')
-  const exB = from(exA).provide(fnB, { mode: 'prototype' })
+  const exB = create(fnB, exA, { mode: 'prototype' })
 
   await exB.get()
   await exB.get()
@@ -103,7 +103,7 @@ test('mode can be mixed', async () => {
 test('can be tested using _inject', async () => {
   const a = value('a')
 
-  const b = from(a).provide(a => a)
+  const b = create(a => a, a)
   b._inject(value('c'))
 
   expect(await b.get()).toBe('c')
@@ -180,4 +180,12 @@ test('could set name', async () => {
   })
 
   expect(named.get.name).toBe('config.get')
+})
+
+test('error should be carried over', async () => {
+  const a = create(() => Promise.reject(new Error('test')))
+
+  const b = create((a) => 'b', a)
+
+  await expect(() => b.get()).rejects.toThrowError('test')
 })

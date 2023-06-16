@@ -103,25 +103,17 @@ export function create<Provide, Dependent = unknown>(
   return executor
 }
 
-export const createProvider = <Output, Input>(provider: Provider<Output, Input>) => provider
 export const value = <Provide>(value: Provide) => create(() => value)
 
-export const from = <Dependent>(executor: Executor<Dependent>) => {
-  return {
-    provide: <Provide>(provider: Provider<Provide, Dependent>, opts: ProviderOption = defaultProviderOptions) => create(provider, executor, opts),
-    execute: async <Output>(executable: Provider<Output, Dependent>): Promise<Output> => executor.execute(executable),
-    prepare: <Input, Output>(provider: (provide: Dependent, input: Input) => Output): (input: Input) => Promise<Awaited<ReturnType<typeof provider>>> => executor.prepare(provider)
-  }
-}
+export const execute = async <Dependent, Output>(executable: Provider<Output, Dependent>, dep: Executor<Dependent>): Promise<Output> => dep.execute(executable)
+export const prepare = <Dependent, Input, Output>(provider: (provide: Dependent, input: Input) => Output, dep: Executor<Dependent>): (input: Input) => Promise<Awaited<ReturnType<typeof provider>>> => dep.prepare(provider)
 
 export type inferProvide<T> = T extends Executor<infer S> ? S : never
 
 export const combine = function <L extends Record<string, Executor<any>>>(layout: L): Executor<{ [key in keyof L]: inferProvide<L[key]> }> {
   return create(async () => {
-    const result = {}
-    for (const [key, value] of Object.entries(layout)) {
-      result[key] = await value.get()
-    }
+    const layoutPromise = Object.entries(layout).map(([key, executor]) => executor.get().then(value => [key, value] as const))
+    const result = Object.fromEntries(await Promise.all(layoutPromise))
     return result as any
   })
 }
