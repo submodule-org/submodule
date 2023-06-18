@@ -1,5 +1,5 @@
-import { vi, expect, test } from "vitest"
-import { execute, prepare, combine, create, value } from "../src"
+import { expect, test, vi } from "vitest"
+import { combine, create, execute, prepare, value } from "../src"
 
 test('submodule should work', async () => {
   const a = create(() => 'a' as const)
@@ -115,9 +115,9 @@ test('magic function', async () => {
   }
 
   const b = value('b')
-  const c = await demand(b.prepare((v, i) => {
+  const c = await demand(prepare((v, i) => {
     return v + i
-  }))
+  }, b))
 
   expect(c).toEqual('ba')
 })
@@ -128,7 +128,7 @@ test('magic function 2', async () => {
   }
 
   const b = value('b')
-  const c = b.prepare<[string], string>((v, i) => v + i)
+  const c = prepare<string, string, string>((v, i) => v + i, b)
 
   const d = await demand(c)
   expect(d).toEqual('ba')

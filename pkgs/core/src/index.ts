@@ -1,4 +1,4 @@
-import { instrument, InstrumentFunction, createInstrumentor, CreateInstrumentHandler, InstrumentHandler, nextInstrument, composeInstrument, createInstrument } from "./instrument";
+import { CreateInstrumentHandler, InstrumentFunction, InstrumentHandler, composeInstrument, createInstrument, createInstrumentor, instrument, nextInstrument } from "./instrument";
 
 type Provider<Provide, Input = unknown> =
   | (() => Provide | Promise<Provide>)
@@ -19,19 +19,32 @@ export function setInstrument(inst: CreateInstrumentHandler) {
   defaultProviderOptions.instrument = nextInstrument(defaultProviderOptions.instrument, inst)
 }
 
-export type Executor<Provide> = {
+export type Executor<Provide, Dependent = unknown> = {
   execute<Output>(executable: Provider<Output, Provide>): Promise<Output>
   get(): Promise<Provide>
   prepare<Input extends Array<any>, Output>(provider: (provide: Provide, ...input: Input) => Output): (...input: Input) => Promise<Awaited<ReturnType<typeof provider>>>
+  _inject: (executor: Executor<Dependent>) => void
+}
+
+function isExecutor<P>(obj: any): obj is Executor<P> {
+  return typeof obj?.['get'] === 'function'
 }
 
 export type Hijacked<Dependent> = (executor: Executor<Dependent>) => void
 
+export function create<Provide>(provider: Provider<Provide>, options?: ProviderOption): Executor<Provide>
+export function create<Provide, Dependent>(provider: Provider<Provide>, dependent?: Executor<Dependent>, options?: ProviderOption): Executor<Provide>
 export function create<Provide, Dependent = unknown>(
   provider: Provider<Provide, Dependent>,
-  dependent?: Executor<Dependent>,
-  options: ProviderOption = defaultProviderOptions,
-) {
+  secondParam?: ProviderOption | Executor<Dependent>,
+  thirdParam?: ProviderOption,
+): Executor<Provide> {
+  const dependent = isExecutor(secondParam)
+    ? secondParam
+    : undefined
+
+  const options = thirdParam
+
   const opts = { ...defaultProviderOptions, ...options }
 
   const name = opts?.name || provider.name || 'anonymous'
@@ -61,8 +74,7 @@ export function create<Provide, Dependent = unknown>(
   }
 
   async function execute<Output>(provider: Provider<Output, Provide>): Promise<Output> {
-    const { provide } = await init()
-    return provider(provide)
+    return provider(await get())
   }
 
   async function get(): Promise<Provide> {
@@ -72,8 +84,9 @@ export function create<Provide, Dependent = unknown>(
 
   function prepare<Input extends Array<any>, Output>(provider: (provide: Provide, ...input: Input) => Output): (...input: Input) => Promise<Awaited<ReturnType<typeof provider>>> {
     return async function () {
-      const { provide } = await init()
-      return provider.call(this, provide, ...arguments)
+      const that = this
+      const args = arguments
+      return value(provider).execute(async fn => fn.call(that, await get(), ...args))
     }
   }
 
@@ -105,8 +118,15 @@ export function create<Provide, Dependent = unknown>(
 
 export const value = <Provide>(value: Provide) => create(() => value)
 
-export const execute = async <Dependent, Output>(executable: Provider<Output, Dependent>, dep: Executor<Dependent>): Promise<Output> => dep.execute(executable)
 export const prepare = <Dependent, Input, Output>(provider: (provide: Dependent, input: Input) => Output, dep: Executor<Dependent>): (input: Input) => Promise<Awaited<ReturnType<typeof provider>>> => dep.prepare(provider)
+
+export async function execute<Output>(executable: Provider<Output>): Promise<Output>
+export async function execute<Output, Dependent>(executable: Provider<Output, Dependent>, dependent: Executor<Dependent>): Promise<Output>
+export async function execute<Dependent, Output>(executable: Provider<Output, Dependent>, dependent?: Executor<Dependent>): Promise<Output> {
+  return dependent
+    ? dependent.execute(executable)
+    : create(executable).get()
+}
 
 export type inferProvide<T> = T extends Executor<infer S> ? S : never
 
@@ -118,4 +138,4 @@ export const combine = function <L extends Record<string, Executor<any>>>(layout
   })
 }
 
-export { CreateInstrumentHandler, InstrumentHandler, composeInstrument, createInstrument }
+export { CreateInstrumentHandler, InstrumentHandler, composeInstrument, createInstrument };
