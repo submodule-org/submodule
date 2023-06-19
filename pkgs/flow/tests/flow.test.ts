@@ -1,12 +1,13 @@
-import { create, createInstrument } from "@submodule/core"
+import { combine, create, createInstrument, execute } from "@submodule/core"
 import { expect, test } from "vitest"
 import { flow, getFlowContext } from "../src"
+import { d } from "vitest/dist/types-2b1c412e"
 
 const logger = (prefix: string) => createInstrument(() => {
   return {
     onExecute({ name }) {
       const context = getFlowContext()
-      console.log('%s~%s - Execution starting... %s', prefix, context?.id, name)
+      // console.log('%s~%s - Execution starting... %s', prefix, context?.id, name)
     },
     onError({ name }) {
       const context = getFlowContext()
@@ -14,7 +15,7 @@ const logger = (prefix: string) => createInstrument(() => {
     },
     onResult({ name, result }) {
       const context = getFlowContext()
-      console.log('%s~%s - Execution ended... %s, result: %O', prefix, context?.id, name, result)
+      console.log('%s~%s - Execution ended... %s, result: %s', prefix, context?.id, name, result)
     }
   }
 })
@@ -28,22 +29,33 @@ const resultCaching = createInstrument(() => {
       if (context !== undefined && context['cache'] === undefined) {
         context['cache'] = cache
       } 
+
+      cache.set(context?.id, new Array())
     },
     
     onResult({ result }) {
       const context = getFlowContext()
-      cache.set(context?.id, result)
+
+      const results = cache.get(context?.id) as Array<any>
+      results.push([result])
     }
   }
 })
 
 test("flow should work", async () => {
-  const config = create(() => ({ port: 3000 }))
-  const server = create((config) => () => config.port, config)
-
   const result = await flow.use({ plugins: [logger('a'), resultCaching] })
     .execute(async () => {
+      const config = create(() => ({ port: 3000 }), { name: 'config'})
+      const server = create((config) => () => config.port, config, { name: 'server' })
+
       const fn = await server.get()
+      const a = create(() => 'a', { name: 'a'})
+      const b = await execute((a) => a + 'b', a, { name: 'b'})
+      
+      const d = a.prepare((x, y: string) => y, { name: 'd'})
+      await d('abc')
+
+
       return fn()
     })
 
