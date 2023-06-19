@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [4.6.1](https://github.com/submodule-js/submodule/compare/@submodule/core4.6.0...@submodule/core4.6.1) (2023-06-19)
+
+
+### Features
+
+* add overriding ([676a47b](https://github.com/submodule-js/submodule/commit/676a47b300c0a9ea626b5a459d12ab1d37c46a8f))
+* added ProvideOption to all operations ([ea6e1cb](https://github.com/submodule-js/submodule/commit/ea6e1cbed692a67e8c506d553aa55fa0df72291e))
+
 ## [4.6.0](https://github.com/submodule-js/submodule/compare/@submodule/core4.4.2...@submodule/core4.6.0) (2023-06-16)
 
 
