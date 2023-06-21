@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [4.6.2](https://github.com/submodule-js/submodule/compare/@submodule/core4.6.1...@submodule/core4.6.2) (2023-06-21)
+
+
+### Features
+
+* make prepare to take variadic arguments ([7d242ab](https://github.com/submodule-js/submodule/commit/7d242ab73141e279dde513541167151d93cfc8d9))
+
 ### [4.6.1](https://github.com/submodule-js/submodule/compare/@submodule/core4.6.0...@submodule/core4.6.1) (2023-06-19)
 
 
