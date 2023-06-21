@@ -15,7 +15,7 @@ test('basic instrumentation', async () => {
   await a.get()
   await b.get()
 
-  expect(fn).toBeCalledTimes(4)
+  expect(fn).toBeCalledTimes(6)
 })
 
 test('instrument can change data', async () => {

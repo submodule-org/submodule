@@ -128,7 +128,7 @@ test('magic function 2', async () => {
   }
 
   const b = value('b')
-  const c = prepare<string, string, string>((v, i) => v + i, b)
+  const c = prepare<string, [string], string>((v, i) => v + i, b)
 
   const d = await demand(c)
   expect(d).toEqual('ba')
@@ -169,6 +169,17 @@ test('magic function 5', async () => {
 
   const d = await demand(c)
   expect(d).toEqual('ba2')
+})
+
+test('magic function 7', async () => {
+  type Fn = (a: string, b: number) => Promise<number>
+  const a = value(true)
+  const mock = vi.fn()
+  const fn = (prepare<boolean, [string, number], any>(mock, a)) satisfies Fn
+
+  await fn('a', 1)
+
+  expect(mock.mock.lastCall).toStrictEqual([true, 'a', 1])
 })
 
 test('could set name', async () => {

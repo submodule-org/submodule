@@ -39,7 +39,7 @@ function extract<Dependent>(
 ) {
   return isExecutor(secondParam)
     ? { dependent: secondParam, options: thirdParam }
-    : { dependent: undefined, options: secondParam }
+    : { dependent: undefined, options: secondParam || thirdParam }
 }
 
 function set(target: any, name: string, value: any) {
@@ -72,7 +72,7 @@ export function create<Provide, Dependent = unknown>(
 
   async function init() {
     if (opts.mode === 'prototype') {
-      cached = load()
+      return load()
     } else {
       if (cached === undefined) {
         cached = load()
@@ -108,7 +108,7 @@ export function create<Provide, Dependent = unknown>(
 
 export const value = <Provide>(value: Provide, options?: Omit<ProviderOption, 'mode'>) => create(() => value, options)
 
-export const prepare = <Dependent, Input, Output>(provider: (provide: Dependent, input: Input) => Output, dep: Executor<Dependent>): (input: Input) => Promise<Awaited<ReturnType<typeof provider>>> => dep.prepare(provider)
+export const prepare = <Dependent, Input extends Array<any>, Output>(provider: (provide: Dependent, ...input: Input) => Output, dep: Executor<Dependent>): (...input: Input) => Promise<Awaited<ReturnType<typeof provider>>> => dep.prepare(provider)
 
 export async function execute<Output>(executable: Provider<Output>, options?: ProviderOption): Promise<Output>
 export async function execute<Output, Dependent>(executable: Provider<Output, Dependent>, dependent: Executor<Dependent>, options?: ProviderOption): Promise<Output>
