@@ -92,8 +92,8 @@ export function create<Provide, Dependent = unknown>(
 
 export const value = <Provide>(value: Provide, options?: Omit<ProviderOption, 'mode'>) => create(() => value, options)
 
-export const staged = <Dependent, Output>(factory: Provider<Output, Dependent>) => (de: Executor<Dependent>): Executor<Output> => {
-  return create(factory, de)
+export const staged = <Dependent, Output>(factory: Provider<Output, Dependent>, options?: ProviderOption) => (de: Executor<Dependent>): Executor<Output> => {
+  return create(factory, de, options)
 }
 
 export const template = <Dependent>(dependent: Executor<Dependent>, options?: ProviderOption) =>
