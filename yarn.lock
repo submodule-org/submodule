@@ -753,13 +753,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@submodule/core@npm:latest":
-  version: 4.6.0
-  resolution: "@submodule/core@npm:4.6.0"
-  checksum: ae20e447ca4a528e44da6f47555c684603104c12f163a20a2403102f0ff43cddfd15cd1a569bfb800fad387307230201b265457d66fc7dd3ceba807b33814695
-  languageName: node
-  linkType: hard
-
 "@submodule/core@workspace:^, @submodule/core@workspace:pkgs/core":
   version: 0.0.0-use.local
   resolution: "@submodule/core@workspace:pkgs/core"
@@ -2454,7 +2447,7 @@ __metadata:
   resolution: "example-todo@workspace:example/with-todo"
   dependencies:
     "@hono/node-server": ^0.2.4
-    "@submodule/core": latest
+    "@submodule/core": "workspace:^"
     commander: ^10.0.0
     debug: ^4.3.4
     express: ^4.18.2

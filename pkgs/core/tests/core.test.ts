@@ -1,10 +1,10 @@
 import { expect, test, vi } from "vitest"
-import { combine, create, execute, prepare, value } from "../src"
+import { combine, create, execute, staged, template, value } from "../src"
 
 test('submodule should work', async () => {
   const a = create(() => 'a' as const)
   expect(await a.get()).toMatch('a')
-  
+
   const b = create(async () => 'b' as const)
   expect(await b.get()).toMatch('b')
 
@@ -22,7 +22,7 @@ test('submodule can be used as dependencies', async () => {
 
 test('create should not be eager', async () => {
   const fn = vi.fn(() => 'a')
-  
+
   const a = create(fn)
   process.nextTick(async () => {
     expect(fn).toBeCalledTimes(0)
@@ -40,7 +40,7 @@ test('combine should work', async () => {
 
   const ab = combine({ a: lazyA, b: eagerB })
   const result = await ab.get()
-  expect(result).toEqual({ a: 'a', b: 'b'})
+  expect(result).toEqual({ a: 'a', b: 'b' })
 })
 
 test('should only executed one even in combine', async () => {
@@ -69,7 +69,7 @@ test('submodule can be chained', async () => {
 
   const result = fn({ a: 'x' })
 
-  expect(result).toEqual({ b: 'x'})
+  expect(result).toEqual({ b: 'x' })
 
 })
 
@@ -100,24 +100,15 @@ test('mode can be mixed', async () => {
 
 })
 
-test('can be tested using _inject', async () => {
-  const a = value('a')
-
-  const b = create(a => a, a)
-  b._inject(value('c'))
-
-  expect(await b.get()).toBe('c')
-})
-
 test('magic function', async () => {
   const demand = async (fn: (x: string) => string | Promise<string>): Promise<string> => {
     return await fn('a')
   }
-
   const b = value('b')
-  const c = await demand(prepare((v, i) => {
+
+  const c = await demand(template(b)((v, i) => {
     return v + i
-  }, b))
+  }))
 
   expect(c).toEqual('ba')
 })
@@ -128,7 +119,7 @@ test('magic function 2', async () => {
   }
 
   const b = value('b')
-  const c = prepare<string, [string], string>((v, i) => v + i, b)
+  const c = template(b)((v, i) => v + i)
 
   const d = await demand(c)
   expect(d).toEqual('ba')
@@ -140,7 +131,7 @@ test('magic function 3', async () => {
   }
 
   const b = value('b')
-  const c = await demand(b.prepare(async (v, i1, i2) => {
+  const c = await demand(template(b)(async (v, i1, i2) => {
     return v + i1 + i2
   }))
 
@@ -153,7 +144,7 @@ test('magic function 4', async () => {
   }
 
   const b = value('b')
-  const c = b.prepare<[string, number], string>((v, i1, i2) => v + i1 + i2)
+  const c = template(b)((v, i1, i2) => v + i1 + i2)
 
   const d = await demand(c)
   expect(d).toEqual('ba2')
@@ -165,7 +156,7 @@ test('magic function 5', async () => {
   }
 
   const b = value('b')
-  const c = b.prepare<[string, number], Promise<string>>(async (v, i1, i2) => Promise.resolve(v + i1 + i2))
+  const c = template(b)(async (v, i1, i2) => Promise.resolve(v + i1 + i2))
 
   const d = await demand(c)
   expect(d).toEqual('ba2')
@@ -175,7 +166,7 @@ test('magic function 7', async () => {
   type Fn = (a: string, b: number) => Promise<number>
   const a = value(true)
   const mock = vi.fn()
-  const fn = (prepare<boolean, [string, number], any>(mock, a)) satisfies Fn
+  const fn = template(a)<Fn>(mock)
 
   await fn('a', 1)
 
@@ -199,4 +190,19 @@ test('error should be carried over', async () => {
   const b = create((a) => 'b', a)
 
   await expect(() => b.get()).rejects.toThrowError('test')
+})
+
+test('staged function', async () => {
+  type Config = { port: number }
+  const stagedService = staged((config: Config) => {
+    // will be a server
+    return config.port
+  })
+
+  const config = value({ port: 3000 })
+
+  const service = stagedService(config)
+
+  const actualized = await service.get()
+  expect(actualized).toBe(3000)
 })

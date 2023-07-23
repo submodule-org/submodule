@@ -1,5 +1,5 @@
-import { vi, test, expect } from "vitest"
-import { create, setInstrument, value } from "../src"
+import { expect, test, vi } from "vitest"
+import { create, execute, setInstrument, value } from "../src"
 
 test('basic instrumentation', async () => {
 
@@ -11,11 +11,11 @@ test('basic instrumentation', async () => {
   const a = create(() => 'a')
   const b = create((a) => a + 'b', a)
 
-  await a.execute((a) => {})
+  await execute((a) => { }, a)
   await a.get()
   await b.get()
 
-  expect(fn).toBeCalledTimes(6)
+  expect(fn).toBeCalledTimes(5)
 })
 
 test('instrument can change data', async () => {
@@ -63,7 +63,7 @@ test('instrument can change executing function', async () => {
 
 test('instrument can be mixed', async () => {
   const fn = vi.fn()
-  
+
   setInstrument({
     onExecute: fn
   })

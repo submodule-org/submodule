@@ -1,7 +1,6 @@
-import { combine, create, createInstrument, execute } from "@submodule/core"
+import { create, createInstrument, execute, template } from "@submodule/core"
 import { expect, test } from "vitest"
 import { flow, getFlowContext } from "../src"
-import { d } from "vitest/dist/types-2b1c412e"
 
 const logger = (prefix: string) => createInstrument(() => {
   return {
@@ -28,11 +27,11 @@ const resultCaching = createInstrument(() => {
       const context = getFlowContext()
       if (context !== undefined && context['cache'] === undefined) {
         context['cache'] = cache
-      } 
+      }
 
       cache.set(context?.id, new Array())
     },
-    
+
     onResult({ result }) {
       const context = getFlowContext()
 
@@ -45,14 +44,14 @@ const resultCaching = createInstrument(() => {
 test("flow should work", async () => {
   const result = await flow.use({ plugins: [logger('a'), resultCaching] })
     .execute(async () => {
-      const config = create(() => ({ port: 3000 }), { name: 'config'})
+      const config = create(() => ({ port: 3000 }), { name: 'config' })
       const server = create((config) => () => config.port, config, { name: 'server' })
 
       const fn = await server.get()
-      const a = create(() => 'a', { name: 'a'})
-      const b = await execute((a) => a + 'b', a, { name: 'b'})
-      
-      const d = a.prepare((x, y: string) => y, { name: 'd'})
+      const a = create(() => 'a', { name: 'a' })
+      const b = await execute((a) => a + 'b', a, { name: 'b' })
+
+      const d = template(a, { name: 'd' })((x, y: string) => y)
       await d('abc')
 
 

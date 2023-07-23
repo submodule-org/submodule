@@ -1,4 +1,4 @@
-import { combine } from "@submodule/core"
+import { combine, template } from "@submodule/core"
 import { Context } from "hono"
 
 import { level } from "./services/level.client"
@@ -6,7 +6,8 @@ import { todo } from "./services/todo.service"
 
 export const services = combine({ level, todo })
 
-export const route = services.prepare<[Context], Promise<Response>>
+type RouteFn = (context: Context) => (Response | Promise<Response>)
+export const route = template(services)<RouteFn>
 
 type Meta = {
   methods?: ['GET' | 'POST' | 'PUT']
@@ -15,6 +16,6 @@ type Meta = {
 export const defineMeta = (meta: Meta) => { return meta }
 
 export type Route = {
-  handle: ReturnType<typeof route>
+  handle: RouteFn
   meta?: Meta
 }
