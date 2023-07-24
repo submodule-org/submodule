@@ -19,17 +19,20 @@ export function setInstrument(inst: CreateInstrumentHandler) {
   defaultProviderOptions.instrument = nextInstrument(defaultProviderOptions.instrument, inst)
 }
 
-export type Executor<Provide> = {
+export type Unstaged<Provide, Dependent> = (dependent: Executor<Dependent, unknown>, options?: ProviderOption) => Executor<Provide, Dependent>
+
+export type Executor<Provide, Dependent> = {
   get(): Promise<Provide>
+  unstage: () => Unstaged<Provide, Dependent>
 }
 
-function isExecutor<P>(obj: any): obj is Executor<P> {
+function isExecutor<P, D>(obj: any): obj is Executor<P, D> {
   return typeof obj?.['get'] === 'function'
 }
 
 function extract<Dependent, Output>(
   executable: Provider<Output>,
-  secondParam?: ProviderOption | Executor<Dependent>,
+  secondParam?: ProviderOption | Executor<Dependent, unknown>,
   thirdParam?: ProviderOption
 ) {
   return isExecutor(secondParam)
@@ -41,20 +44,20 @@ function set(target: any, name: string, value: any) {
   Object.defineProperty(target, name, { value: value, writable: false });
 }
 
-export function create<Provide>(provider: Provider<Provide>, options?: ProviderOption): Executor<Provide>
-export function create<Provide, Dependent>(provider: Provider<Provide, Dependent>, dependent?: Executor<Dependent>, options?: ProviderOption): Executor<Provide>
+export function create<Provide>(provider: Provider<Provide>, options?: ProviderOption): Executor<Provide, void>
+export function create<Provide, Dependent>(provider: Provider<Provide, Dependent>, dependent?: Executor<Dependent, unknown>, options?: ProviderOption): Executor<Provide, Dependent>
 export function create<Provide, Dependent = unknown>(
   providerParam: Provider<Provide, Dependent>,
-  secondParam?: ProviderOption | Executor<Dependent>,
+  secondParam?: ProviderOption | Executor<Dependent, unknown>,
   thirdParam?: ProviderOption,
-): Executor<Provide> {
+): Executor<Provide, Dependent> {
   const { provider, dependent, options } = extract(providerParam, secondParam, thirdParam)
   const opts = { ...defaultProviderOptions, ...options }
 
   const name = opts?.name || provider.name || 'anonymous'
 
   let cached: Promise<{ provide: Provide }> | undefined = undefined
-  let dependentRef: Executor<Dependent> | undefined = dependent
+  let dependentRef: Executor<Dependent, unknown> | undefined = dependent
 
   async function load() {
     const actualized = dependentRef
@@ -77,8 +80,9 @@ export function create<Provide, Dependent = unknown>(
     return cached
   }
 
-  const executor: Executor<Provide> = {
+  const executor: Executor<Provide, Dependent> = {
     get: async () => (await init()).provide,
+    unstage: () => (dependent, options) => create(provider, dependent, options || opts)
   }
 
   set(executor.get, 'name', `${name}.get`)
@@ -92,18 +96,23 @@ export function create<Provide, Dependent = unknown>(
 
 export const value = <Provide>(value: Provide, options?: Omit<ProviderOption, 'mode'>) => create(() => value, options)
 
-export const staged = <Dependent, Output>(factory: Provider<Output, Dependent>, options?: ProviderOption) => (de: Executor<Dependent>): Executor<Output> => {
+export const prestaged = <Dependent, Output>(factory: Provider<Output, Dependent>, options?: ProviderOption): Unstaged<Output, Dependent> => 
+(de: Executor<Dependent, unknown>): Executor<Output, Dependent> => {
   return create(factory, de, options)
 }
 
-export const template = <Dependent>(dependent: Executor<Dependent>, options?: ProviderOption) =>
+export const stage = <Dependent, Provide>(unstaged: Unstaged<Provide, Dependent>, dependent: Executor<Dependent, unknown>, options?: ProviderOption) => {
+  return unstaged(dependent, options)
+}
+
+export const template = <Dependent>(dependent: Executor<Dependent, unknown>, options?: ProviderOption) =>
   <Fn extends (...input: any[]) => any, Input extends any[] = Parameters<Fn>>(factory: (dependent: Dependent, ...params: Input) => ReturnType<Fn>) => {
     return (...params: Input) => execute(v => factory(v, ...params), dependent, options)
   }
 
 export async function execute<Output>(executable: Provider<Output>, options?: ProviderOption): Promise<Awaited<Output>>
-export async function execute<Output, Dependent>(executable: Provider<Output, Dependent>, dependent: Executor<Dependent>, options?: ProviderOption): Promise<Awaited<Output>>
-export async function execute<Dependent, Output>(executable: Provider<Output, Dependent>, secondParam?: Executor<Dependent> | ProviderOption, thirdParam?: ProviderOption): Promise<Awaited<Output>> {
+export async function execute<Output, Dependent>(executable: Provider<Output, Dependent>, dependent: Executor<Dependent, unknown>, options?: ProviderOption): Promise<Awaited<Output>>
+export async function execute<Dependent, Output>(executable: Provider<Output, Dependent>, secondParam?: Executor<Dependent, unknown> | ProviderOption, thirdParam?: ProviderOption): Promise<Awaited<Output>> {
   const { provider, dependent, options } = extract(executable, secondParam, thirdParam)
 
   if (dependent) {
@@ -114,9 +123,9 @@ export async function execute<Dependent, Output>(executable: Provider<Output, De
   }
 }
 
-export type inferProvide<T> = T extends Executor<infer S> ? S : never
+export type inferProvide<T> = T extends Executor<infer S, any> ? S : never
 
-export const combine = function <L extends Record<string, Executor<any>>>(layout: L): Executor<{ [key in keyof L]: inferProvide<L[key]> }> {
+export const combine = function <L extends Record<string, Executor<any, any>>>(layout: L): Executor<{ [key in keyof L]: inferProvide<L[key]> }, unknown> {
   return create(async () => {
     const layoutPromise = Object.entries(layout).map(([key, executor]) => executor.get().then(value => [key, value] as const))
     const result = Object.fromEntries(await Promise.all(layoutPromise))

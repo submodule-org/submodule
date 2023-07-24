@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vitest"
-import { combine, create, execute, staged, template, value } from "../src"
+import { combine, create, execute, prestaged, stage, template, value } from "../src"
 
 test('submodule should work', async () => {
   const a = create(() => 'a' as const)
@@ -192,9 +192,9 @@ test('error should be carried over', async () => {
   await expect(() => b.get()).rejects.toThrowError('test')
 })
 
-test('staged function', async () => {
+test('prestaged function', async () => {
   type Config = { port: number }
-  const stagedService = staged((config: Config) => {
+  const stagedService = prestaged((config: Config) => {
     // will be a server
     return config.port
   })
@@ -205,4 +205,28 @@ test('staged function', async () => {
 
   const actualized = await service.get()
   expect(actualized).toBe(3000)
+})
+
+test('unstage function', async () => {
+  const config = value({ port: 3000 })
+  
+  const service = create((config) => {
+    // will be a server
+    return config.port
+  }, config)
+  
+  const prestagedService = service.unstage()
+  
+  const alternativeConfig = value({ port: 4000 })
+  const reService = stage(prestagedService, alternativeConfig)
+
+  const actualized = await reService.get()
+  expect(actualized).toBe(4000)
+})
+
+test('ustage non dependency', async () => {
+  const config = value({ port: 3000 })
+  const prestagedConfig = config.unstage()
+
+  const meaningless = stage(prestagedConfig, value(undefined))
 })
