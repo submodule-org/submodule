@@ -4,36 +4,43 @@ type Provider<Provide, Input = unknown> =
   | (() => Provide | Promise<Provide>)
   | ((input: Input) => Provide | Promise<Provide>)
 
-export type ProviderOption = {
+export type ProviderOption<Provide> = {
   name?: string
   instrument?: InstrumentFunction
   mode?: 'prototype' | 'singleton'
+  eager?: boolean
+  onShutdown?: (provide: Provide) => void | Promise<void>
+  onExecute?: <V>(provide: Provide, execution: Provider<V, Provide>) => V | Promise<V>
 }
 
-export const defaultProviderOptions: ProviderOption = {
+export const defaultProviderOptions: ProviderOption<any> = {
   mode: 'singleton',
-  instrument: createInstrumentor({})
+  eager: false,
+  instrument: createInstrumentor({}),
 }
 
 export function setInstrument(inst: CreateInstrumentHandler) {
   defaultProviderOptions.instrument = nextInstrument(defaultProviderOptions.instrument, inst)
 }
 
-export type Unstaged<Provide, Dependent> = (dependent: Executor<Dependent, unknown>, options?: ProviderOption) => Executor<Provide, Dependent>
+export type Unstaged<Provide, Dependent> = (dependent: Executor<Dependent, unknown>, options?: ProviderOption<Provide>) => Executor<Provide, Dependent>
 
-export type Executor<Provide, Dependent> = {
-  get(): Promise<Provide>
-  unstage: () => Unstaged<Provide, Dependent>
+export type Executor<Value, Dependent> = {
+  get(): Promise<Value>
+  execute<Output>(execution: Provider<Output, Value>): Promise<Output>
+  unstage: () => Unstaged<Value, Dependent>
 }
 
 function isExecutor<P, D>(obj: any): obj is Executor<P, D> {
   return typeof obj?.['get'] === 'function'
+    && typeof obj?.['execute'] === 'function'
+    && typeof obj?.['unstage'] === 'function'
 }
 
 function extract<Dependent, Output>(
   executable: Provider<Output>,
-  secondParam?: ProviderOption | Executor<Dependent, unknown>,
-  thirdParam?: ProviderOption
+  secondParam?: ProviderOption<Output> | Executor<Dependent, unknown>,
+  thirdParam?: ProviderOption<Output>
 ) {
   return isExecutor(secondParam)
     ? { provider: executable, dependent: secondParam, options: thirdParam }
@@ -44,44 +51,58 @@ function set(target: any, name: string, value: any) {
   Object.defineProperty(target, name, { value: value, writable: false });
 }
 
-export function create<Provide>(provider: Provider<Provide>, options?: ProviderOption): Executor<Provide, void>
-export function create<Provide, Dependent>(provider: Provider<Provide, Dependent>, dependent?: Executor<Dependent, unknown>, options?: ProviderOption): Executor<Provide, Dependent>
+type AnyFn = (...input: any[]) => any
+
+export const internals = {
+  internalCache: new Map<AnyFn, Promise<any>>(),
+  startupHooks: new Map<AnyFn, AnyFn>(),
+  shutdownHooks: new Map<AnyFn, AnyFn>(),
+  isShutdown: false,
+  isBooted: false,
+}
+
+export function create<Provide>(provider: Provider<Provide>, options?: ProviderOption<Provide>): Executor<Provide, void>
+export function create<Provide, Dependent>(provider: Provider<Provide, Dependent>, dependent?: Executor<Dependent, unknown>, options?: ProviderOption<Provide>): Executor<Provide, Dependent>
 export function create<Provide, Dependent = unknown>(
   providerParam: Provider<Provide, Dependent>,
-  secondParam?: ProviderOption | Executor<Dependent, unknown>,
-  thirdParam?: ProviderOption,
+  secondParam?: ProviderOption<Provide> | Executor<Dependent, unknown>,
+  thirdParam?: ProviderOption<Provide>,
 ): Executor<Provide, Dependent> {
   const { provider, dependent, options } = extract(providerParam, secondParam, thirdParam)
   const opts = { ...defaultProviderOptions, ...options }
 
   const name = opts?.name || provider.name || 'anonymous'
 
-  let cached: Promise<{ provide: Provide }> | undefined = undefined
-  let dependentRef: Executor<Dependent, unknown> | undefined = dependent
-
   async function load() {
-    const actualized = dependentRef
-      ? await dependentRef.get()
-      : undefined
-
-    const provide = await provider(actualized as Dependent)
-    return { provide }
+    const actualized = await dependent?.get()
+    const value = await provider(actualized)
+    return value
   }
 
-  async function init() {
-    if (opts.mode === 'prototype') {
-      return load()
-    } else {
-      if (cached === undefined) {
-        cached = load()
-      }
-    }
+  async function get() {
+    if (internals.isShutdown) throw new Error("invalid state, submodule is already shutdown")
 
-    return cached
+    if (opts?.mode === 'singleton') {
+      if (!internals.internalCache.has(provider)) {
+        internals.internalCache.set(provider, load())
+        opts?.onShutdown && internals.shutdownHooks.set(provider, opts.onShutdown)
+      }
+
+      return await internals.internalCache.get(provider)
+    }
+    return await load()
+  }
+
+  async function execute<V>(execution: Provider<V, Provide>): Promise<V> {
+    const value = await get()
+    return opts?.onExecute
+      ? await opts.onExecute(value, execution)
+      : execution(value)
   }
 
   const executor: Executor<Provide, Dependent> = {
-    get: async () => (await init()).provide,
+    get,
+    execute,
     unstage: () => (dependent, options) => create(provider, dependent, options || opts)
   }
 
@@ -91,33 +112,36 @@ export function create<Provide, Dependent = unknown>(
     instrument(executor, opts.instrument)
   }
 
+  if (opts?.eager && !internals.isBooted) {
+    internals.startupHooks.set(provider, executor.get)
+  }
+
   return executor
 }
 
-export const value = <Provide>(value: Provide, options?: Omit<ProviderOption, 'mode'>) => create(() => value, options)
+export const value = <Provide>(value: Provide, options?: Omit<ProviderOption<Provide>, 'mode'>) => create(() => value, options)
 
-export const prestaged = <Dependent, Output>(factory: Provider<Output, Dependent>, options?: ProviderOption): Unstaged<Output, Dependent> => 
-(de: Executor<Dependent, unknown>): Executor<Output, Dependent> => {
-  return create(factory, de, options)
-}
+export const prestaged = <Dependent, Output>(factory: Provider<Output, Dependent>, options?: ProviderOption<Output>): Unstaged<Output, Dependent> =>
+  (de: Executor<Dependent, unknown>): Executor<Output, Dependent> => {
+    return create(factory, de, options)
+  }
 
-export const stage = <Dependent, Provide>(unstaged: Unstaged<Provide, Dependent>, dependent: Executor<Dependent, unknown>, options?: ProviderOption) => {
+export const stage = <Dependent, Provide>(unstaged: Unstaged<Provide, Dependent>, dependent: Executor<Dependent, unknown>, options?: ProviderOption<Provide>) => {
   return unstaged(dependent, options)
 }
 
-export const template = <Dependent>(dependent: Executor<Dependent, unknown>, options?: ProviderOption) =>
+export const template = <Dependent>(dependent: Executor<Dependent, unknown>, options?: ProviderOption<Dependent>) =>
   <Fn extends (...input: any[]) => any, Input extends any[] = Parameters<Fn>>(factory: (dependent: Dependent, ...params: Input) => ReturnType<Fn>) => {
     return (...params: Input) => execute(v => factory(v, ...params), dependent, options)
   }
 
-export async function execute<Output>(executable: Provider<Output>, options?: ProviderOption): Promise<Awaited<Output>>
-export async function execute<Output, Dependent>(executable: Provider<Output, Dependent>, dependent: Executor<Dependent, unknown>, options?: ProviderOption): Promise<Awaited<Output>>
-export async function execute<Dependent, Output>(executable: Provider<Output, Dependent>, secondParam?: Executor<Dependent, unknown> | ProviderOption, thirdParam?: ProviderOption): Promise<Awaited<Output>> {
+export async function execute<Output>(executable: Provider<Output>, options?: ProviderOption<Output>): Promise<Awaited<Output>>
+export async function execute<Output, Dependent>(executable: Provider<Output, Dependent>, dependent: Executor<Dependent, unknown>, options?: ProviderOption<Output>): Promise<Awaited<Output>>
+export async function execute<Dependent, Output>(executable: Provider<Output, Dependent>, secondParam?: Executor<Dependent, unknown> | ProviderOption<Output>, thirdParam?: ProviderOption<Output>): Promise<Awaited<Output>> {
   const { provider, dependent, options } = extract(executable, secondParam, thirdParam)
 
   if (dependent) {
-    const value = await dependent.get()
-    return await create(() => provider(value), options).get()
+    return await dependent.execute(provider)
   } else {
     return await create(() => provider(), options).get()
   }
@@ -133,5 +157,14 @@ export const combine = function <L extends Record<string, Executor<any, any>>>(l
   })
 }
 
-export { CreateInstrumentHandler, InstrumentFunction, InstrumentHandler, composeInstrument, createInstrument };
+export const boot = async () => {
+  const processBoot = Array.from(internals.startupHooks.values()).map(x => x())
+  await Promise.allSettled(processBoot).finally(() => { internals.isBooted = true })
+}
 
+export const shutdown = async () => {
+  const processShutdown = Array.from(internals.shutdownHooks.values()).map(x => x())
+  await Promise.allSettled(processShutdown).finally(() => { internals.isShutdown = true })
+}
+
+export { CreateInstrumentHandler, InstrumentFunction, InstrumentHandler, composeInstrument, createInstrument };

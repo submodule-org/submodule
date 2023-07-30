@@ -9,13 +9,13 @@ test('basic instrumentation', async () => {
   })
 
   const a = create(() => 'a')
-  const b = create((a) => a + 'b', a)
+  const b = create((a) => a + 'b', a) // 1
 
-  await execute((a) => { }, a)
-  await a.get()
-  await b.get()
+  await execute((a) => { }, a) // 2
+  await a.get() // 3
+  await b.get() // 4
 
-  expect(fn).toBeCalledTimes(5)
+  expect(fn).toBeCalledTimes(4)
 })
 
 test('instrument can change data', async () => {
