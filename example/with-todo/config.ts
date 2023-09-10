@@ -6,9 +6,9 @@ export const config = create(() => {
       name: 'todo.level'
     },
     honoConfig: {
-      port: 3000
+      port: 4000
     }
   }
-  
+
   return config
 })

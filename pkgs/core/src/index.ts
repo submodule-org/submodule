@@ -1,4 +1,4 @@
-import { CreateInstrumentHandler, InstrumentFunction, InstrumentHandler, composeInstrument, createInstrument, createInstrumentor, instrument, nextInstrument } from "./instrument";
+import { composeInstrument, createInstrument, createInstrumentor, instrument, nextInstrument, type CreateInstrumentHandler, type InstrumentFunction, type InstrumentHandler } from "./instrument";
 
 type Provider<Provide, Input = unknown> =
   | (() => Provide | Promise<Provide>)
@@ -8,14 +8,11 @@ export type ProviderOption<Provide> = {
   name?: string
   instrument?: InstrumentFunction
   mode?: 'prototype' | 'singleton'
-  eager?: boolean
-  onShutdown?: (provide: Provide) => void | Promise<void>
   onExecute?: <V>(provide: Provide, execution: Provider<V, Provide>) => V | Promise<V>
 }
 
 export const defaultProviderOptions: ProviderOption<any> = {
   mode: 'singleton',
-  eager: false,
   instrument: createInstrumentor({}),
 }
 
@@ -26,7 +23,7 @@ export function setInstrument(inst: CreateInstrumentHandler) {
 export type Unstaged<Provide, Dependent> = (dependent: Executor<Dependent, unknown>, options?: ProviderOption<Provide>) => Executor<Provide, Dependent>
 
 export type Executor<Value, Dependent> = {
-  get(): Promise<Value>
+  get(deps?: Executor<Dependent, any>): Promise<Value>
   execute<Output>(execution: Provider<Output, Value>): Promise<Output>
   unstage: () => Unstaged<Value, Dependent>
 }
@@ -55,10 +52,6 @@ type AnyFn = (...input: any[]) => any
 
 export const internals = {
   internalCache: new Map<AnyFn, Promise<any>>(),
-  startupHooks: new Map<AnyFn, AnyFn>(),
-  shutdownHooks: new Map<AnyFn, AnyFn>(),
-  isShutdown: false,
-  isBooted: false,
 }
 
 export function create<Provide>(provider: Provider<Provide>, options?: ProviderOption<Provide>): Executor<Provide, void>
@@ -73,24 +66,21 @@ export function create<Provide, Dependent = unknown>(
 
   const name = opts?.name || provider.name || 'anonymous'
 
-  async function load() {
-    const actualized = await dependent?.get()
+  async function load(dep?: Executor<Dependent, any>) {
+    const actualized = dep ? await dep.get() : await dependent?.get()
     const value = await provider(actualized)
     return value
   }
 
-  async function get() {
-    if (internals.isShutdown) throw new Error("invalid state, submodule is already shutdown")
-
+  async function get(dep?: Executor<Dependent, any>) {
     if (opts?.mode === 'singleton') {
       if (!internals.internalCache.has(provider)) {
-        internals.internalCache.set(provider, load())
-        opts?.onShutdown && internals.shutdownHooks.set(provider, opts.onShutdown)
+        internals.internalCache.set(provider, load(dep))
       }
 
       return await internals.internalCache.get(provider)
     }
-    return await load()
+    return await load(dep)
   }
 
   async function execute<V>(execution: Provider<V, Provide>): Promise<V> {
@@ -110,10 +100,6 @@ export function create<Provide, Dependent = unknown>(
 
   if (opts.instrument) {
     instrument(executor, opts.instrument)
-  }
-
-  if (opts?.eager && !internals.isBooted) {
-    internals.startupHooks.set(provider, executor.get)
   }
 
   return executor
@@ -155,16 +141,6 @@ export const combine = function <L extends Record<string, Executor<any, any>>>(l
     const result = Object.fromEntries(await Promise.all(layoutPromise))
     return result as any
   })
-}
-
-export const boot = async () => {
-  const processBoot = Array.from(internals.startupHooks.values()).map(x => x())
-  await Promise.allSettled(processBoot).finally(() => { internals.isBooted = true })
-}
-
-export const shutdown = async () => {
-  const processShutdown = Array.from(internals.shutdownHooks.values()).map(x => x())
-  await Promise.allSettled(processShutdown).finally(() => { internals.isShutdown = true })
 }
 
 export { CreateInstrumentHandler, InstrumentFunction, InstrumentHandler, composeInstrument, createInstrument };

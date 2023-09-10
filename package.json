@@ -9,8 +9,5 @@
   "workspaces": [
     "pkgs/*",
     "example/*"
-  ],
-  "scripts": {
-    "test": "yarn workspaces foreach run test"
-  }
+  ]
 }

@@ -209,14 +209,14 @@ test('prestaged function', async () => {
 
 test('unstage function', async () => {
   const config = value({ port: 3000 })
-  
+
   const service = create((config) => {
     // will be a server
     return config.port
   }, config)
-  
+
   const prestagedService = service.unstage()
-  
+
   const alternativeConfig = value({ port: 4000 })
   const reService = stage(prestagedService, alternativeConfig)
 
@@ -224,9 +224,14 @@ test('unstage function', async () => {
   expect(actualized).toBe(4000)
 })
 
-test('ustage non dependency', async () => {
+test('can mock easily', async () => {
   const config = value({ port: 3000 })
-  const prestagedConfig = config.unstage()
+  const service = create((config) => {
+    // will be a server
+    return config.port
+  }, config)
 
-  const meaningless = stage(prestagedConfig, value(undefined))
+  const testConfig = value({ port: 4000 })
+  const result = await service.get(testConfig)
+  expect(result).toBe(4000)
 })
