@@ -22,12 +22,12 @@
     "dts": true
   },
   "scripts": {
-    "dev": "yarn run -T tsup --watch",
+    "dev": "tsup --watch",
     "test": "vitest run",
-    "build": "yarn run -T tsup",
-    "preview": "yarn run -T standard-version --path . -t @submodule/client --dry-run",
-    "bump": "yarn run -T standard-version --path . -t @submodule/client",
+    "build": "tsup",
+    "preview": "standard-version --path . -t @submodule/client --dry-run",
+    "bump": "standard-version --path . -t @submodule/client",
     "release": "git push --follow-tags origin main && npm publish --access public",
-    "client:build": "yarn build"
+    "client:build": "build"
   }
 }

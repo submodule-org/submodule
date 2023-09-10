@@ -1,15 +1,11 @@
-import { serve as honoServe } from '@hono/node-server'
 import { execute } from "@submodule/core"
-import createDebug from "debug"
 import { Hono } from "hono"
 
 import { config } from "./config"
 import { Route } from "./router"
 
-const debugRuntime = createDebug('todo.runtime')
-
-execute(async (config) => {
-  const port = config.honoConfig?.port || 3000
+export default await execute(async (config) => {
+  const port = config.honoConfig.port
 
   const app = new Hono()
 
@@ -21,23 +17,21 @@ execute(async (config) => {
 
   for (const routeKey in router) {
     const route = router[routeKey]
-
     const methods = route.meta?.methods || ['GET']
     app.on(
       methods,
       '/' + routeKey,
       async (context) => {
-        debugRuntime('incoming request to path %s - %s', context.req.method, context.req.url)
-
+        console.log('incoming request to path %s - %s', context.req.method, context.req.url)
         return await route.handle(context)
       }
     )
   }
 
-  honoServe({
-    fetch: app.fetch,
-    port
-  })
+  console.log('hono will be listening at port', port)
 
-  console.log('Server is listening at port', port)
+  return {
+    port,
+    fetch: app.fetch
+  }
 }, config)

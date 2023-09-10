@@ -2,9 +2,9 @@
   "name": "example-todo",
   "packageManager": "yarn@3.3.0",
   "scripts": {
-    "dev": "tsx watch main",
-    "build": "yarn run -T tsup",
-    "start": "node dist/main"
+    "dev": "bun --watch run ./main.ts",
+    "build": "bun build ./main.ts --outdir dist",
+    "start": "bun run dist/main"
   },
   "dependencies": {
     "@hono/node-server": "^0.2.4",
