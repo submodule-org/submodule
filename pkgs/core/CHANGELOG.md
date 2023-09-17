@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.0.0-rc.1](https://github.com/submodule-js/submodule/compare/@submodule/core5.0.0-rc.0...@submodule/core5.0.0-rc.1) (2023-09-17)
+
+
+### Features
+
+* bring back the template, remove stage and unstage ([b6b2cf8](https://github.com/submodule-js/submodule/commit/b6b2cf8dde79bc107f2ef05880111654dcda919f))
+
 ## 5.0.0-rc.0 (2023-09-10)
 
 
