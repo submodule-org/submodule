@@ -1,0 +1,43 @@
+# Running mode
+
+Submodule offers two initialization mode
+
+- Prototype, where the result of the Provider will be created on every call
+- Singleton, where the result of the Provider will be cached on the first call and won't be changed the whole lifecycle
+
+## Singleton - default mode
+
+By default, singleton mode will be used
+
+```typescript
+import { create } from "@submodule/core"
+const config = create(() => { /** load things from yaml */ })
+```
+
+the YAML part will be loaded only once and to kept in memory, further access will return the same result
+
+## Prototype
+
+To create a new instance on call, prototype can be used
+
+```typescript
+import { create } from "@submodule/core"
+const config = create(() => { /** load things from yaml */ }, undefined, { mode: 'prototype' })
+```
+
+As such, every time `config.execute()`, the config will be loaded again.
+
+## In use with combination
+
+When combine is used
+
+```typescript
+from(singleton).provide(() => {/**/}, { mode: 'prototype' })
+```
+
+The singleton will be created only once
+
+```typescript
+from(prototype).provide(() => {/**/}, { mode: 'prototype' })
+```
+Then both submodule will be called many times

@@ -1,0 +1,32 @@
+# Testing
+
+Javascript clousure is one of the common reason to make a function much less testable.
+Submodule comes prepared. We introduced `hijacking` in version `4.1` of the library. As such, it is easy to change the actual implementation to a mock implementation to test
+
+For example
+
+```typescript
+import { create } from "@submodule/core"
+type LogLevel = 'debug' | 'log' | 'error'
+const config = create(() => ({ logLevel: 'debug' as LogLvel } /** imagine this config is loaded from .env */))
+
+const logger = create((config) => {
+  return (...msgs: string[]) => {
+    if (config.logLevel === 'debug') {
+      ...
+    } else if ...
+  }
+}, config)
+```
+
+As you see from the code, the implementation of the logger heavy dependent on the config value. 
+To test, you can easily extract the implementation of logger then write unit test for it, sometime, it is just a hassle to do sometime
+
+Instead, you can also control the transfered config using `hijacking`
+
+```typescript
+import { value } from "@submodule/core"
+logger._inject(value({ logLevel: 'error' })
+```
+
+With this, the dependent value will be as fed and you can simulate other cases

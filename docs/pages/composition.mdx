@@ -1,0 +1,39 @@
+# Composition
+
+Composition makes the library's DX
+
+```typescript filename="submodule.ts"
+import { create, combine } from "@submodule/core"
+
+const config = create(async () => {
+  // load config from YAML
+  // validate configuration ...
+  return { mongoDB: { ...mongoConfig }, fastify: {...fastifyConfig } }
+})
+
+const mongoService = create(async (config) => {
+  return mongo.connect(config.mongoDb)
+}, config)
+
+const userService = create(async (mongoDb) => {
+  return {
+    createUser: ...,
+    listUsers: ...
+    removeUser: ...
+  }
+}, mongoService)
+
+const projectService = create(async (mongoDb) => {
+  return {
+    createProject: ...,
+    listProjects: ...
+    removeProject: ...
+  }
+}, mongoService)
+
+const services = combine({ userService, projectService }) 
+
+const result = await from(services).execute(({ userService, projectService }) => {
+  // do whatever you like with services any where
+})
+```

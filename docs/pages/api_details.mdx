@@ -1,0 +1,128 @@
+# API
+
+Submodule doesn't come with a lot of API
+
+## Executor
+
+Executor is the heart of submodule. An executor is a value/promise wrapper providing certain chain-operations
+
+### executor.get
+
+Get is the async method to help you get the value out of the Executor
+
+```typescript
+const a = create(() => 'a')
+await a.get() // will get 'a'
+```
+
+### executor.execute
+
+Chain the execution
+
+```typescript
+const a = create(() => 'a')
+
+const x = await a.execute(v => {
+  // v is 'a' 
+})
+```
+
+### executor.prepare
+
+Prepare a function. 
+- The 1st parameter will be the executor value. 
+- The 2nd parameter is the magic parameter.
+- Result is the function where the only parameter is expected to be the type of the 2nd parameter
+
+Usecase, `prepare` is normally use to handle framework callbacks
+
+```typescript
+const a = create(() => 'a')
+const fn = a.prepare<[Request]>((v, i) => {
+  //                                ^? Request
+  //                             ^? 'a'
+})
+
+fn(request) 
+// ^? Request
+```
+
+From `v4.4`, prepare also supports variadic parameters
+
+```typescript
+const a = create(() => 'a')
+const fn = a.prepare<[Request, Response]>((v, req, res) => {
+  //                                          ^? Request
+  //                                               ^? Response
+})
+
+fn(request, response) 
+```
+
+## Creation API
+
+### value
+
+Value accepts and value and wrap it in an executor
+
+```typescript
+const a = value('a')
+
+await a.get() // returns 'a'
+```
+
+### from
+
+Link executor together
+
+```typescript
+const a = value('a')
+
+const b: Executor<...> = from(a).provide((v) => {
+  //                                      ^? 'a'
+})
+```
+
+### combine
+
+Combine executor together
+
+```typescript
+const a = value('a')
+const b = value('b')
+
+const c: Executor<{ a: string, b: string }> = combine({ a, b })
+```
+
+### create
+
+Provide a value in the future via a callback. The value will be actualized when needed and depending 
+
+```typescript
+const a = create(() => 'a')
+
+await a.get() // returns 'a'
+```
+
+You can also create an executor with dependency, similar to `from`
+
+```typescript
+const a = create(() => 'a')
+
+const b = create((v) => { ... }, a)
+const b = from(a).provide((v) => { ... })
+```
+
+You can also create a non-cache provider by setting `mode`
+
+```typescript
+const a = create(() => /** random number */)
+await a.get() // always same value
+await a.get() // always same value
+await a.get() // always same value
+
+const b = create(() => /** random number */, undefined, { mode: 'prototype' })
+await b.get() // always different value
+await b.get() // always different value
+await b.get() // always different value
+```
