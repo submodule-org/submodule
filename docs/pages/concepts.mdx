@@ -1,5 +1,156 @@
 import { Tabs, Tab } from "nextra-theme-docs"
 
+# Why "Submodule"?
+
+It is very high chance (like 99% chances), you have used libraries/framework for your project within JS ecosystem. You'll start with an example from library's documentation, try it out, happy and apply
+
+Things that you may not be fully aware of is, the code you copy from those example, are not "production-ready". It maybe a little bit too fancy to say "production-ready", but,
+
+- **The code may not be readable**
+- **The code may not clear of dependencies**
+- **The code may not be explicit for operations (port binding, external configs)**
+- **The code may behave differently on each desired environment (dev, staging, production, clustering)**
+
+Does those sound good to you? Then there are few more reasons you may want to read further
+- **The code may not be composable (don't be extreme, you don't need it all the time)**
+- **The code may not be testable**
+- **The code may not be reusable**
+
+<details>
+<summary>
+Don't believe what you see?, have a look at few examples we have collected
+</summary>
+<Tabs items={['fastify']}>
+<Tab>
+### Fact
+
+The code below copied from [fastify homepage](https://fastify.dev/)
+
+```typescript
+import Fastify, { FastifyInstance, RouteShorthandOptions } from 'fastify'
+import { Server, IncomingMessage, ServerResponse } from 'http'
+
+const server: FastifyInstance = Fastify({})
+
+const opts: RouteShorthandOptions = {
+  schema: {
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          pong: {
+            type: 'string'
+          }
+        }
+      }
+    }
+  }
+}
+
+server.get('/ping', opts, async (request, reply) => {
+  return { pong: 'it worked!' }
+})
+
+const start = async () => {
+  try {
+    await server.listen({ port: 3000 })
+
+    const address = server.server.address()
+    const port = typeof address === 'string' ? address : address?.port
+
+  } catch (err) {
+    server.log.error(err)
+    process.exit(1)
+  }
+}
+
+start()
+```
+
+To get this code to a little bit more production-use
+- The server will need to be configurable
+- The listening part will need to be configurable
+- The configuration should be testable across different environments (well, those configuration maybe changed)
+
+<details>
+<summary>**Improve it**</summary>
+
+We can manage it by
+```typescript
+import Fastify, { FastifyInstance, RouteShorthandOptions } from 'fastify'
+import { Server, IncomingMessage, ServerResponse } from 'http'
+
+type FastifyConfig = { /** config type */ }
+function createFastifyServer(config: FastifyConfig = {}): FastifyInstance {
+  return Fastify(config)
+}
+
+type FastifyListeningConfig = { /** config type */}
+async function startFastifyServer(server: FastifyInstance, config: FastifyListeningConfig) {
+  try {
+    await server.listen({ port: 3000 })
+
+    const address = server.server.address()
+    const port = typeof address === 'string' ? address : address?.port
+
+  } catch (err) {
+    server.log.error(err)
+    process.exit(1)
+  }
+}
+
+function loadAndValidateConfig() {
+  // this where you may want to retrieve and validate configuration from process.env or argv
+  return {
+    fastify: {
+      server: { /**... */},
+      listening: { /**... */}
+    }
+  }
+}
+
+function registerRoutes(server: FastifyInstance) {
+  const opts: RouteShorthandOptions = {
+    schema: {
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            pong: {
+              type: 'string'
+            }
+          }
+        }
+      }
+    }
+  }
+
+  server.get('/ping', opts, async (request, reply) => {
+    return { pong: 'it worked!' }
+  })
+}
+
+const start = async () => {
+  const { fastify } = loadAndValidateConfig()
+  const server = createFastifyServer(fastify.server)
+  registerRoutes(server)
+  await startFastifyServer(server, fastify.listening)
+}
+
+start()
+```
+
+The code is more concrete, more testable, but we get to see the dependencies building up quite quickly and it brings more complexity to `start` function, as it is the starting point of them all.
+
+
+### Improve even further with `Submodule`
+</details>
+</Tab>
+</Tabs>
+</details>
+
+
+
 # Concepts
 
 Submodule is built around a function first-class support. It utilizes nature of functions to
