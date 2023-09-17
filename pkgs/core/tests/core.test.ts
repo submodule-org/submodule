@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vitest"
-import { combine, create, execute, prestaged, stage, template, value } from "../src"
+import { combine, create, execute, prepare, template, value } from "../src"
 
 test('submodule should work', async () => {
   const a = create(() => 'a' as const)
@@ -106,9 +106,9 @@ test('magic function', async () => {
   }
   const b = value('b')
 
-  const c = await demand(template(b)((v, i) => {
+  const c = await demand(prepare((v, i) => {
     return v + i
-  }))
+  }, b))
 
   expect(c).toEqual('ba')
 })
@@ -119,7 +119,7 @@ test('magic function 2', async () => {
   }
 
   const b = value('b')
-  const c = template(b)((v, i) => v + i)
+  const c = prepare((v, i) => v + i, b)
 
   const d = await demand(c)
   expect(d).toEqual('ba')
@@ -131,9 +131,9 @@ test('magic function 3', async () => {
   }
 
   const b = value('b')
-  const c = await demand(template(b)(async (v, i1, i2) => {
+  const c = await demand(prepare(async (v, i1, i2) => {
     return v + i1 + i2
-  }))
+  }, b))
 
   expect(c).toEqual('ba2')
 })
@@ -194,14 +194,13 @@ test('error should be carried over', async () => {
 
 test('prestaged function', async () => {
   type Config = { port: number }
-  const stagedService = prestaged((config: Config) => {
+  const stagedService = (config: Config) => {
     // will be a server
     return config.port
-  })
+  }
 
   const config = value({ port: 3000 })
-
-  const service = stagedService(config)
+  const service = create(stagedService, config)
 
   const actualized = await service.get()
   expect(actualized).toBe(3000)
@@ -215,13 +214,10 @@ test('unstage function', async () => {
     return config.port
   }, config)
 
-  const prestagedService = service.unstage()
-
   const alternativeConfig = value({ port: 4000 })
-  const reService = stage(prestagedService, alternativeConfig)
+  const reService = await service.get(alternativeConfig)
 
-  const actualized = await reService.get()
-  expect(actualized).toBe(4000)
+  expect(reService).toBe(4000)
 })
 
 test('can mock easily', async () => {
