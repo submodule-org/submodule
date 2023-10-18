@@ -231,3 +231,24 @@ test('can mock easily', async () => {
   const result = await service.get(testConfig)
   expect(result).toBe(4000)
 })
+
+test('can set value by early access to the root dependency', async () => {
+  const port = create((port: number) => port)
+
+  const service = create((port) => {
+    // will be a server
+    return port
+  }, port)
+
+  await port.get(value(4000))
+  await port.get(value(3000))
+
+  const result = await service.get()
+  expect(result).toBe(4000)
+})
+
+test('provider with dependency cannot be initialized without dependency', async () => {
+  const port = create((port: number) => port, undefined, { mode: 'prototype' })
+
+  expect(async () => await port.get()).rejects.toThrowError()
+})

@@ -23,8 +23,8 @@
     "dev": "tsup --watch",
     "test": "vitest run",
     "build": "tsup",
-    "preview": "standard-version --path . --dry-run -t @submodule/core",
-    "bump": "standard-version --path . -t @submodule/core",
+    "preview": "yarn run -T standard-version --path . --dry-run -t @submodule/core",
+    "bump": "yarn run -T standard-version --path . -t @submodule/core",
     "release": "git push --follow-tags origin main && npm publish --access public"
   },
   "main": "dist/index.js",
@@ -46,6 +46,7 @@
     "@vitest/coverage-c8": "^0.31.0",
     "@vitest/ui": "^0.31.0",
     "esbuild": "^0.16.13",
+    "release-please": "^16.0.0",
     "tsup": "^6.7.0",
     "typescript": "^4.9.5",
     "vitest": "^0.31.0"

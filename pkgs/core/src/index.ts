@@ -64,8 +64,12 @@ export function create<Provide, Dependent = unknown>(
 
   async function load(dep?: Executor<Dependent, any>) {
     const actualized = dep ? await dep.get() : await dependent?.get()
-    const value = await provider(actualized)
-    return value
+
+    if (provider.length > 0 && actualized === undefined) {
+      throw new Error(`invalid state, provider ${provider.toString()} requires dependent but not provided`)
+    }
+
+    return await provider(actualized)
   }
 
   async function get(dep?: Executor<Dependent, any>) {
