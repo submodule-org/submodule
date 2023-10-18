@@ -24,7 +24,7 @@
     "test": "vitest run",
     "build": "tsup",
     "preview": "yarn run -T standard-version --path . --dry-run -t @submodule/core",
-    "bump": "yarn run -T standard-version --path . -t @submodule/core",
+    "bump": "yarn build && yarn run -T standard-version --path . -t @submodule/core",
     "release": "git push --follow-tags origin main && npm publish --access public"
   },
   "main": "dist/index.js",
