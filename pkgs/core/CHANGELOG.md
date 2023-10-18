@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.0.0](https://github.com/submodule-js/submodule/compare/@submodule/core4.6.2...@submodule/core5.0.0) (2023-10-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* prepare for next version
+
+### Features
+
+* added booting and shutdown utilities ([766407c](https://github.com/submodule-js/submodule/commit/766407cb7efb7e56b0178a7eba89d06a65161b43))
+* added providerOption to staged ([d1376ae](https://github.com/submodule-js/submodule/commit/d1376ae7870fcb07fda5857b392b5726b9f36a1a))
+* bring back the template, remove stage and unstage ([b6b2cf8](https://github.com/submodule-js/submodule/commit/b6b2cf8dde79bc107f2ef05880111654dcda919f))
+* moved to bun, added few fancy API ([a73b951](https://github.com/submodule-js/submodule/commit/a73b951caecd0158a9a4687f07a6cfd2c147aec0))
+* prepare for next version ([6ea6394](https://github.com/submodule-js/submodule/commit/6ea63941a4123cf63685b81d8ed0c987f6f6b449))
+* restructure stage apis ([db70c7d](https://github.com/submodule-js/submodule/commit/db70c7da9e9484c1a168ed1b00be91aeae6e3309))
+
+
+### Bug Fixes
+
+* throw error on initialization failure ([af0462c](https://github.com/submodule-js/submodule/commit/af0462cb90b4e54ae34816fc1f33b021baa97d9f))
+
 ## [5.0.0-rc.1](https://github.com/submodule-js/submodule/compare/@submodule/core5.0.0-rc.0...@submodule/core5.0.0-rc.1) (2023-09-17)
 
 
