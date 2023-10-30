@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.1.0](https://github.com/submodule-js/submodule/compare/@submodule/core5.0.0...@submodule/core5.1.0) (2023-10-30)
+
+
+### Features
+
+* added onError and onExecute ([08849c3](https://github.com/submodule-js/submodule/commit/08849c3cb0d9d87347e4ee07d8866417f2bbe7f5))
+
 ## [5.0.0](https://github.com/submodule-js/submodule/compare/@submodule/core4.6.2...@submodule/core5.0.0) (2023-10-18)
 
 
