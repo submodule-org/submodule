@@ -75,7 +75,7 @@ test('submodule can be chained', async () => {
 
 test('submodule can be executed in prototype mode', async () => {
   const fnA = vi.fn(() => 'a')
-  const exA = create(fnA, undefined, { mode: 'prototype' })
+  const exA = create(fnA, { mode: 'prototype' })
 
   expect(fnA).toBeCalledTimes(0)
   await exA.get()
@@ -86,7 +86,7 @@ test('submodule can be executed in prototype mode', async () => {
 
 test('mode can be mixed', async () => {
   const fnA = vi.fn(() => 'a')
-  const exA = create(fnA, undefined, { mode: 'singleton' })
+  const exA = create(fnA, { mode: 'singleton' })
 
   const fnB = vi.fn(() => 'b')
   const exB = create(fnB, exA, { mode: 'prototype' })
@@ -174,7 +174,7 @@ test('magic function 7', async () => {
 })
 
 test('could set name', async () => {
-  const execute = create(() => 'a', undefined, { name: 'test' })
+  const execute = create(() => 'a', { name: 'test' })
   expect(execute.get.name).toBe('test.get')
 
   const named = create(function config() {
@@ -233,7 +233,7 @@ test('can mock easily', async () => {
 })
 
 test('can set value by early access to the root dependency', async () => {
-  const port = create((port: number) => port)
+  const port = create((port: number) => port, value(0))
 
   const service = create((port) => {
     // will be a server
@@ -248,7 +248,70 @@ test('can set value by early access to the root dependency', async () => {
 })
 
 test('provider with dependency cannot be initialized without dependency', async () => {
-  const port = create((port: number) => port, undefined, { mode: 'prototype' })
+  const port = create((port: number) => port, undefined as any)
 
   expect(async () => await port.get()).rejects.toThrowError()
+})
+
+test('can use .set to change the value', async () => {
+  const a = value('a')
+  const c = create((a) => a, a)
+  a.set('b')
+
+  expect(await a.get()).equal('b')
+  expect(await c.get()).equal('b')
+})
+
+test('expect error to be thown', async () => {
+  const problematic = create(() => {
+    throw new Error('test')
+  })
+
+  expect(async () => await problematic.get()).rejects.toThrowError('test')
+  expect(async () => await problematic.get()).rejects.toThrowError('test')
+})
+
+test('expect onError to report error', async () => {
+  const onError = vi.fn()
+  const problematic = create(() => {
+    throw new Error('test')
+  }, { onError })
+
+  await expect(async () => await problematic.get()).rejects.toThrowError('test')
+  expect(onError).toBeCalledTimes(1)
+  expect(onError).toBeCalledWith(expect.any(Error))
+
+  await expect(async () => await problematic.get()).rejects.toThrowError('test')
+  expect(onError).toBeCalledTimes(1)
+})
+
+test('expect onError to report error in prototype mode', async () => {
+  const onError = vi.fn()
+  const problematic = create(() => {
+    throw new Error('test')
+  }, { onError, mode: 'prototype' })
+
+  await expect(async () => await problematic.get()).rejects.toThrowError('test')
+  expect(onError).toBeCalledTimes(1)
+  expect(onError).toBeCalledWith(expect.any(Error))
+
+  await expect(async () => await problematic.get()).rejects.toThrowError('test')
+  expect(onError).toBeCalledTimes(2)
+})
+
+test('expect onExecute to wrap around execution', async () => {
+  let value = 0
+  const resource = create(() => {
+    return () => value++
+  }, {
+    onExecute: async (fn, execution) => {
+      fn()
+      const result = await execution(fn)
+      fn()
+      return result
+    }
+  })
+
+  expect(await resource.execute((v) => v())).toBe(1)
+  expect(value).toBe(3)
 })

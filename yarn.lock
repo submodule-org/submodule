@@ -76,6 +76,55 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@dprint/darwin-arm64@npm:0.42.5":
+  version: 0.42.5
+  resolution: "@dprint/darwin-arm64@npm:0.42.5"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@dprint/darwin-x64@npm:0.42.5":
+  version: 0.42.5
+  resolution: "@dprint/darwin-x64@npm:0.42.5"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@dprint/linux-arm64-glibc@npm:0.42.5":
+  version: 0.42.5
+  resolution: "@dprint/linux-arm64-glibc@npm:0.42.5"
+  conditions: os=linux & cpu=arm64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@dprint/linux-arm64-musl@npm:0.42.5":
+  version: 0.42.5
+  resolution: "@dprint/linux-arm64-musl@npm:0.42.5"
+  conditions: os=linux & cpu=arm64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@dprint/linux-x64-glibc@npm:0.42.5":
+  version: 0.42.5
+  resolution: "@dprint/linux-x64-glibc@npm:0.42.5"
+  conditions: os=linux & cpu=x64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@dprint/linux-x64-musl@npm:0.42.5":
+  version: 0.42.5
+  resolution: "@dprint/linux-x64-musl@npm:0.42.5"
+  conditions: os=linux & cpu=x64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@dprint/win32-x64@npm:0.42.5":
+  version: 0.42.5
+  resolution: "@dprint/win32-x64@npm:0.42.5"
+  conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
 "@esbuild/android-arm64@npm:0.16.17":
   version: 0.16.17
   resolution: "@esbuild/android-arm64@npm:0.16.17"
@@ -1226,11 +1275,13 @@ __metadata:
     "@types/node": ^18.11.18
     "@vitest/coverage-c8": ^0.31.0
     "@vitest/ui": ^0.31.0
+    dprint: ^0.42.5
     esbuild: ^0.16.13
     release-please: ^16.0.0
     tsup: ^6.7.0
     typescript: ^4.9.5
     vitest: ^0.31.0
+    wireit: ^0.14.1
   languageName: unknown
   linkType: soft
 
@@ -2366,7 +2417,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chokidar@npm:^3.5.1":
+"chokidar@npm:^3.5.1, chokidar@npm:^3.5.3":
   version: 3.5.3
   resolution: "chokidar@npm:3.5.3"
   dependencies:
@@ -3717,6 +3768,38 @@ __metadata:
   languageName: node
   linkType: hard
 
+"dprint@npm:^0.42.5":
+  version: 0.42.5
+  resolution: "dprint@npm:0.42.5"
+  dependencies:
+    "@dprint/darwin-arm64": 0.42.5
+    "@dprint/darwin-x64": 0.42.5
+    "@dprint/linux-arm64-glibc": 0.42.5
+    "@dprint/linux-arm64-musl": 0.42.5
+    "@dprint/linux-x64-glibc": 0.42.5
+    "@dprint/linux-x64-musl": 0.42.5
+    "@dprint/win32-x64": 0.42.5
+  dependenciesMeta:
+    "@dprint/darwin-arm64":
+      optional: true
+    "@dprint/darwin-x64":
+      optional: true
+    "@dprint/linux-arm64-glibc":
+      optional: true
+    "@dprint/linux-arm64-musl":
+      optional: true
+    "@dprint/linux-x64-glibc":
+      optional: true
+    "@dprint/linux-x64-musl":
+      optional: true
+    "@dprint/win32-x64":
+      optional: true
+  bin:
+    dprint: bin.js
+  checksum: 04c1461eab0ec90b234a5a004cc94e58be865a2f59b55e8643c904338884fc5a92d271a0550421d36db6c1fe4c490ceea5a2d7ff60a28ad90f8d2748893b88b7
+  languageName: node
+  linkType: hard
+
 "duplexer@npm:^0.1.1":
   version: 0.1.2
   resolution: "duplexer@npm:0.1.2"
@@ -4368,7 +4451,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fast-glob@npm:^3.2.12, fast-glob@npm:^3.2.9":
+"fast-glob@npm:^3.2.11, fast-glob@npm:^3.2.12, fast-glob@npm:^3.2.9":
   version: 3.3.1
   resolution: "fast-glob@npm:3.3.1"
   dependencies:
@@ -4937,7 +5020,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graceful-fs@npm:^4.1.11, graceful-fs@npm:^4.1.15, graceful-fs@npm:^4.1.2, graceful-fs@npm:^4.1.6, graceful-fs@npm:^4.2.0, graceful-fs@npm:^4.2.11, graceful-fs@npm:^4.2.6":
+"graceful-fs@npm:^4.1.11, graceful-fs@npm:^4.1.15, graceful-fs@npm:^4.1.2, graceful-fs@npm:^4.1.6, graceful-fs@npm:^4.2.0, graceful-fs@npm:^4.2.11, graceful-fs@npm:^4.2.4, graceful-fs@npm:^4.2.6":
   version: 4.2.11
   resolution: "graceful-fs@npm:4.2.11"
   checksum: ac85f94da92d8eb6b7f5a8b20ce65e43d66761c55ce85ac96df6865308390da45a8d3f0296dd3a663de65d30ba497bd46c696cc1e248c72b13d6d567138a4fc7
@@ -5936,7 +6019,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jsonc-parser@npm:^3.2.0":
+"jsonc-parser@npm:^3.0.0, jsonc-parser@npm:^3.2.0":
   version: 3.2.0
   resolution: "jsonc-parser@npm:3.2.0"
   checksum: 946dd9a5f326b745aa326d48a7257e3f4a4b62c5e98ec8e49fa2bdd8d96cef7e6febf1399f5c7016114fd1f68a1c62c6138826d5d90bc650448e3cf0951c53c7
@@ -8457,6 +8540,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"proper-lockfile@npm:^4.1.2":
+  version: 4.1.2
+  resolution: "proper-lockfile@npm:4.1.2"
+  dependencies:
+    graceful-fs: ^4.2.4
+    retry: ^0.12.0
+    signal-exit: ^3.0.2
+  checksum: 00078ee6a61c216a56a6140c7d2a98c6c733b3678503002dc073ab8beca5d50ca271de4c85fca13b9b8ee2ff546c36674d1850509b84a04a5d0363bcb8638939
+  languageName: node
+  linkType: hard
+
 "property-information@npm:^6.0.0":
   version: 6.3.0
   resolution: "property-information@npm:6.3.0"
@@ -10948,6 +11042,21 @@ __metadata:
   dependencies:
     string-width: ^1.0.2 || 2 || 3 || 4
   checksum: d5fc37cd561f9daee3c80e03b92ed3e84d80dde3365a8767263d03dacfc8fa06b065ffe1df00d8c2a09f731482fcacae745abfbb478d4af36d0a891fad4834d3
+  languageName: node
+  linkType: hard
+
+"wireit@npm:^0.14.1":
+  version: 0.14.1
+  resolution: "wireit@npm:0.14.1"
+  dependencies:
+    braces: ^3.0.2
+    chokidar: ^3.5.3
+    fast-glob: ^3.2.11
+    jsonc-parser: ^3.0.0
+    proper-lockfile: ^4.1.2
+  bin:
+    wireit: bin/wireit.js
+  checksum: 66ff4aafcc6fd2fd27d1061d472723ad9e727f118cf58bb3649bc835bb85ec05383da429830926206d9fdd7c89ca577b29a77f4429c8c9135763aedf3d7b5a2c
   languageName: node
   linkType: hard
 

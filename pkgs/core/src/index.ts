@@ -8,7 +8,8 @@ export type ProviderOption<Provide> = {
   name?: string
   instrument?: InstrumentFunction
   mode?: 'prototype' | 'singleton'
-  onExecute?: <V>(provide: Provide, execution: Provider<V, Provide>) => V | Promise<V>
+  onExecute?: <V>(provide: Provide, execution: Provider<V, Provide>) => V | Promise<V>,
+  onError?: (error: unknown, value?: Provide) => (void | Promise<void>)
 }
 
 export const defaultProviderOptions: ProviderOption<any> = {
@@ -21,13 +22,15 @@ export function setInstrument(inst: CreateInstrumentHandler) {
 }
 
 export type Executor<Value, Dependent> = {
+  set(value: Value): void
   get(deps?: Executor<Dependent, any>): Promise<Value>
   execute<Output>(execution: Provider<Output, Value>): Promise<Output>
 }
 
+const executorSymbol = Symbol.for('$submodule')
+
 function isExecutor<P, D>(obj: any): obj is Executor<P, D> {
-  return typeof obj?.['get'] === 'function'
-    && typeof obj?.['execute'] === 'function'
+  return obj?.[executorSymbol]
 }
 
 function extract<Dependent, Output>(
@@ -40,19 +43,13 @@ function extract<Dependent, Output>(
     : { provider: executable as (() => Output | Promise<Output>), dependent: undefined, options: secondParam || thirdParam }
 }
 
-function set(target: any, name: string, value: any) {
+function forceObjectProp(target: any, name: string, value: any) {
   Object.defineProperty(target, name, { value: value, writable: false });
 }
 
-type AnyFn = (...input: any[]) => any
-
-export const internals = {
-  internalCache: new Map<AnyFn, Promise<any>>(),
-}
-
-export function create<Provide>(provider: Provider<Provide>, options?: ProviderOption<Provide>): Executor<Provide, void>
-export function create<Provide, Dependent>(provider: Provider<Provide, Dependent>, dependent?: Executor<Dependent, unknown>, options?: ProviderOption<Provide>): Executor<Provide, Dependent>
-export function create<Provide, Dependent = unknown>(
+export function create<Provide, Dependent = never>(provider: Provider<Provide>, options?: ProviderOption<Provide>): Executor<Provide, void>
+export function create<Provide, Dependent>(provider: Provider<Provide, Dependent>, dependent: Executor<Dependent, unknown>, options?: ProviderOption<Provide>): Executor<Provide, Dependent>
+export function create<Provide, Dependent = never>(
   providerParam: Provider<Provide, Dependent>,
   secondParam?: ProviderOption<Provide> | Executor<Dependent, unknown>,
   thirdParam?: ProviderOption<Provide>,
@@ -60,42 +57,62 @@ export function create<Provide, Dependent = unknown>(
   const { provider, dependent, options } = extract(providerParam, secondParam, thirdParam)
   const opts = { ...defaultProviderOptions, ...options }
 
+  let depExecutor: Executor<Dependent, any> | undefined = dependent
+  let loader: Promise<Provide> | undefined = undefined
+
   const name = opts?.name || provider.name || 'anonymous'
 
-  async function load(dep?: Executor<Dependent, any>) {
-    const actualized = dep ? await dep.get() : await dependent?.get()
+  async function load(inject?: Executor<Dependent, any>) {
+    try {
+      const actualized = inject ? await inject.get() : await depExecutor?.get()
 
-    if (provider.length > 0 && actualized === undefined) {
-      throw new Error(`invalid state, provider ${provider.toString()} requires dependent but not provided`)
+      if (provider.length > 0 && actualized === undefined) {
+        throw new Error(`invalid state, provider ${provider.toString()} requires dependent but not provided`)
+      }
+
+      return await provider(actualized)
+    } catch (e) {
+      await opts.onError?.(e)
+      throw e
     }
-
-    return await provider(actualized)
   }
 
   async function get(dep?: Executor<Dependent, any>) {
     if (opts?.mode === 'singleton') {
-      if (!internals.internalCache.has(provider)) {
-        internals.internalCache.set(provider, load(dep))
+      if (loader === undefined) {
+        loader = load(dep)
       }
 
-      return await internals.internalCache.get(provider)
+      return await loader
     }
     return await load(dep)
   }
 
   async function execute<V>(execution: Provider<V, Provide>): Promise<V> {
-    const value = await get()
-    return opts?.onExecute
-      ? await opts.onExecute(value, execution)
-      : execution(value)
+    let value: Provide | undefined = undefined
+
+    try {
+      const value = await get()
+      return opts.onExecute
+        ? await opts.onExecute(value, execution)
+        : execution(value)
+    } catch (e) {
+      await opts.onError?.(e, value)
+      throw e
+    }
   }
 
-  const executor: Executor<Provide, Dependent> = {
-    get,
-    execute,
+  function set(value: Provide) {
+    if (loader === undefined) {
+      loader = Promise.resolve(value)
+    }
   }
 
-  set(executor.get, 'name', `${name}.get`)
+  const executor: Executor<Provide, Dependent> = { get, set, execute, [Symbol.for('$submodule')]: true }
+
+  forceObjectProp(executor.get, 'name', `${name}.get`)
+  forceObjectProp(executor.set, 'name', `${name}.set`)
+  forceObjectProp(executor.execute, 'name', `${name}.execute`)
 
   if (opts.instrument) {
     instrument(executor, opts.instrument)

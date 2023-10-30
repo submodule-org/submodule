@@ -2,3 +2,7 @@ src
 tests
 tsconfig.json
 yarn*%
+.wireit
+coverage
+dprint.json
+vite.config.ts

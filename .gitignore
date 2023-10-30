@@ -12,5 +12,5 @@
 .yarn/cache
 
 node_modules
-
+.wireit
 **/coverage/

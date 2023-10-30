@@ -21,11 +21,40 @@
   "homepage": "https://submodule.js.org",
   "scripts": {
     "dev": "tsup --watch",
-    "test": "vitest run",
-    "build": "tsup",
-    "preview": "yarn run -T standard-version --path . --dry-run -t @submodule/core",
-    "bump": "yarn build && yarn run -T standard-version --path . -t @submodule/core",
-    "release": "git push --follow-tags origin main && npm publish --access public"
+    "test": "wireit",
+    "build": "wireit",
+    "preview": "wireit",
+    "bump": "wireit",
+    "release": "wireit"
+  },
+  "wireit": {
+    "release": {
+      "command": "git push --follow-tags origin main && npm publish --access public",
+      "dependencies": [
+        "bump"
+      ]
+    },
+    "bump": {
+      "command": "yarn run -T standard-version --path . -t @submodule/core",
+      "dependencies": [
+        "build"
+      ]
+    },
+    "preview": {
+      "command": "yarn run -T standard-version --path . --dry-run -t @submodule/core",
+      "dependencies": [
+        "build"
+      ]
+    },
+    "build": {
+      "command": "tsup",
+      "dependencies": [
+        "test"
+      ]
+    },
+    "test": {
+      "command": "vitest run"
+    }
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -45,10 +74,12 @@
     "@types/node": "^18.11.18",
     "@vitest/coverage-c8": "^0.31.0",
     "@vitest/ui": "^0.31.0",
+    "dprint": "^0.42.5",
     "esbuild": "^0.16.13",
     "release-please": "^16.0.0",
     "tsup": "^6.7.0",
     "typescript": "^4.9.5",
-    "vitest": "^0.31.0"
+    "vitest": "^0.31.0",
+    "wireit": "^0.14.1"
   }
 }
