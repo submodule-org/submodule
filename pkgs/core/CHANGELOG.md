@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [5.1.3](https://github.com/submodule-js/submodule/compare/@submodule/core5.1.2...@submodule/core5.1.3) (2023-10-31)
+
 ### [5.1.2](https://github.com/submodule-js/submodule/compare/@submodule/core5.1.1...@submodule/core5.1.2) (2023-10-31)
 
 ### [5.1.1](https://github.com/submodule-js/submodule/compare/@submodule/core5.1.0...@submodule/core5.1.1) (2023-10-30)
