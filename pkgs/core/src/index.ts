@@ -1,8 +1,6 @@
 import { composeInstrument, createInstrument, createInstrumentor, instrument, nextInstrument, type CreateInstrumentHandler, type InstrumentFunction, type InstrumentHandler } from "./instrument";
 
-type Provider<Provide, Input = unknown> =
-  | (() => Provide | Promise<Provide>)
-  | ((input: Input) => Provide | Promise<Provide>)
+type Provider<Provide, Input = unknown> = (input: Input) => Provide | Promise<Provide>
 
 export type ProviderOption<Provide> = {
   name?: string
@@ -21,10 +19,13 @@ export function setInstrument(inst: CreateInstrumentHandler) {
   defaultProviderOptions.instrument = nextInstrument(defaultProviderOptions.instrument, inst)
 }
 
+const a = { [Symbol.for('test')]: true } as const
+
 export type Executor<Value, Dependent> = {
   set(value: Value): void
   get(deps?: Executor<Dependent, any>): Promise<Value>
   execute<Output>(execution: Provider<Output, Value>): Promise<Output>
+  readonly [x: symbol]: true
 }
 
 const executorSymbol = Symbol.for('$submodule')
@@ -123,9 +124,9 @@ export function create<Provide, Dependent = never>(
 
 export const value = <Provide>(value: Provide, options?: Omit<ProviderOption<Provide>, 'mode'>) => create(() => value, options)
 
-export const template = <Dependent>(dependent: Executor<Dependent, unknown>, options?: ProviderOption<Dependent>) =>
+export const template = <Dependent>(dependent: Executor<Dependent, unknown>) =>
   <Fn extends (...input: any[]) => any, Input extends any[] = Parameters<Fn>>(factory: (dependent: Dependent, ...params: Input) => ReturnType<Fn>) => {
-    return (...params: Input) => execute(v => factory(v, ...params), dependent, options)
+    return (...params: Input) => dependent.execute((dep) => factory(dep, ...params))
   }
 
 export const prepare = <Dependent, Input extends Array<any>, Output>(
@@ -144,12 +145,7 @@ export async function execute<Output>(executable: Provider<Output>, options?: Pr
 export async function execute<Output, Dependent>(executable: Provider<Output, Dependent>, dependent: Executor<Dependent, unknown>, options?: ProviderOption<Output>): Promise<Awaited<Output>>
 export async function execute<Dependent, Output>(executable: Provider<Output, Dependent>, secondParam?: Executor<Dependent, unknown> | ProviderOption<Output>, thirdParam?: ProviderOption<Output>): Promise<Awaited<Output>> {
   const { provider, dependent, options } = extract(executable, secondParam, thirdParam)
-
-  if (dependent) {
-    return await dependent.execute(provider)
-  } else {
-    return await create(() => provider(), options).get()
-  }
+  return await create(() => dependent ? dependent.execute(provider) : provider(), options).get()
 }
 
 export type inferProvide<T> = T extends Executor<infer S, any> ? S : never

@@ -8,14 +8,14 @@ test('basic instrumentation', async () => {
     onResult: fn
   })
 
-  const a = create(() => 'a')
-  const b = create((a) => a + 'b', a) // 1
+  const a = create(() => 'a') // 1
+  const b = create((a) => a + 'b', a) // 2
 
-  await execute((a) => { }, a) // 2
-  await a.get() // 3
-  await b.get() // 4
+  await execute((a) => { }, a) // 3
+  await a.get() // 4
+  await b.get() // 5
 
-  expect(fn).toBeCalledTimes(4)
+  expect(fn).toBeCalledTimes(5)
 })
 
 test('instrument can change data', async () => {
