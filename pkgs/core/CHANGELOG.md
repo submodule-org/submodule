@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [5.1.4](https://github.com/submodule-js/submodule/compare/@submodule/core5.1.3...@submodule/core5.1.4) (2024-01-04)
+
+
+### Features
+
+* added make API ([97e968d](https://github.com/submodule-js/submodule/commit/97e968d682f630804cfefd829897d22e9b59b4ff))
+
 ### [5.1.3](https://github.com/submodule-js/submodule/compare/@submodule/core5.1.2...@submodule/core5.1.3) (2023-10-31)
 
 ### [5.1.2](https://github.com/submodule-js/submodule/compare/@submodule/core5.1.1...@submodule/core5.1.2) (2023-10-31)
