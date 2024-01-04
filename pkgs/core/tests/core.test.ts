@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vitest"
-import { combine, create, execute, prepare, template, value } from "../src"
+import { combine, create, execute, prepare, template, value, make } from "../src"
 
 test('submodule should work', async () => {
   const a = create(() => 'a' as const)
@@ -314,4 +314,28 @@ test('expect onExecute to wrap around execution', async () => {
 
   expect(await resource.execute((v) => v())).toBe(1)
   expect(value).toBe(3)
+})
+
+test('use set to change value', async () => {
+  const value = create(() => ({ a: 'a' }))
+
+  const b = create((a) => a, value)
+  value.set({ a: 'b' })
+
+  expect(await b.get()).toEqual({ a: 'b' })
+})
+
+test('make API', async () => {
+  const port = make(value(0), (port: number) => port)
+
+  const service = make(port, (port) => {
+    // will be a server
+    return port
+  })
+
+  await port.get(value(4000))
+  await port.get(value(3000))
+
+  const result = await service.get()
+  expect(result).toBe(4000)
 })

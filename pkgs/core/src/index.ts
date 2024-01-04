@@ -19,8 +19,6 @@ export function setInstrument(inst: CreateInstrumentHandler) {
   defaultProviderOptions.instrument = nextInstrument(defaultProviderOptions.instrument, inst)
 }
 
-const a = { [Symbol.for('test')]: true } as const
-
 export type Executor<Value, Dependent> = {
   set(value: Value): void
   get(deps?: Executor<Dependent, any>): Promise<Value>
@@ -48,8 +46,36 @@ function forceObjectProp(target: any, name: string, value: any) {
   Object.defineProperty(target, name, { value: value, writable: false });
 }
 
-export function create<Provide, Dependent = never>(provider: Provider<Provide>, options?: ProviderOption<Provide>): Executor<Provide, void>
-export function create<Provide, Dependent>(provider: Provider<Provide, Dependent>, dependent: Executor<Dependent, unknown>, options?: ProviderOption<Provide>): Executor<Provide, Dependent>
+export function make<Provide>(provider: Provider<Provide>, options?: ProviderOption<Provide>): Executor<Provide, void>
+export function make<Dependency, Provide>(dependencies: Executor<Dependency, unknown>, provider: Provider<Provide, Dependency>, options?: ProviderOption<Provide>): Executor<Provide, Dependency>
+export function make<Dependency, Provide>(
+  firstParam: Executor<Dependency, unknown> | Provider<Provide>,
+  secondParam?: Provider<Provide, Dependency> | ProviderOption<Provide>,
+  thirdParam?: ProviderOption<Provide>
+): Executor<Provide, Dependency> {
+
+  if (isExecutor(firstParam)) {
+    if (secondParam === undefined) {
+      throw new Error('invalid state, provider is required')
+    }
+
+    if (typeof secondParam !== 'function') {
+      throw new Error('invalid state, provider is required')
+    }
+
+    return create(secondParam, firstParam, thirdParam)
+  } else {
+    if (typeof secondParam === 'function') {
+      throw new Error('invalid state, second param must be option or undefined')
+    }
+
+    return create(firstParam, undefined, secondParam)
+  }
+}
+
+
+export function create<Provide>(provider: Provider<Provide>, options?: ProviderOption<Provide>): Executor<Provide, void>
+export function create<Provide, Dependent>(provider: Provider<Provide, Dependent>, dependent?: Executor<Dependent, unknown>, options?: ProviderOption<Provide>): Executor<Provide, Dependent>
 export function create<Provide, Dependent = never>(
   providerParam: Provider<Provide, Dependent>,
   secondParam?: ProviderOption<Provide> | Executor<Dependent, unknown>,
