@@ -6,7 +6,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsup",
-    "test": "vitest run"
+    "test": "vitest run",
+    "release": "git push --follow-tags origin main && npm publish --access public"
   },
   "keywords": [],
   "author": "Duke",
