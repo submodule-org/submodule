@@ -1,9 +1,8 @@
 {
   "name": "submodule-parent",
-  "packageManager": "yarn@3.3.0",
   "dependencies": {
     "standard-version": "^9.5.0",
-    "tsup": "^6.5.0",
+    "tsup": "^8.0.2",
     "tsx": "^3.12.6"
   },
   "workspaces": [
