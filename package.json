@@ -9,5 +9,6 @@
     "pkgs/*",
     "example/*",
     "docs"
-  ]
+  ],
+  "version": "0.0.0"
 }
