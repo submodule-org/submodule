@@ -84,6 +84,10 @@ export function getScope() {
 
 const globalScope = createScope()
 
+export function dispose() {
+  globalScope.dispose()
+}
+
 export type Executor<Value, Dependent> = {
   resolve(scope: Scope): Promise<Value>
   modify(executor: Executor<Dependent, unknown>): void
@@ -166,6 +170,7 @@ export function create<P, D>(provider: Provider<P, D> | ProviderClass<P, D>, dep
 }
 
 export const value = <Provide>(value: Provide) => create(() => value)
+export const group = <Provide>(...values: Executor<Provide, unknown>[]) => create(() => Promise.all(values.map(v => v.resolve(getScope()))))
 
 export function prepare<Dependent, Input extends Array<any>, Output>(
   provider: ((provide: Dependent, ...input: Input) => Output),

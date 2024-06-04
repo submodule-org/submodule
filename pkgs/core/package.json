@@ -60,8 +60,18 @@
       "output": []
     }
   },
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "exports": "./src/index.ts",
+  "publishConfig": {
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "import": "./dist/index.js",
+        "require": "./dist/index.cjs",
+        "types": "./dist/index.d.ts"
+      }
+    }
+  },
   "tsup": {
     "entry": [
       "src/index.ts"
@@ -79,6 +89,7 @@
     "@types/node": "^18.11.18",
     "@vitest/ui": "^1.6.0",
     "dprint": "^0.42.5",
+    "esbuild": "^0.21.4",
     "release-please": "^16.0.0",
     "tsup": "^8.1.0",
     "typescript": "^4.9.5",

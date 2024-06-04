@@ -1,37 +1,26 @@
-import { execute } from "@submodule/core"
+import { combine, createExecution, group } from "@submodule/core"
+import { serve } from '@hono/node-server'
 import { Hono } from "hono"
-
+import { routes } from "./routes/todo.route"
 import { config } from "./config"
-import { Route } from "./router"
 
-export default await execute(async (config) => {
-  const port = config.honoConfig.port
-
+const main = createExecution(async ({ todo, config }) => {
   const app = new Hono()
 
-  const router: Record<string, Route> = {
-    add: await import('./routes/add'),
-    list: await import('./routes/list'),
-    toggle: await import('./routes/toggle'),
+  for (const route of todo) {
+    app.route("/", route)
   }
 
-  for (const routeKey in router) {
-    const route = router[routeKey]
-    const methods = route.meta?.methods || ['GET']
-    app.on(
-      methods,
-      '/' + routeKey,
-      async (context) => {
-        console.log('incoming request to path %s - %s', context.req.method, context.req.url)
-        return await route.handle(context)
-      }
-    )
-  }
+  const server = serve({
+    fetch: app.fetch,
+    port: config.honoConfig.port
+  }, () => {
+    console.log('hono will be listening at port', config.honoConfig.port)
+  })
 
-  console.log('hono will be listening at port', port)
+  return server
+}, combine({
+  todo: routes, config
+}))
 
-  return {
-    port,
-    fetch: app.fetch
-  }
-}, config)
+main.execute()
