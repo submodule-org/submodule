@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.0.0-rc.0](https://github.com/submodule-js/submodule/compare/@submodule/core5.2.0...@submodule/core6.0.0-rc.0) (2024-06-06)
+
+
+### Features
+
+* added a lot of new api for metas ([69c4d21](https://github.com/submodule-js/submodule/commit/69c4d21b9642ce79bb50651546cc65bc3a504d2a))
+* added scope and its api ([1937024](https://github.com/submodule-js/submodule/commit/1937024b65ed7a77edbbca7fce33f5531360b74b))
+* oversimplified submodule api ([b8639d7](https://github.com/submodule-js/submodule/commit/b8639d736cb89b6022565871f0a2fe84a373abd1))
+
 ## [5.2.0](https://github.com/submodule-js/submodule/compare/@submodule/core5.1.4...@submodule/core5.2.0) (2024-01-04)
 
 ### [5.1.4](https://github.com/submodule-js/submodule/compare/@submodule/core5.1.3...@submodule/core5.1.4) (2024-01-04)
