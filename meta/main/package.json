@@ -1,0 +1,10 @@
+{
+  "name": "@submodule/meta-main",
+  "packageManager": "yarn@4.2.2",
+  "dependencies": {
+    "@submodule/core": "workspace:^"
+  },
+  "peerDependencies": {
+    "@submodule/meta-pino": "workspace:^"
+  }
+}

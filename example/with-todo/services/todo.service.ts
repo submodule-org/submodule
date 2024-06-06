@@ -18,13 +18,13 @@ export const todo = create(async (db) => {
       counter += 1;
     }
     return result;
-}
+  }
 
   async function addTodo(newTodo: Omit<Todo, 'id'>): Promise<Todo> {
     const id = nextId()
-    await db.put(id, JSON.stringify({...newTodo, id}))
+    await db.put(id, JSON.stringify({ ...newTodo, id }))
 
-    return {...newTodo, id}
+    return { ...newTodo, id }
   }
 
   async function listTodos(): Promise<Todo[]> {

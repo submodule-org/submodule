@@ -1,0 +1,11 @@
+{
+  "name": "@submodule/meta-hono",
+  "packageManager": "yarn@4.2.2",
+  "dependencies": {
+    "@submodule/core": "workspace:^",
+    "@submodule/meta-pino": "workspace:^"
+  },
+  "peerDependencies": {
+    "hono": "^4"
+  }
+}

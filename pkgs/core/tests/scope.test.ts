@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { createScope, value, create } from "../src"
+import { createScope, value, create, combine } from "../src"
 
 describe('scope', () => {
   const seed = value(5)
@@ -13,6 +13,8 @@ describe('scope', () => {
       }
     }
   }, seed)
+
+  const combineSourceMod = create((v) => v, combine({ seed, sourceMod }))
 
   test('scopes are isolated', async () => {
     const scope1 = createScope()
@@ -52,5 +54,25 @@ describe('scope', () => {
 
     source.plus()
     expect(source.i).toBe(6)
+  })
+
+  test('resolving value can be changed via patching', async () => {
+    const scope = createScope()
+
+    sourceMod.patch(seed, value(10))
+    let source = await sourceMod.resolve(scope)
+    expect(source.i).toBe(10)
+
+    sourceMod.reset()
+  })
+
+  test('combine value can be changed via patching', async () => {
+    const scope = createScope()
+
+    combineSourceMod.patch(seed, 20)
+
+    let combined = await combineSourceMod.resolve(scope)
+    expect(combined.seed).toBe(20)
+    expect(combined.sourceMod.i).toBe(20)
   })
 })

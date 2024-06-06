@@ -1,6 +1,9 @@
 {
   "name": "submodule-parent",
   "dependencies": {
+    "@submodule/meta-commander": "workspace:^",
+    "@submodule/meta-hono": "workspace:^",
+    "@submodule/meta-main": "workspace:^",
     "esbuild": "^0.21.4",
     "standard-version": "^9.5.0",
     "tsup": "^8.1.0",
@@ -9,7 +12,8 @@
   "workspaces": [
     "pkgs/*",
     "example/*",
-    "docs"
+    "docs",
+    "meta/*"
   ],
   "version": "0.0.0"
 }
