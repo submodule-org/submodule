@@ -62,6 +62,12 @@
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "files": [
+    "dist/**",
+    "package.json",
+    "README.md",
+    "CHANGELOG.md"
+  ],
   "exports": {
     ".": {
       "source": "./src/index.ts",
