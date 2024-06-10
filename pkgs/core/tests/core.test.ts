@@ -161,3 +161,14 @@ test('expect error to be thown', async () => {
   expect(async () => await resolve(problematic)).rejects.toThrowError('test')
   expect(async () => await resolve(problematic)).rejects.toThrowError('test')
 })
+
+test('can use object as dependency', async () => {
+  const intValue = value(1)
+  const strValue = value('test')
+
+  const comb = create(({ intValue, strValue }) => {
+    return intValue + strValue
+  }, { intValue, strValue })
+
+  expect(await resolve(comb)).toBe('1test')
+})

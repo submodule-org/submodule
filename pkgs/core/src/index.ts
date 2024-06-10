@@ -154,12 +154,17 @@ export function createExecution<Dependency, Input extends Array<any>, Output>(
   return new Execution(executor, dependency)
 }
 
+type EODE<D> = Executor<D> | { [key in keyof D]: Executor<D[key]> }
+
 export function create<P>(providerClass: ProviderClass<P>): Executor<P>
-export function create<P, D>(providerClass: ProviderClass<P, D>, dependencies: Executor<D>): Executor<P>
+export function create<P, D>(providerClass: ProviderClass<P, D>, dependencies: EODE<D>): Executor<P>
 export function create<P>(provider: Provider<P>): Executor<P>
-export function create<P, D>(provider: Provider<P, D>, dependencies: Executor<D>): Executor<P>
-export function create<P, D>(provider: Provider<P, D> | ProviderClass<P, D>, dependencies?: Executor<D>): Executor<P> {
+export function create<P, D>(provider: Provider<P, D>, dependencies: EODE<D>): Executor<P>
+export function create<P, D>(provider: Provider<P, D> | ProviderClass<P, D>, dependencies?: EODE<D>): Executor<P> {
   let modifiableDependency = dependencies
+    ? isExecutor(dependencies) ? dependencies : combine(dependencies)
+    : undefined
+
   let patches: [Executor<any>, Executor<any> | any][] = []
 
   async function resolve(scope: Scope): Promise<P> {
