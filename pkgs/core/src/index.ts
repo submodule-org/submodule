@@ -54,13 +54,15 @@ export class Scope {
     this.store.set(executor, Promise.resolve(value))
   }
 
-  async resolve<T>(executor: Executor<T>): Promise<T> {
-    return executor.resolve(this)
+  async resolve<T>(executor: EODE<T>): Promise<T> {
+    return isExecutor(executor)
+      ? executor.resolve(this)
+      : combine(executor).resolve(this)
   }
 
   async execute<Dependent, Output>(
     executable: Provider<Output, Dependent>,
-    dependency: Executor<Dependent>
+    dependency: EODE<Dependent>
   ): Promise<Awaited<Output>> {
     const value = await this.resolve(dependency)
     return await executable(value)
@@ -68,7 +70,7 @@ export class Scope {
 
   prepare<Dependent, Input extends Array<any>, Output>(
     provider: (provide: Dependent, ...input: Input) => Output,
-    dependency: Executor<Dependent>,
+    dependency: EODE<Dependent>,
   ): (...input: Input) => Promise<Awaited<ReturnType<typeof provider>>> {
     const scope = this
     return async function () {
@@ -129,11 +131,11 @@ export function isExecutor<P, D>(obj: any): obj is Executor<P> {
 export class Execution<Input extends Array<any>, Output, Dependency> {
   constructor(
     private executor: (dependency: Dependency, ...input: Input) => Output | Promise<Output>,
-    private dependency: Executor<Dependency>
+    private dependency: EODE<Dependency>
   ) { }
 
   async executeIn(scope: Scope, ...input: Input): Promise<Awaited<Output>> {
-    const dependency = await this.dependency.resolve(scope)
+    const dependency = await scope.resolve(this.dependency)
     return await this.executor(dependency, ...input)
   }
 
@@ -232,7 +234,7 @@ export const scoper = create(new ProviderClass(async (scope) => scope))
 
 export function prepare<Dependent, Input extends Array<any>, Output>(
   provider: ((provide: Dependent, ...input: Input) => Output),
-  dependency: Executor<Dependent>,
+  dependency: EODE<Dependent>,
   scope: Scope = getScope()
 ): (...input: Input) => Promise<Awaited<Output>> {
   const execution = new Execution(provider, dependency)
@@ -241,7 +243,7 @@ export function prepare<Dependent, Input extends Array<any>, Output>(
 
 export async function execute<Dependent, Output>(
   executable: Provider<Output, Dependent>,
-  dependency: Executor<Dependent>,
+  dependency: EODE<Dependent>,
   scope: Scope = getScope()
 ): Promise<Awaited<Output>> {
   const execution = new Execution(executable, dependency)
