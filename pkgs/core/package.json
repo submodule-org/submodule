@@ -1,6 +1,6 @@
 {
   "name": "@submodule/core",
-  "version": "6.0.0-rc.1",
+  "version": "6.0.0-rc.2",
   "description": "Structural way to build node and deno application",
   "author": "Lagz0ne <duke@silentium.io>",
   "repository": {
@@ -80,6 +80,10 @@
   "tsup": {
     "entry": [
       "src/index.ts"
+    ],
+    "format": [
+      "esm",
+      "cjs"
     ],
     "minify": false,
     "treeshake": false,
