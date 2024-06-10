@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.0.0-rc.3](https://github.com/submodule-js/submodule/compare/@submodule/core6.0.0-rc.2...@submodule/core6.0.0-rc.3) (2024-06-10)
+
+
+### Features
+
+* can use object instead of combine ([e90b503](https://github.com/submodule-js/submodule/commit/e90b503c92c3b14130b80fd3fe54cccb633900e3))
+
 ## [6.0.0-rc.2](https://github.com/submodule-js/submodule/compare/@submodule/core6.0.0-rc.1...@submodule/core6.0.0-rc.2) (2024-06-10)
 
 ## [6.0.0-rc.1](https://github.com/submodule-js/submodule/compare/@submodule/core6.0.0-rc.0...@submodule/core6.0.0-rc.1) (2024-06-06)
