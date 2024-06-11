@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.0.0-rc.5](https://github.com/submodule-js/submodule/compare/@submodule/core6.0.0-rc.4...@submodule/core6.0.0-rc.5) (2024-06-11)
+
+
+### Features
+
+* applied EDOE to all API ([0406290](https://github.com/submodule-js/submodule/commit/04062901ad034eca63730face97f91c9567a1065))
+
 ## [6.0.0-rc.4](https://github.com/submodule-js/submodule/compare/@submodule/core6.0.0-rc.3...@submodule/core6.0.0-rc.4) (2024-06-10)
 
 ## [6.0.0-rc.3](https://github.com/submodule-js/submodule/compare/@submodule/core6.0.0-rc.2...@submodule/core6.0.0-rc.3) (2024-06-10)
