@@ -1490,43 +1490,21 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@submodule/meta-commander@workspace:^, @submodule/meta-commander@workspace:meta/commander":
+"@submodule/helpers@workspace:pkgs/helpers":
   version: 0.0.0-use.local
-  resolution: "@submodule/meta-commander@workspace:meta/commander"
+  resolution: "@submodule/helpers@workspace:pkgs/helpers"
   dependencies:
     "@commander-js/extra-typings": "npm:^12.1.0"
+    "@hono/node-server": "npm:^1.11.2"
+    "@submodule/core": "workspace:^"
     commander: "npm:^12.1.0"
-  languageName: unknown
-  linkType: soft
-
-"@submodule/meta-hono@workspace:^, @submodule/meta-hono@workspace:meta/hono":
-  version: 0.0.0-use.local
-  resolution: "@submodule/meta-hono@workspace:meta/hono"
-  dependencies:
-    "@submodule/core": "workspace:^"
-    "@submodule/meta-pino": "workspace:^"
+    hono: "npm:^4.4.5"
+    pino: "npm:^9.2.0"
   peerDependencies:
-    hono: ^4
-  languageName: unknown
-  linkType: soft
-
-"@submodule/meta-main@workspace:^, @submodule/meta-main@workspace:meta/main":
-  version: 0.0.0-use.local
-  resolution: "@submodule/meta-main@workspace:meta/main"
-  dependencies:
-    "@submodule/core": "workspace:^"
-  peerDependencies:
-    "@submodule/meta-pino": "workspace:^"
-  languageName: unknown
-  linkType: soft
-
-"@submodule/meta-pino@workspace:^, @submodule/meta-pino@workspace:meta/pino":
-  version: 0.0.0-use.local
-  resolution: "@submodule/meta-pino@workspace:meta/pino"
-  dependencies:
-    pino: "npm:^9.1.0"
-  peerDependencies:
-    "@submodule/core": "workspace:^"
+    "@hono/node-server": "*"
+    "@submodule/core": ^6
+    commander: "*"
+    hono: "*"
     pino: ^9
   languageName: unknown
   linkType: soft
@@ -5186,6 +5164,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"hono@npm:^4.4.5":
+  version: 4.4.5
+  resolution: "hono@npm:4.4.5"
+  checksum: 10/82fbf91f24815faeefcff6ad5bba6f2fe488dc63366052e9e22416dd675119a9ddacd487f70a25fe7f032794e073ef322ebb6f49dd67aad6272da2479ba71b7d
+  languageName: node
+  linkType: hard
+
 "hosted-git-info@npm:^2.1.4":
   version: 2.8.9
   resolution: "hosted-git-info@npm:2.8.9"
@@ -7961,9 +7946,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pino@npm:^9.1.0":
-  version: 9.1.0
-  resolution: "pino@npm:9.1.0"
+"pino@npm:^9.2.0":
+  version: 9.2.0
+  resolution: "pino@npm:9.2.0"
   dependencies:
     atomic-sleep: "npm:^1.0.0"
     fast-redact: "npm:^3.1.1"
@@ -7978,7 +7963,7 @@ __metadata:
     thread-stream: "npm:^3.0.0"
   bin:
     pino: bin.js
-  checksum: 10/b7b0bdfdc2d9db017fa690e85f2e8ad2ddda09b1cbccb9868bc55d9a218ab3e9e4d75e6beb9d44fef10c4982d8719db4cf2325ea1f866d2fb37b7dff7f7297b1
+  checksum: 10/7d8db2228a468d0f54839719d8bee12c6e16529a98df7477e0ec530359c596bf26b291dc1dbf92ede633a487df4a29b871e795f777ce091a9576409d1bd87137
   languageName: node
   linkType: hard
 
@@ -9435,13 +9420,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "submodule-parent@workspace:."
   dependencies:
-    "@submodule/meta-commander": "workspace:^"
-    "@submodule/meta-hono": "workspace:^"
-    "@submodule/meta-main": "workspace:^"
     esbuild: "npm:^0.21.4"
     standard-version: "npm:^9.5.0"
     tsup: "npm:^8.1.0"
     tsx: "npm:^4.11.2"
+    typescript: "npm:^5.4.5"
   languageName: unknown
   linkType: soft
 
@@ -9896,6 +9879,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"typescript@npm:^5.4.5":
+  version: 5.4.5
+  resolution: "typescript@npm:5.4.5"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10/d04a9e27e6d83861f2126665aa8d84847e8ebabcea9125b9ebc30370b98cb38b5dff2508d74e2326a744938191a83a69aa9fddab41f193ffa43eabfdf3f190a5
+  languageName: node
+  linkType: hard
+
 "typescript@patch:typescript@npm%3A^4.6.4#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^4.9.5#optional!builtin<compat/typescript>":
   version: 4.9.5
   resolution: "typescript@patch:typescript@npm%3A4.9.5#optional!builtin<compat/typescript>::version=4.9.5&hash=289587"
@@ -9913,6 +9906,16 @@ __metadata:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 10/c93786fcc9a70718ba1e3819bab56064ead5817004d1b8186f8ca66165f3a2d0100fee91fa64c840dcd45f994ca5d615d8e1f566d39a7470fc1e014dbb4cf15d
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@npm%3A^5.4.5#optional!builtin<compat/typescript>":
+  version: 5.4.5
+  resolution: "typescript@patch:typescript@npm%3A5.4.5#optional!builtin<compat/typescript>::version=5.4.5&hash=5adc0c"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10/760f7d92fb383dbf7dee2443bf902f4365db2117f96f875cf809167f6103d55064de973db9f78fe8f31ec08fff52b2c969aee0d310939c0a3798ec75d0bca2e1
   languageName: node
   linkType: hard
 

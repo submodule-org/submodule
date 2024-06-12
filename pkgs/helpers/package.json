@@ -1,0 +1,72 @@
+{
+  "name": "@submodule/helpers",
+  "version": "1.0.0",
+  "packageManager": "yarn@4.2.2",
+  "devDependencies": {
+    "@hono/node-server": "^1.11.2",
+    "@submodule/core": "workspace:^",
+    "commander": "^12.1.0",
+    "hono": "^4.4.5",
+    "pino": "^9.2.0"
+  },
+  "scripts": {
+    "build": "yarn run -T tsup",
+    "preview": "yarn run -T standard-version --path . --dry-run -t @submodule/helpers",
+    "bump": "yarn run -T standard-version --path . -t @submodule/helpers",
+    "release": "git push --follow-tags origin main && npm publish --access public"
+  },
+  "files": [
+    "dist/**",
+    "package.json",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "peerDependencies": {
+    "@hono/node-server": "*",
+    "@submodule/core": "^6",
+    "commander": "*",
+    "hono": "*",
+    "pino": "^9"
+  },
+  "tsup": {
+    "entry": [
+      "src/*.ts"
+    ],
+    "minify": false,
+    "treeshake": false,
+    "splitting": true,
+    "sourcemap": true,
+    "clean": true,
+    "dts": true
+  },
+  "dependencies": {
+    "@commander-js/extra-typings": "^12.1.0"
+  },
+  "exports": {
+    "./pino": {
+      "source": "./src/pino.ts",
+      "import": "./dist/pino.js",
+      "require": "./dist/pino.js",
+      "types": "./dist/pino.d.ts"
+    },
+    "./commander": {
+      "source": "./src/commander.ts",
+      "import": "./dist/commander.js",
+      "require": "./dist/commander.js",
+      "types": "./dist/commander.d.ts"
+    },
+    "./hono": {
+      "source": "./src/hono.ts",
+      "import": "./dist/hono.js",
+      "require": "./dist/hono.js",
+      "types": "./dist/hono.d.ts"
+    },
+    "./main": {
+      "source": "./src/main.ts",
+      "import": "./dist/main.js",
+      "require": "./dist/main.js",
+      "types": "./dist/main.d.ts"
+    },
+    "./package.json": "./package.json"
+  }
+}

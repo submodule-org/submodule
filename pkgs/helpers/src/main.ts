@@ -1,5 +1,5 @@
 import { createScope, type Executor } from "@submodule/core"
-import { createLogger } from "@submodule/meta-pino"
+import { createLogger } from "./pino"
 
 const mainLogger = createLogger("main")
 

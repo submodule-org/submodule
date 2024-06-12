@@ -1,8 +1,0 @@
-{
-  "name": "@submodule/meta-commander",
-  "packageManager": "yarn@4.2.2",
-  "dependencies": {
-    "@commander-js/extra-typings": "^12.1.0",
-    "commander": "^12.1.0"
-  }
-}

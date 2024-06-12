@@ -2,7 +2,7 @@ import { Hono } from "hono"
 import { serve } from '@hono/node-server'
 
 import { combine, value, type Executor, scoper, group, create } from "@submodule/core"
-import { createLogger } from "@submodule/meta-pino"
+import { createLogger } from "./pino"
 
 export type Options = Omit<Parameters<typeof serve>[0], "fetch">
 

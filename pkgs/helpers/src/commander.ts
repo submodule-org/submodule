@@ -1,6 +1,6 @@
 import { Command, type OptionValues } from '@commander-js/extra-typings';
 import { combine, create, group, scoper, value, type Executor } from '@submodule/core';
-import { createLogger } from "@submodule/meta-pino";
+import { createLogger } from "./pino";
 
 const logger = createLogger("commander")
 
