@@ -1,5 +1,5 @@
 import { pino, LoggerOptions } from "pino"
-import { create, value, Executor } from "@submodule/core"
+import { create, value, Executor, isExecutor } from "@submodule/core"
 
 const defaultLoggerConfig: LoggerOptions<never> = {
   level: "info",
@@ -30,11 +30,11 @@ export function setDevMode() {
 }
 
 export function setLoggerConfig(uc: LoggerOptions<never> | Executor<LoggerOptions<never>>): void {
-  logger.patch(pinoConfig, uc)
+  pinoConfig.subs(isExecutor(uc) ? uc : value(uc))
 }
 
 export function deriveDefaultLogger(m: (opt: LoggerOptions<never>) => LoggerOptions<never>): void {
-  logger.patch(pinoConfig, value(m({ ...defaultLoggerConfig })))
+  pinoConfig.subs(value(m({ ...defaultLoggerConfig })))
 }
 
 export function createLogger(name: string, attrs?: Record<string, any>) {

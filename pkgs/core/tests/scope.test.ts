@@ -56,23 +56,4 @@ describe('scope', () => {
     expect(source.i).toBe(6)
   })
 
-  test('resolving value can be changed via patching', async () => {
-    const scope = createScope()
-
-    sourceMod.patch(seed, value(10))
-    let source = await sourceMod.resolve(scope)
-    expect(source.i).toBe(10)
-
-    sourceMod.reset()
-  })
-
-  test('combine value can be changed via patching', async () => {
-    const scope = createScope()
-
-    combineSourceMod.patch(seed, 20)
-
-    let combined = await combineSourceMod.resolve(scope)
-    expect(combined.seed).toBe(20)
-    expect(combined.sourceMod.i).toBe(20)
-  })
 })

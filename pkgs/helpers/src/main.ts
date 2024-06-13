@@ -3,9 +3,17 @@ import { createLogger } from "./pino"
 
 const mainLogger = createLogger("main")
 
+const noExecution = Boolean(process.env['NO_EXECUTION'])
+
 export const main = async (...executions: Array<Executor<unknown>>) => {
+
   const scope = createScope()
   const logger = await mainLogger.resolve(scope)
+  if (noExecution) {
+    logger.debug("NO_EXECUTION is set, will just return")
+    return
+  }
+
   logger.debug("starting server")
 
   if (executions.length === 0) {

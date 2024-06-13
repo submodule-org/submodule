@@ -42,9 +42,9 @@ export const startCmd = (cmds: Array<Executor<Command<any>>>, modifier?: Array<E
 
   if (modifier) {
     const mc = group(...modifier)
-    parse.patch(modifiers, mc)
+    modifiers.subs(mc)
   }
 
-  parse.patch(commands, uc)
+  commands.subs(uc)
   return parse
 }

@@ -1,7 +1,7 @@
 import { Hono } from "hono"
 import { serve } from '@hono/node-server'
 
-import { combine, value, type Executor, scoper, group, create } from "@submodule/core"
+import { combine, value, type Executor, scoper, group, create, isExecutor } from "@submodule/core"
 import { createLogger } from "./pino"
 
 export type Options = Omit<Parameters<typeof serve>[0], "fetch">
@@ -11,9 +11,10 @@ type HonoConfig = {
 }
 
 const defaultLogger = createLogger("hono")
-const defaultConfig = value<Options>({
+const defaultConfig = value<HonoConfig>({
   port: 4000
 })
+
 const defaultRoutes = value<Hono[]>([])
 
 export const server = create(async ({ config, routes, logger, scoper }) => {
@@ -47,13 +48,13 @@ export const server = create(async ({ config, routes, logger, scoper }) => {
 }, combine({ scoper, config: defaultConfig, routes: defaultRoutes, logger: defaultLogger }))
 
 export function setConfig(uc: HonoConfig | Executor<HonoConfig>) {
-  server.patch(defaultConfig, uc)
+  defaultConfig.subs(isExecutor(uc) ? uc : value(uc))
 }
 
 export const startServer = (config: HonoConfig | Executor<HonoConfig>, ...routes: Array<Executor<Hono<any, any, any>>>) => {
   const _routes = group(...routes)
-  server.patch(defaultRoutes, _routes)
-  server.patch(defaultConfig, config)
+  defaultRoutes.subs(_routes)
+  defaultConfig.subs(isExecutor(config) ? config : value(config))
 
   return server
 }
