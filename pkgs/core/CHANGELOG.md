@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.0.0-rc.6](https://github.com/submodule-js/submodule/compare/@submodule/core6.0.0-rc.5...@submodule/core6.0.0-rc.6) (2024-06-13)
+
+
+### Features
+
+* added helpers module (migrated from previous meta) ([2bf2847](https://github.com/submodule-js/submodule/commit/2bf28476c38cdb954353b0ed790fd40916bff80f))
+* added substituion api ([a1d3df3](https://github.com/submodule-js/submodule/commit/a1d3df3423df317c1091495d79ffde63e2dc8c78))
+
 ## [6.0.0-rc.5](https://github.com/submodule-js/submodule/compare/@submodule/core6.0.0-rc.4...@submodule/core6.0.0-rc.5) (2024-06-11)
 
 
