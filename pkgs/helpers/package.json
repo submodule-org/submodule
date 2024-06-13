@@ -1,6 +1,6 @@
 {
   "name": "@submodule/helpers",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "packageManager": "yarn@4.2.2",
   "devDependencies": {
     "@hono/node-server": "^1.11.2",

@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.0.1](https://github.com/submodule-org/submodule/compare/@submodule/helpers1.0.0...@submodule/helpers1.0.1) (2024-06-13)
+
 ## 1.0.0 (2024-06-12)
 
 
