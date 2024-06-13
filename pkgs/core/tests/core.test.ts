@@ -172,3 +172,11 @@ test('can use object as dependency', async () => {
 
   expect(await resolve(comb)).toBe('1test')
 })
+
+test('submodule can be substituted', async () => {
+  const intValue = value(1)
+  intValue.subs(value(2))
+
+  const i = await resolve(intValue)
+  expect(i).toBe(2)
+})

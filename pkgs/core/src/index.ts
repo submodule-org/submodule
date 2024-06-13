@@ -115,9 +115,10 @@ export function dispose() {
   globalScope.dispose()
 }
 
-export type Executor<Value> = {
+export interface Executor<Value> {
   resolve(scope: Scope): Promise<Value>
   reset(): void
+  subs(executor: Executor<Value>): void
   patch<T>(executor: Executor<T>, patch: Executor<T> | T): void
   readonly [x: symbol]: true
 }
@@ -163,6 +164,8 @@ export function create<P, D>(providerClass: ProviderClass<P, D>, dependencies: E
 export function create<P>(provider: Provider<P>): Executor<P>
 export function create<P, D>(provider: Provider<P, D>, dependencies: EODE<D>): Executor<P>
 export function create<P, D>(provider: Provider<P, D> | ProviderClass<P, D>, dependencies?: EODE<D>): Executor<P> {
+  let substitution: Executor<P> | undefined
+
   let modifiableDependency = dependencies
     ? isExecutor(dependencies) ? dependencies : combine(dependencies)
     : undefined
@@ -172,6 +175,10 @@ export function create<P, D>(provider: Provider<P, D> | ProviderClass<P, D>, dep
   async function resolve(scope: Scope): Promise<P> {
     if (scope.has(executor)) {
       return await scope.get(executor)
+    }
+
+    if (substitution) {
+      return await scope.resolve(substitution)
     }
 
     const promise = Promise.resolve()
@@ -214,11 +221,16 @@ export function create<P, D>(provider: Provider<P, D> | ProviderClass<P, D>, dep
     patches.push([executor, patch])
   }
 
-  function reset() {
-    patches = []
+  function subs(executor: Executor<P>) {
+    substitution = executor
   }
 
-  const executor: Executor<P> = { reset, resolve, patch, [Symbol.for('$submodule')]: true }
+  function reset() {
+    patches = []
+    substitution = undefined
+  }
+
+  const executor: Executor<P> = { subs, reset, resolve, patch, [Symbol.for('$submodule')]: true }
 
   return executor
 }
