@@ -231,6 +231,11 @@ export const group = <Provide>(...values: Executor<Provide>[]) => create(
 
 export const scoper = create(new ProviderClass(async (scope) => scope))
 
+export const flat = <T>(executor: Executor<Executor<T>>) => create(async scoper => {
+  const target = await scoper.resolve(executor)
+  return scoper.resolve(target)
+}, scoper)
+
 export function prepare<Dependent, Input extends Array<any>, Output>(
   provider: ((provide: Dependent, ...input: Input) => Output),
   dependency: EODE<Dependent>,

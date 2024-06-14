@@ -7,7 +7,7 @@ const defaultLoggerConfig: LoggerOptions<never> = {
 
 const pinoConfig = value<LoggerOptions<never>>(defaultLoggerConfig)
 
-const logger = create((pinoConfig) => {
+export const logger = create((pinoConfig) => {
   return pino(pinoConfig)
 }, pinoConfig)
 

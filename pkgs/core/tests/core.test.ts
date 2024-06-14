@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vitest"
-import { resolve, combine, create, execute, prepare, value, resolveValue } from "../src"
+import { resolve, combine, create, execute, prepare, value, resolveValue, flat } from "../src"
 
 test('submodule should work', async () => {
   const a = create(() => 'a' as const)
@@ -179,4 +179,10 @@ test('submodule can be substituted', async () => {
 
   const i = await resolve(intValue)
   expect(i).toBe(2)
+})
+
+test("flat should work", async () => {
+  const a = create(() => create(() => 'a'))
+  const ar = resolve(flat(a))
+  expect(await ar).toBe('a')
 })
