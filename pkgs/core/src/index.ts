@@ -13,6 +13,12 @@ type OnResolve = {
 
 type Defer = (e?: unknown) => void | Promise<void>
 
+/**
+ * Represents a scope in the dependency injection system.
+ * A scope acts as a value holder and manages the lifecycle of dependencies.
+ * Middleware can be applied at the scope level.
+ * While there's a default global scope, multiple scopes can be created as needed.
+ */
 export class Scope {
   constructor(
     private store = new Map<Executor<any>, Promise<any>>(),
@@ -20,14 +26,31 @@ export class Scope {
     private defers: Defer[] = []
   ) { }
 
-  has(executor: Executor<any>) {
+  /**
+   * Checks if an executor has been resolved in this scope.
+   * @param {Executor<any>} executor - The executor to check.
+   * @returns {boolean} True if the executor has been resolved, false otherwise.
+   */
+  has(executor: Executor<any>): boolean {
     return this.store.has(executor)
   }
 
+  /**
+   * Retrieves the resolved value of an executor.
+   * @template T
+   * @param {Executor<T>} executor - The executor to retrieve the value for.
+   * @returns {Promise<T>} A promise that resolves to the value.
+   */
   async get<T>(executor: Executor<T>): Promise<T> {
     return this.store.get(executor)
   }
 
+  /**
+   * Sets the value for an executor in the scope.
+   * @template T
+   * @param {Executor<T>} executor - The executor to set the value for.
+   * @param {T | Promise<T> | Executor<T>} v - The value to set.
+   */
   set<T>(executor: Executor<T>, v: T | Promise<T> | Executor<T>) {
     if (this.store.has(executor)) {
       return
@@ -41,6 +64,12 @@ export class Scope {
     this.store.set(executor, Promise.resolve(v))
   }
 
+  /**
+   * Resolves a value for an executor and stores it in the scope.
+   * @template T
+   * @param {Executor<T>} executor - The executor to resolve the value for.
+   * @param {T | Executor<T>} value - The value to resolve.
+   */
   resolveValue<T>(executor: Executor<T>, value: T | Executor<T>) {
     if (this.store.has(executor)) {
       return
@@ -54,12 +83,26 @@ export class Scope {
     this.store.set(executor, Promise.resolve(value))
   }
 
+  /**
+   * Resolves an executor or a combination of executors.
+   * @template T
+   * @param {EODE<T>} executor - The executor or combination to resolve.
+   * @returns {Promise<T>} A promise that resolves to the final value.
+   */
   async resolve<T>(executor: EODE<T>): Promise<T> {
     return isExecutor(executor)
       ? executor.resolve(this)
       : combine(executor).resolve(this)
   }
 
+  /**
+   * Executes a provider with its dependencies.
+   * @template Dependent
+   * @template Output
+   * @param {Provider<Output, Dependent>} executable - The provider to execute.
+   * @param {EODE<Dependent>} dependency - The dependencies for the provider.
+   * @returns {Promise<Awaited<Output>>} A promise that resolves to the output of the provider.
+   */
   async execute<Dependent, Output>(
     executable: Provider<Output, Dependent>,
     dependency: EODE<Dependent>
@@ -68,6 +111,15 @@ export class Scope {
     return await executable(value)
   }
 
+  /**
+   * Prepares a provider for execution with its dependencies. 
+   * @template Dependent
+   * @template Input
+   * @template Output
+   * @param {(provide: Dependent, ...input: Input) => Output} provider - The provider function.
+   * @param {EODE<Dependent>} dependency - The dependencies for the provider.
+   * @returns {(...input: Input) => Promise<Awaited<ReturnType<typeof provider>>>} A function that executes the provider with its dependencies.
+   */
   prepare<Dependent, Input extends Array<any>, Output>(
     provider: (provide: Dependent, ...input: Input) => Output,
     dependency: EODE<Dependent>,
@@ -80,18 +132,33 @@ export class Scope {
     }
   }
 
+  /**
+   * Adds a defer callback to the scope. Defer function is executed when scope is disposed.
+   * @param {Defer} deferer - The defer callback to add.
+   */
   addDefer(deferer: Defer) {
     this.defers.push(deferer)
   }
 
+  /**
+   * Adds an onResolve callback to the scope. The resolve callback is executed when the executor is resolved.
+   * @param {OnResolve} onResolve - The onResolve callback to add.
+   */
   addOnResolves(onResolve: OnResolve) {
     this.resolves.push(onResolve)
   }
 
-  get onResolves() {
+  /**
+   * Gets the array of onResolve callbacks.
+   * @returns {OnResolve[]} The array of onResolve callbacks.
+   */
+  get onResolves(): OnResolve[] {
     return this.resolves
   }
 
+  /**
+   * Disposes of the scope, clearing all stored values and callbacks.
+   */
   async dispose() {
     this.defers.forEach(d => d())
 
@@ -101,24 +168,70 @@ export class Scope {
   }
 }
 
-export function createScope() {
+/**
+ * Creates and returns a new Scope instance.
+ * @function
+ * @returns {Scope} A new Scope instance.
+ */
+export function createScope(): Scope {
   return new Scope()
 }
 
-export function getScope() {
+/**
+ * Returns the global scope instance.
+ * This function provides access to the singleton global scope,
+ * which can be used for dependency injection and management across the application.
+ * 
+ * @function
+ * @returns {Scope} The global scope instance.
+ */
+export function getScope(): Scope {
   return globalScope
 }
 
 const globalScope = createScope()
 
-export function dispose() {
+/**
+ * Disposes of the global scope.
+ * This function calls the dispose method on the global scope instance,
+ * clearing all stored values and callbacks.
+ * 
+ * @function
+ * @returns {void}
+ */
+export function dispose(): void {
   globalScope.dispose()
 }
 
+/**
+ * Represents an executor that can resolve a value, reset its state, and substitute itself.
+ * @template Value The type of value this executor resolves to.
+ */
 export interface Executor<Value> {
-  resolve(scope: Scope): Promise<Value>
+  /**
+   * Resolves the value within the given scope.
+   * @param scope The scope in which to resolve the value.
+   * @returns A promise that resolves to the value.
+   */
+  resolve(scope: Scope): Promise<Readonly<Value>>
+
+  /**
+   * Resets the executor to its initial state.
+   */
   reset(): void
+
+  /**
+   * Substitutes this executor with another executor of the same type.
+   * If scope that the Executor is being resolved in has already resolved this executor,
+   * it will keep the resolved value and not resolve the new executor until reset.  
+   * 
+   * @param executor The executor to substitute this one with.
+   */
   subs(executor: Executor<Value>): void
+
+  /**
+   * A symbol property that identifies this object as an Executor.
+   */
   readonly [x: symbol]: true
 }
 
@@ -158,10 +271,60 @@ export function createExecution<Dependency, Input extends Array<any>, Output>(
 
 type EODE<D> = Executor<D> | { [key in keyof D]: Executor<D[key]> }
 
+/**
+ * Creates an Executor for a given provider or provider class.
+ * 
+ * @template P The type of the provided value
+ * 
+ * @param {ProviderClass<P>} providerClass - A provider class without dependencies
+ * @returns {Executor<P>} An executor for the provided value
+ */
 export function create<P>(providerClass: ProviderClass<P>): Executor<P>
-export function create<P, D>(providerClass: ProviderClass<P, D>, dependencies: EODE<D>): Executor<P>
+
+/**
+ * Creates an Executor for a given provider class with dependencies.
+ * 
+ * @template P The type of the provided value
+ * @template D The type of the dependencies
+ * 
+ * @param {ProviderClass<P, NoInfer<D>>} providerClass - A provider class with dependencies
+ * @param {EODE<D>} dependencies - The dependencies required by the provider class
+ * @returns {Executor<P>} An executor for the provided value
+ */
+export function create<P, D>(providerClass: ProviderClass<P, NoInfer<D>>, dependencies: EODE<D>): Executor<P>
+
+/**
+ * Creates an Executor for a given provider function without dependencies.
+ * 
+ * @template P The type of the provided value
+ * 
+ * @param {Provider<P>} provider - A provider function without dependencies
+ * @returns {Executor<P>} An executor for the provided value
+ */
 export function create<P>(provider: Provider<P>): Executor<P>
-export function create<P, D>(provider: Provider<P, D>, dependencies: EODE<D>): Executor<P>
+
+/**
+ * Creates an Executor for a given provider function with dependencies.
+ * 
+ * @template P The type of the provided value
+ * @template D The type of the dependencies
+ * 
+ * @param {Provider<P, NoInfer<D>>} provider - A provider function with dependencies
+ * @param {EODE<D>} dependencies - The dependencies required by the provider function
+ * @returns {Executor<P>} An executor for the provided value
+ */
+export function create<P, D>(provider: Provider<P, NoInfer<D>>, dependencies: EODE<D>): Executor<P>
+
+/**
+ * Creates an Executor for a given provider or provider class, with optional dependencies.
+ * 
+ * @template P The type of the provided value
+ * @template D The type of the dependencies (if any)
+ * 
+ * @param {Provider<P, D> | ProviderClass<P, D>} provider - A provider function or class
+ * @param {EODE<D>} [dependencies] - Optional dependencies required by the provider
+ * @returns {Executor<P>} An executor for the provided value
+ */
 export function create<P, D>(provider: Provider<P, D> | ProviderClass<P, D>, dependencies?: EODE<D>): Executor<P> {
   let substitution: Executor<P> | undefined
 
@@ -222,20 +385,113 @@ export function create<P, D>(provider: Provider<P, D> | ProviderClass<P, D>, dep
   return executor
 }
 
-export const value = <Provide>(value: Provide) => create(() => value)
-export const group = <Provide>(...values: Executor<Provide>[]) => create(
+/**
+ * Creates an Executor that always resolves to the given value.
+ * This is useful for wrapping constant values in the Executor interface.
+ * 
+ * @template Provide The type of the value to be provided
+ * @param {Provide} value The constant value to be wrapped
+ * @returns {Executor<Provide>} An Executor that resolves to the given value
+ * 
+ * @example
+ * const constantExecutor = value(42);
+ * // constantExecutor will always resolve to 42
+ * 
+ * @example
+ * const configExecutor = value({ apiKey: 'abc123', maxRetries: 3 });
+ * // configExecutor will always resolve to the given configuration object
+ */
+export const value = <Provide>(value: Provide): Executor<Provide> => create(() => value)
+
+/**
+ * Groups similar Executors together.
+ * 
+ * @template Provide The type of value that the grouped Executors provide
+ * @param {...Executor<Provide>[]} values The Executors to group
+ * @returns {Executor<Provide[]>} An Executor that resolves to an array of the provided values
+ * 
+ * @example
+ * const executor1 = value(1);
+ * const executor2 = value(2);
+ * const groupedExecutor = group(executor1, executor2);
+ * // groupedExecutor will resolve to [1, 2]
+ */
+
+export const group = <Provide>(...values: Executor<Provide>[]): Executor<Provide[]> => create(
   new ProviderClass(
     async (scope) => Promise.all(values.map(v => scope.resolve(v))),
   )
 )
 
+/**
+ * Creates a unimplemented executor that throws an error when resolved.
+ * This can be used as a placeholder for dependencies that will be implemented later.
+ * 
+ * @template Provide The type of value that this executor will eventually provide
+ * @returns {Executor<Provide>} An executor that throws an error when resolved
+ * 
+ * @example
+ * const willBeResolved = unImplemented<string>();
+ * // Later, implement the dependency:
+ * willBeResolved.subs(value('actual value'));
+ */
+export const unImplemented = <Provide>(): Executor<Provide> => {
+  return create<Provide>(() => {
+    throw new Error('not implemented')
+  })
+}
+
+/**
+ * Create a function to shape an expected output type.
+ * Useful for creating a desired series of output types, for example, a route, a cmd.
+ * 
+ * @template Provide The type of value that the Executor will provide
+ * @returns A function that takes an Executor and returns it unchanged
+ * 
+ * @example
+ * const routeFactory = factory<Hono>();
+ * const loginroute = routeFactory(create() {
+ *   return Hono...
+ * })
+ */
+export const factory = <Provide>() => (impl: Executor<Provide>): Executor<Provide> => {
+  return impl
+}
+
+/**
+ * Creates an executor that provides the current scope.
+ * This can be useful when you need access to the scope within other executors or providers.
+ * 
+ * There are some usecases where you want to have access to the current scope.
+ * For example, conditional resolves, lazy resolves, etc.
+ * 
+ * @example
+ * const myExecutor = create(async (scope) => {
+ *   // Now you can use currentScope...
+ *   return process.env.PGLITE ? scope.resovle(pgLiteImpl) : scope.resolve(pgImpl);
+ * }, scoper);
+ */
 export const scoper = create(new ProviderClass(async (scope) => scope))
 
+/**
+ * Flattens a nested Executor structure by resolving the outer Executor and then resolving the inner Executor.
+ * Useful for creating conditional implementations.
+ * 
+ * @template T The type of the value provided by the innermost Executor
+ * 
+ * @example
+ * const nestedExecutor = create(() => create(() => 'Hello, World!'));
+ * const flattenedExecutor = flat(nestedExecutor);
+ * const result = await resolve(flattenedExecutor); // 'Hello, World!'
+ */
 export const flat = <T>(executor: Executor<Executor<T>>) => create(async scoper => {
   const target = await scoper.resolve(executor)
   return scoper.resolve(target)
 }, scoper)
 
+/**
+ * @deprecated
+ */
 export function prepare<Dependent, Input extends Array<any>, Output>(
   provider: ((provide: Dependent, ...input: Input) => Output),
   dependency: EODE<Dependent>,
@@ -245,6 +501,9 @@ export function prepare<Dependent, Input extends Array<any>, Output>(
   return execution.resolve(scope)
 }
 
+/**
+ * @deprecated
+ */
 export async function execute<Dependent, Output>(
   executable: Provider<Output, Dependent>,
   dependency: EODE<Dependent>,
@@ -254,6 +513,19 @@ export async function execute<Dependent, Output>(
   return execution.executeIn(scope)
 }
 
+/**
+ * Resolves an Executor to its final value in the global scope.
+ * 
+ * @template T The type of the value provided by the Executor
+ * @param {Executor<T>} executor The Executor to resolve
+ * @param {Scope} [scope=getScope()] The scope in which to resolve the Executor. Defaults to the current scope.
+ * @returns {Promise<T>} A Promise that resolves to the final value of the Executor
+ * 
+ * @example
+ * const myExecutor = create(() => 'Hello, World!');
+ * const result = await resolve(myExecutor);
+ * console.log(result); // 'Hello, World!'
+ */
 export async function resolve<T>(executor: Executor<T>, scope: Scope = getScope()): Promise<T> {
   return await scope.resolve(executor)
 }
@@ -268,13 +540,29 @@ export function resolveValue<T>(
 
 export type inferProvide<T> = T extends Executor<infer S> ? S : never
 
+/**
+ * Combines multiple Executors into a single Executor that resolves to an object.
+ * 
+ * @template L An object type where values are Executors
+ * @param {L} layout An object where each value is an Executor
+ * @returns {Executor<{ [key in keyof L]: inferProvide<L[key]> }>} An Executor that resolves to an object with the same keys as the input, but with resolved values
+ * 
+ * @example
+ * const nameExecutor = create(() => 'John');
+ * const ageExecutor = create(() => 30);
+ * const combinedExecutor = combine({ name: nameExecutor, age: ageExecutor });
+ * const result = await resolve(combinedExecutor);
+ * console.log(result); // { name: 'John', age: 30 }
+ */
 export function combine<
-  L extends Record<string, Executor<any>>
+  L extends Record<string, Executor<unknown>>
 >(layout: L): Executor<{ [key in keyof L]: inferProvide<L[key]> }> {
   return create(new ProviderClass(async (scope) => {
-    const layoutPromise = Object.entries(layout).map(([key, executor]) => executor.resolve(scope).then(value => [key, value] as const))
-    const result = Object.fromEntries(await Promise.all(layoutPromise))
-    return result as any
-  }))
+    const layoutPromise = Object.entries(layout).map(
+      async ([key, executor]) => [key, await executor.resolve(scope)] as const
+    );
+    const result = Object.fromEntries(await Promise.all(layoutPromise));
+    return result as { [key in keyof L]: inferProvide<L[key]> };
+  }));
 }
 

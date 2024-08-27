@@ -71,9 +71,9 @@
   "exports": {
     ".": {
       "source": "./src/index.ts",
-      "import": "./dist/index.js",
       "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     },
     "./package.json": "./package.json"
   },
@@ -88,6 +88,9 @@
     "clean": true,
     "dts": true
   },
+  "peerDependencies": {
+    "typescript": "^5.4.0"
+  },
   "devDependencies": {
     "@biomejs/biome": "^1.7.3",
     "@types/debug": "^4.1.7",
@@ -97,7 +100,7 @@
     "esbuild": "^0.21.4",
     "release-please": "^16.0.0",
     "tsup": "^8.1.0",
-    "typescript": "^4.9.5",
+    "typescript": "^5.4.0",
     "vite": "^5.2.12",
     "vitest": "^1.6.0",
     "wireit": "^0.14.1"

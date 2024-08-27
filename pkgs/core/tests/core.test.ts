@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vitest"
-import { resolve, combine, create, execute, prepare, value, resolveValue, flat } from "../src"
+import { resolve, combine, create, execute, prepare, value, resolveValue, flat, unImplemented, createScope, factory } from "../src"
 
 test('submodule should work', async () => {
   const a = create(() => 'a' as const)
@@ -116,7 +116,7 @@ test('error should be carried over', async () => {
 
   const b = create((a) => 'b', a)
 
-  await expect(() => resolve(b)).rejects.toThrowError('test')
+  await expect(async () => await resolve(b)).rejects.toThrowError('test')
 })
 
 test('can mock easily', async () => {
@@ -148,9 +148,25 @@ test('can set value by early access to the root dependency', async () => {
 })
 
 test('provider with dependency cannot be initialized without dependency', async () => {
-  const port = create((port: number) => port, undefined as any)
+  const port = unImplemented<number>()
 
-  expect(async () => await resolve(port)).rejects.toThrowError()
+  const falsyScope = createScope()
+  expect(async () => await falsyScope.resolve(port)).rejects.toThrowError('not implemented')
+
+  const truthyScope = createScope()
+  port.subs(value(1))
+  expect(await truthyScope.resolve(port)).toBe(1)
+})
+
+test('factory should work', async () => {
+  const fnFactory = factory<(value: string) => number>()
+  const seed = value(1)
+  const stringToNumber = fnFactory(create((seed) => {
+    return (value: string) => Number(value) + seed.valueOf()
+  }, seed))
+
+  const result = await resolve(stringToNumber)
+  expect(result('1')).toBe(2)
 })
 
 test('expect error to be thown', async () => {
@@ -167,8 +183,8 @@ test('can use object as dependency', async () => {
   const strValue = value('test')
 
   const comb = create(({ intValue, strValue }) => {
-    return intValue + strValue
-  }, { intValue, strValue })
+    return String(intValue) + strValue
+  }, combine({ intValue, strValue }))
 
   expect(await resolve(comb)).toBe('1test')
 })
@@ -183,6 +199,6 @@ test('submodule can be substituted', async () => {
 
 test("flat should work", async () => {
   const a = create(() => create(() => 'a'))
-  const ar = resolve(flat(a))
-  expect(await ar).toBe('a')
+  const ar = await resolve(flat(a))
+  expect(ar).toBe('a')
 })
