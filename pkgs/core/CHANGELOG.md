@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.0.0](https://github.com/submodule-js/submodule/compare/@submodule/core5.2.0...@submodule/core6.0.0) (2024-08-27)
+
 ## [6.0.0-rc.8](https://github.com/submodule-js/submodule/compare/@submodule/core6.0.0-rc.7...@submodule/core6.0.0-rc.8) (2024-06-14)
 
 
