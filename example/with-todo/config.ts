@@ -12,3 +12,7 @@ export const config = create(() => {
 
   return config
 })
+
+export const honoConfig = create(async (config) => {
+  return config.honoConfig
+}, config)

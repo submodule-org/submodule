@@ -1,37 +1,48 @@
-import { execute } from "@submodule/core"
-import { Hono } from "hono"
+import { Command } from "@commander-js/extra-typings"
+import { createCommand, startCmd } from "@submodule/meta-commander"
+import { startServer } from "@submodule/meta-hono"
+import { main } from "@submodule/meta-main"
+import { add, list, toggle } from "./routes/todo.route"
+import { create } from "@submodule/core"
+import { todo } from "./services/todo.service"
 
-import { config } from "./config"
-import { Route } from "./router"
-
-export default await execute(async (config) => {
-  const port = config.honoConfig.port
-
-  const app = new Hono()
-
-  const router: Record<string, Route> = {
-    add: await import('./routes/add'),
-    list: await import('./routes/list'),
-    toggle: await import('./routes/toggle'),
+const startServerCmd = createCommand(
+  new Command("serve")
+    .option("-p, --port <port>", "port to listen on", Number, 4000),
+  ({ port }) => {
+    return startServer({ port }, add, list, toggle)
   }
+)
 
-  for (const routeKey in router) {
-    const route = router[routeKey]
-    const methods = route.meta?.methods || ['GET']
-    app.on(
-      methods,
-      '/' + routeKey,
-      async (context) => {
-        console.log('incoming request to path %s - %s', context.req.method, context.req.url)
-        return await route.handle(context)
+const todoCmd = createCommand(
+  new Command("todo")
+    .argument("[action]", "action to perform", String)
+    .option("--id <id>", "id of todo to perform action on", String)
+    .option("--value <value>", "content of the todo to add", String),
+  (action, { id, value }) => {
+    return create(async (todosvc) => {
+      switch (action) {
+        case "list":
+        case "":
+          console.log(await todosvc.listTodos())
+          return
+        case "add":
+          if (!value) throw new Error("value is required")
+          const addedTodo = await todosvc.addTodo({ value })
+
+          console.log(addedTodo)
+          return
+        case "toggle":
+          if (!id) throw new Error("id is required")
+
+          const toggledTodo = await todosvc.toggleTodo(id)
+          console.log(toggledTodo)
+          return
       }
-    )
+    }, todo)
   }
+)
 
-  console.log('hono will be listening at port', port)
-
-  return {
-    port,
-    fetch: app.fetch
-  }
-}, config)
+main(
+  startCmd([startServerCmd, todoCmd])
+)

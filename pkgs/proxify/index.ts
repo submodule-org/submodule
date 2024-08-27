@@ -1,6 +1,6 @@
 const supportedType = ['object', 'array']
 
-export const proxify = <T>(value: T) => {
+export const proxify = <T>(value: Readonly<T>) => {
   const proxied = {}
 
   if (!supportedType.includes(typeof value)) {

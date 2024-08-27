@@ -2,6 +2,52 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.0.0-rc.8](https://github.com/submodule-js/submodule/compare/@submodule/core6.0.0-rc.7...@submodule/core6.0.0-rc.8) (2024-06-14)
+
+
+### Features
+
+* added flat api to turn Executor<Executor<T>> to Executor<T> ([38846d8](https://github.com/submodule-js/submodule/commit/38846d8c539e65513c9a059939ab2159aac9f4b0))
+
+## [6.0.0-rc.7](https://github.com/submodule-js/submodule/compare/@submodule/core6.0.0-rc.6...@submodule/core6.0.0-rc.7) (2024-06-13)
+
+## [6.0.0-rc.6](https://github.com/submodule-js/submodule/compare/@submodule/core6.0.0-rc.5...@submodule/core6.0.0-rc.6) (2024-06-13)
+
+
+### Features
+
+* added helpers module (migrated from previous meta) ([2bf2847](https://github.com/submodule-js/submodule/commit/2bf28476c38cdb954353b0ed790fd40916bff80f))
+* added substituion api ([a1d3df3](https://github.com/submodule-js/submodule/commit/a1d3df3423df317c1091495d79ffde63e2dc8c78))
+
+## [6.0.0-rc.5](https://github.com/submodule-js/submodule/compare/@submodule/core6.0.0-rc.4...@submodule/core6.0.0-rc.5) (2024-06-11)
+
+
+### Features
+
+* applied EDOE to all API ([0406290](https://github.com/submodule-js/submodule/commit/04062901ad034eca63730face97f91c9567a1065))
+
+## [6.0.0-rc.4](https://github.com/submodule-js/submodule/compare/@submodule/core6.0.0-rc.3...@submodule/core6.0.0-rc.4) (2024-06-10)
+
+## [6.0.0-rc.3](https://github.com/submodule-js/submodule/compare/@submodule/core6.0.0-rc.2...@submodule/core6.0.0-rc.3) (2024-06-10)
+
+
+### Features
+
+* can use object instead of combine ([e90b503](https://github.com/submodule-js/submodule/commit/e90b503c92c3b14130b80fd3fe54cccb633900e3))
+
+## [6.0.0-rc.2](https://github.com/submodule-js/submodule/compare/@submodule/core6.0.0-rc.1...@submodule/core6.0.0-rc.2) (2024-06-10)
+
+## [6.0.0-rc.1](https://github.com/submodule-js/submodule/compare/@submodule/core6.0.0-rc.0...@submodule/core6.0.0-rc.1) (2024-06-06)
+
+## [6.0.0-rc.0](https://github.com/submodule-js/submodule/compare/@submodule/core5.2.0...@submodule/core6.0.0-rc.0) (2024-06-06)
+
+
+### Features
+
+* added a lot of new api for metas ([69c4d21](https://github.com/submodule-js/submodule/commit/69c4d21b9642ce79bb50651546cc65bc3a504d2a))
+* added scope and its api ([1937024](https://github.com/submodule-js/submodule/commit/1937024b65ed7a77edbbca7fce33f5531360b74b))
+* oversimplified submodule api ([b8639d7](https://github.com/submodule-js/submodule/commit/b8639d736cb89b6022565871f0a2fe84a373abd1))
+
 ## [5.2.0](https://github.com/submodule-js/submodule/compare/@submodule/core5.1.4...@submodule/core5.2.0) (2024-01-04)
 
 ### [5.1.4](https://github.com/submodule-js/submodule/compare/@submodule/core5.1.3...@submodule/core5.1.4) (2024-01-04)

@@ -5,4 +5,4 @@ yarn*%
 .wireit
 coverage
 dprint.json
-vite.config.ts
+vite.config.mts
