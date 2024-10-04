@@ -1,6 +1,6 @@
-export class ProviderClass<Provide, Input = unknown> {
+export class ProviderClass<Provide> {
   constructor(
-    public provider: (scope: Scope, input: Input) => Provide | Promise<Provide>,
+    public provider: (scope: Scope, self: Executor<Provide>) => Provide | Promise<Provide>,
   ) { }
 }
 
@@ -20,18 +20,20 @@ type Defer = (e?: unknown) => void | Promise<void>
  * While there's a default global scope, multiple scopes can be created as needed.
  */
 export class Scope {
+  private aliases: Map<unknown, Executor<unknown>>
+
   constructor(
-    private store = new Map<Executor<any>, Promise<any>>(),
+    private store = new Map<Executor<unknown>, Promise<unknown>>(),
     private resolves: OnResolve[] = [],
     private defers: Defer[] = []
   ) { }
 
   /**
    * Checks if an executor has been resolved in this scope.
-   * @param {Executor<any>} executor - The executor to check.
+   * @param {Executor<unknown>} executor - The executor to check.
    * @returns {boolean} True if the executor has been resolved, false otherwise.
    */
-  has(executor: Executor<any>): boolean {
+  has(executor: Executor<unknown>): boolean {
     return this.store.has(executor)
   }
 
@@ -41,8 +43,8 @@ export class Scope {
    * @param {Executor<T>} executor - The executor to retrieve the value for.
    * @returns {Promise<T>} A promise that resolves to the value.
    */
-  async get<T>(executor: Executor<T>): Promise<T> {
-    return this.store.get(executor)
+  async get<T>(executor: Executor<T>): Promise<T | undefined> {
+    return this.store.get(executor) as (T | undefined)
   }
 
   /**
@@ -57,11 +59,15 @@ export class Scope {
     }
 
     if (isExecutor(v)) {
-      this.store.set(executor, v.resolve(this))
+      this.store.set(executor, v.resolve(this, executor))
       return
     }
 
     this.store.set(executor, Promise.resolve(v))
+  }
+
+  setAlias<T>(alias: unknown, executor: Executor<T>) {
+    this.aliases.set(alias, executor)
   }
 
   /**
@@ -76,7 +82,7 @@ export class Scope {
     }
 
     if (isExecutor(value)) {
-      this.store.set(executor, value.resolve(this))
+      this.store.set(executor, value.resolve(this, value))
       return
     }
 
@@ -90,9 +96,21 @@ export class Scope {
    * @returns {Promise<T>} A promise that resolves to the final value.
    */
   async resolve<T>(executor: EODE<T>): Promise<T> {
-    return isExecutor(executor)
-      ? executor.resolve(this)
-      : combine(executor).resolve(this)
+    if (isExecutor(executor)) {
+      return executor.resolve(this, executor)
+    }
+
+    const combined = combine(executor)
+    return combined.resolve(this, combined)
+  }
+
+  async resolveAlias<T>(alias: unknown): Promise<T | undefined> {
+    const executor = this.aliases.get(alias)
+    if (!executor) {
+      return
+    }
+
+    return await this.resolve(executor) as T
   }
 
   /**
@@ -120,15 +138,13 @@ export class Scope {
    * @param {EODE<Dependent>} dependency - The dependencies for the provider.
    * @returns {(...input: Input) => Promise<Awaited<ReturnType<typeof provider>>>} A function that executes the provider with its dependencies.
    */
-  prepare<Dependent, Input extends Array<any>, Output>(
+  prepare<Dependent, Input extends Array<unknown>, Output>(
     provider: (provide: Dependent, ...input: Input) => Output,
     dependency: EODE<Dependent>,
   ): (...input: Input) => Promise<Awaited<ReturnType<typeof provider>>> {
     const scope = this
-    return async function () {
-      const that = this
-      const args = arguments
-      return execute(async (d) => provider.call(that, d, ...args), dependency, scope)
+    return async function (...args: unknown[]) {
+      return execute(async (d) => provider.call(this, d, ...args), dependency, scope)
     }
   }
 
@@ -160,11 +176,21 @@ export class Scope {
    * Disposes of the scope, clearing all stored values and callbacks.
    */
   async dispose() {
-    this.defers.forEach(d => d())
+    for (const d of this.defers) {
+      d();
+    }
 
     this.store.clear()
     this.defers = []
     this.resolves = []
+  }
+
+  /**
+   * Removes an executor from the scope.
+   * @param {Executor<unknown>} executor - The executor to remove.
+   */
+  async remove(executor: Executor<unknown>) {
+    this.store.delete(executor)
   }
 }
 
@@ -213,7 +239,7 @@ export interface Executor<Value> {
    * @param scope The scope in which to resolve the value.
    * @returns A promise that resolves to the value.
    */
-  resolve(scope: Scope): Promise<Readonly<Value>>
+  resolve(scope: Scope, ref: Executor<Value>): Promise<Value>
 
   /**
    * Resets the executor to its initial state.
@@ -237,11 +263,11 @@ export interface Executor<Value> {
 
 const executorSymbol = Symbol.for('$submodule')
 
-export function isExecutor<P, D>(obj: any): obj is Executor<P> {
+export function isExecutor<P, D>(obj: unknown): obj is Executor<P> {
   return obj?.[executorSymbol]
 }
 
-export class Execution<Input extends Array<any>, Output, Dependency> {
+export class Execution<Input extends Array<unknown>, Output, Dependency> {
   constructor(
     private executor: (dependency: Dependency, ...input: Input) => Output | Promise<Output>,
     private dependency: EODE<Dependency>
@@ -262,7 +288,7 @@ export class Execution<Input extends Array<any>, Output, Dependency> {
 
 }
 
-export function createExecution<Dependency, Input extends Array<any>, Output>(
+export function createExecution<Dependency, Input extends Array<unknown>, Output>(
   executor: (dependency: Dependency, ...input: Input) => Output | Promise<Output>,
   dependency: Executor<Dependency>
 ): Execution<Input, Output, Dependency> {
@@ -280,18 +306,6 @@ type EODE<D> = Executor<D> | { [key in keyof D]: Executor<D[key]> }
  * @returns {Executor<P>} An executor for the provided value
  */
 export function create<P>(providerClass: ProviderClass<P>): Executor<P>
-
-/**
- * Creates an Executor for a given provider class with dependencies.
- * 
- * @template P The type of the provided value
- * @template D The type of the dependencies
- * 
- * @param {ProviderClass<P, NoInfer<D>>} providerClass - A provider class with dependencies
- * @param {EODE<D>} dependencies - The dependencies required by the provider class
- * @returns {Executor<P>} An executor for the provided value
- */
-export function create<P, D>(providerClass: ProviderClass<P, NoInfer<D>>, dependencies: EODE<D>): Executor<P>
 
 /**
  * Creates an Executor for a given provider function without dependencies.
@@ -319,22 +333,22 @@ export function create<P, D>(provider: Provider<P, NoInfer<D>>, dependencies: EO
  * Creates an Executor for a given provider or provider class, with optional dependencies.
  * 
  * @template P The type of the provided value
- * @template D The type of the dependencies (if any)
+ * @template D The type of the dependencies (if unknown)
  * 
  * @param {Provider<P, D> | ProviderClass<P, D>} provider - A provider function or class
  * @param {EODE<D>} [dependencies] - Optional dependencies required by the provider
  * @returns {Executor<P>} An executor for the provided value
  */
-export function create<P, D>(provider: Provider<P, D> | ProviderClass<P, D>, dependencies?: EODE<D>): Executor<P> {
+export function create<P, D>(provider: Provider<P, D> | ProviderClass<P>, dependencies?: EODE<D>): Executor<P> {
   let substitution: Executor<P> | undefined
 
-  let modifiableDependency = dependencies
+  const modifiableDependency = dependencies
     ? isExecutor(dependencies) ? dependencies : combine(dependencies)
     : undefined
 
-  async function resolve(scope: Scope): Promise<P> {
+  async function resolve(scope: Scope, ref: Executor<P>): Promise<P> {
     if (scope.has(executor)) {
-      return await scope.get(executor)
+      return await scope.get(executor) as Promise<P>
     }
 
     if (substitution) {
@@ -342,10 +356,10 @@ export function create<P, D>(provider: Provider<P, D> | ProviderClass<P, D>, dep
     }
 
     const promise = Promise.resolve()
-      .then(() => modifiableDependency?.resolve(scope))
+      .then(() => modifiableDependency?.resolve(scope, modifiableDependency))
       .then(async (actualized) => {
         if (provider instanceof ProviderClass) {
-          return provider.provider(scope, actualized as D)
+          return provider.provider(scope, ref)
         }
 
         if (provider.length > 0 && actualized === undefined) {
@@ -359,6 +373,10 @@ export function create<P, D>(provider: Provider<P, D> | ProviderClass<P, D>, dep
           if (onResolve.filter(actualized)) {
             return onResolve.cb(actualized)
           }
+        }
+
+        if (actualized === undefined || actualized === null) {
+          scope.remove(ref)
         }
 
         return actualized
@@ -492,7 +510,7 @@ export const flat = <T>(executor: Executor<Executor<T>>) => create(async scoper 
 /**
  * @deprecated
  */
-export function prepare<Dependent, Input extends Array<any>, Output>(
+export function prepare<Dependent, Input extends Array<unknown>, Output>(
   provider: ((provide: Dependent, ...input: Input) => Output),
   dependency: EODE<Dependent>,
   scope: Scope = getScope()
@@ -559,10 +577,85 @@ export function combine<
 >(layout: L): Executor<{ [key in keyof L]: inferProvide<L[key]> }> {
   return create(new ProviderClass(async (scope) => {
     const layoutPromise = Object.entries(layout).map(
-      async ([key, executor]) => [key, await executor.resolve(scope)] as const
+      async ([key, executor]) => [key, await scope.resolve(executor)] as const
     );
     const result = Object.fromEntries(await Promise.all(layoutPromise));
     return result as { [key in keyof L]: inferProvide<L[key]> };
   }));
 }
 
+export interface Cacheable<K, V> {
+  get: (key: K) => V | undefined
+  set: (key: K, value: V) => unknown
+}
+
+export function cache<K, V>(): Executor<Cacheable<K, V>> {
+  return value(new Map<K, V>())
+}
+
+export function createCache<K, V extends Executor<unknown>>(executor: Executor<Cacheable<K, V>>): Executor<Cacheable<K, V>> {
+  return executor
+}
+
+type FactoryOptions<T, AT, TAT> = {
+  factory: Executor<Provider<T, TAT>> | Provider<T, TAT>,
+  keyTransform: Executor<Provider<AT, TAT>> | Provider<AT, TAT>,
+  cacheProvider?: Executor<Cacheable<AT, Executor<T>>>
+}
+
+/**
+ * createFactory builds the foundation for authoring. 
+ * 
+ * Imagine situation where you needs to create a factory for a logger.
+ * Mostly all well-defined, but there are certain aspects where you want to have more control.
+ * 
+ * The root goes to the factory, while others can have certain inputs on the change
+ * 
+ * @template T The type of the value to be created
+ * @template AT Type of the key to be used to compare. Should be comparable 
+ * @template TAT Type of the key to be used to create the value
+ * 
+ * @param factory The factory to create the value
+ * @param keyTransform The key transform non-comparable to comparable
+ * @param cacheProvider The cache provider to cache the value, by default it will be a Map
+ *
+ * @returns executor so end-user has more control over how to create an instance
+ * @returns create as a convenient way to create an instance
+ */
+export function createFactory<T, AT, TAT = AT>(
+  { factory, keyTransform, cacheProvider }: FactoryOptions<T, AT, TAT>
+): {
+  executor: Executor<(key: TAT) => Promise<T>>,
+  create: (provider: Provider<T, Provider<T, TAT>>) => Executor<T>
+} {
+  const defaultCacheProvider = cache<AT, Executor<T>>()
+
+  const stdFactory = isExecutor(factory) ? factory : value(factory)
+  const stdKeyTransform = isExecutor(keyTransform) ? keyTransform : value(keyTransform)
+
+  const executor = create(async ({ scoper, keyTransform, cacheProvider, factory }) => {
+    return async (key: TAT): Promise<T> => {
+
+      const transformedKey = await keyTransform(key)
+      const maybeExecutor = cacheProvider.get(transformedKey)
+      if (maybeExecutor) {
+        return await scoper.resolve(maybeExecutor)
+      }
+
+      const executor = value(await factory(key))
+      cacheProvider.set(transformedKey, executor)
+
+      return await scoper.resolve(executor)
+    }
+  }, {
+    scoper,
+    factory: stdFactory,
+    keyTransform: stdKeyTransform,
+    cacheProvider: cacheProvider || defaultCacheProvider,
+  })
+
+  return {
+    executor,
+    create: (provider: Provider<T, Provider<T, TAT>>) => create(provider, executor),
+  }
+}

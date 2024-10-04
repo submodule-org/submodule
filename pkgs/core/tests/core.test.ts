@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vitest"
-import { resolve, combine, create, execute, prepare, value, resolveValue, flat, unImplemented, createScope, factory } from "../src"
+import { resolve, combine, create, execute, prepare, value, resolveValue, flat, unImplemented, createScope, factory, scoper, createCache, type Executor, createFactory } from "../src"
 
 test('submodule should work', async () => {
   const a = create(() => 'a' as const)
@@ -201,4 +201,80 @@ test("flat should work", async () => {
   const a = create(() => create(() => 'a'))
   const ar = await resolve(flat(a))
   expect(ar).toBe('a')
+})
+
+test("submodule can do cachedFactory", async () => {
+  type LogConfig = {
+    name: string
+    level: 'debug' | 'info' | 'warn' | 'error'
+  }
+
+  type Logger = {
+    log: (msg: string) => void
+  }
+
+  const loggerFactory = createFactory<Logger, string, LogConfig>({
+    factory: async (config: LogConfig): Promise<Logger> => {
+      return {
+        log: (msg: string) => {
+          return `${config.level} - ${config.name} - ${msg}`
+        }
+      }
+    },
+    keyTransform: (key) => key.name
+  })
+
+  const systemLogger = loggerFactory.create((factory) => factory({ name: 'system', level: 'debug' }))
+  const anotherSystemLogger = loggerFactory.create((factory) => factory({ name: 'system', level: 'debug' }))
+
+  const userLogger = loggerFactory.create((factory) => factory({ name: 'user', level: 'info' }))
+
+  const scope = createScope()
+  const r = await scope.resolve({ systemLogger, userLogger, anotherSystemLogger })
+  expect(r.systemLogger === r.anotherSystemLogger).toBe(true)
+  expect(r.systemLogger.log('hello')).toBe('debug - system - hello')
+  expect(r.userLogger.log('hello')).toBe('info - user - hello')
+})
+
+test("factory can make use of executor as well", async () => {
+  type ServerConfig = {
+    port: number
+  }
+
+  type Server = {
+    serverPort: number
+  }
+
+  const rootServerConfig = create(() => ({ port: 4000 } as ServerConfig))
+
+  const serverTemplate = createFactory<Server, ServerConfig>({
+    factory: create((rootConfig) => async (config) => {
+      return {
+        serverPort: config.port + rootConfig.port
+      }
+    }, rootServerConfig),
+    keyTransform: (config) => config
+  })
+
+  const server = serverTemplate.create(f => f({ port: 4000 }))
+
+  const scope = createScope()
+  const r = await scope.resolve(server)
+  expect(r.serverPort).toBe(8000)
+})
+
+test("null or undefined will not be cached", async () => {
+  let seed = 0
+  const fn = vi.fn()
+
+  const plus = create(() => {
+    fn(seed++)
+  })
+
+  const scope = createScope()
+  await scope.resolve(plus)
+  expect(fn).toBeCalledTimes(1)
+
+  await scope.resolve(plus)
+  expect(fn).toBeCalledTimes(2)
 })

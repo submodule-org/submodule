@@ -49,7 +49,7 @@ describe('scope', () => {
     const scope = createScope()
 
     scope.set(seed, value(5))
-    let source = await sourceMod.resolve(scope)
+    const source = await sourceMod.resolve(scope)
     expect(source.i).toBe(5)
 
     source.plus()
