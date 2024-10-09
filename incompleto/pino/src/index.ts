@@ -1,4 +1,4 @@
-import { combine, type Executor, map, normalize, provide } from "@submodule/core"
+import { combine, type EODE, type Executor, isExecutor, map, provide } from "@submodule/core"
 import type { Logger, LoggerOptions } from "pino"
 
 type PinoModuleConfig = {
@@ -6,8 +6,8 @@ type PinoModuleConfig = {
   config?: LoggerOptions
 }
 
-export const createPinoModule = (config: PinoModuleConfig | Executor<PinoModuleConfig>) => {
-  const moduleConfig = normalize(config)
+export const createPinoModule = (config: EODE<PinoModuleConfig>) => {
+  const moduleConfig = isExecutor(config) ? config : combine(config)
   const pinoModule = provide(async () => {
     return await import('pino')
   })

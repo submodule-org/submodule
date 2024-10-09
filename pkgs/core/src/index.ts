@@ -304,6 +304,7 @@ export type EODE<D> = Executor<D> | { [key in keyof D]: Executor<D[key]> }
  * 
  * @param {ProviderClass<P>} providerClass - A provider class without dependencies
  * @returns {Executor<P>} An executor for the provided value
+ * @deprecated use provide instead
  */
 export function create<P>(providerClass: ProviderClass<P>): Executor<P>
 
@@ -314,6 +315,7 @@ export function create<P>(providerClass: ProviderClass<P>): Executor<P>
  * 
  * @param {Provider<P>} provider - A provider function without dependencies
  * @returns {Executor<P>} An executor for the provided value
+ * @deprecated use provide instead
  */
 export function create<P>(provider: Provider<P>): Executor<P>
 
@@ -326,6 +328,7 @@ export function create<P>(provider: Provider<P>): Executor<P>
  * @param {Provider<P, NoInfer<D>>} provider - A provider function with dependencies
  * @param {EODE<D>} dependencies - The dependencies required by the provider function
  * @returns {Executor<P>} An executor for the provided value
+ * @deprecated use map instead
  */
 export function create<P, D>(provider: Provider<P, NoInfer<D>>, dependencies: EODE<D>): Executor<P>
 
