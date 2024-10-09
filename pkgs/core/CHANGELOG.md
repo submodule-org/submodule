@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.1.0](https://github.com/submodule-js/submodule/compare/@submodule/core6.0.0...@submodule/core6.1.0) (2024-10-04)
+
+
+### Features
+
+* added createFactory, an atom to have better authoring ([b0e2018](https://github.com/submodule-js/submodule/commit/b0e20183d473fe4a37af106a32e84847f666ccac))
+
 ## [6.0.0](https://github.com/submodule-js/submodule/compare/@submodule/core5.2.0...@submodule/core6.0.0) (2024-08-27)
 
 ## [6.0.0-rc.8](https://github.com/submodule-js/submodule/compare/@submodule/core6.0.0-rc.7...@submodule/core6.0.0-rc.8) (2024-06-14)

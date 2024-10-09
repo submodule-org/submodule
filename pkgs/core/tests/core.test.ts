@@ -1,5 +1,6 @@
 import { expect, test, vi } from "vitest"
-import { resolve, combine, create, execute, prepare, value, resolveValue, flat, unImplemented, createScope, factory, scoper, createCache, type Executor, createFactory } from "../src"
+import { resolve, combine, create, execute, prepare, value, resolveValue, flat, unImplemented, createScope, factory, factorize, produce, provide, map } from "../src"
+import { server } from "typescript"
 
 test('submodule should work', async () => {
   const a = create(() => 'a' as const)
@@ -209,29 +210,23 @@ test("submodule can do cachedFactory", async () => {
     level: 'debug' | 'info' | 'warn' | 'error'
   }
 
-  type Logger = {
-    log: (msg: string) => void
-  }
-
-  const loggerFactory = createFactory<Logger, string, LogConfig>({
-    factory: async (config: LogConfig): Promise<Logger> => {
+  const createLogger = factorize(
+    async (config: LogConfig) => {
       return {
         log: (msg: string) => {
           return `${config.level} - ${config.name} - ${msg}`
         }
       }
-    },
-    keyTransform: (key) => key.name
-  })
+    }
+  )
 
-  const systemLogger = loggerFactory.create((factory) => factory({ name: 'system', level: 'debug' }))
-  const anotherSystemLogger = loggerFactory.create((factory) => factory({ name: 'system', level: 'debug' }))
-
-  const userLogger = loggerFactory.create((factory) => factory({ name: 'user', level: 'info' }))
+  const systemLogger = createLogger({ name: 'system', level: 'debug' })
+  const anotherSystemLogger = createLogger({ name: 'system', level: 'info' })
+  const userLogger = createLogger({ name: 'user', level: 'info' })
 
   const scope = createScope()
   const r = await scope.resolve({ systemLogger, userLogger, anotherSystemLogger })
-  expect(r.systemLogger === r.anotherSystemLogger).toBe(true)
+
   expect(r.systemLogger.log('hello')).toBe('debug - system - hello')
   expect(r.userLogger.log('hello')).toBe('info - user - hello')
 })
@@ -241,22 +236,17 @@ test("factory can make use of executor as well", async () => {
     port: number
   }
 
-  type Server = {
-    serverPort: number
-  }
-
   const rootServerConfig = create(() => ({ port: 4000 } as ServerConfig))
 
-  const serverTemplate = createFactory<Server, ServerConfig>({
-    factory: create((rootConfig) => async (config) => {
+  const createServer = factorize(
+    create((rootConfig) => async (config: ServerConfig) => {
       return {
         serverPort: config.port + rootConfig.port
       }
     }, rootServerConfig),
-    keyTransform: (config) => config
-  })
+  )
 
-  const server = serverTemplate.create(f => f({ port: 4000 }))
+  const server = createServer({ port: 4000 })
 
   const scope = createScope()
   const r = await scope.resolve(server)
@@ -277,4 +267,57 @@ test("null or undefined will not be cached", async () => {
 
   await scope.resolve(plus)
   expect(fn).toBeCalledTimes(2)
+})
+
+test("use fullfill to create a module", async () => {
+  const plus = create(() => {
+    return (seed: number) => seed + 1
+  })
+
+  const formula = produce(plus, value(1))
+
+  const scope = createScope()
+  const result = await scope.resolve(formula)
+  expect(result).toBe(2)
+})
+
+test("fulfillment can make use of destructuring", async () => {
+  type Config = {
+    server: string
+    port: string
+  }
+
+  const defaultConfig = value({
+    server: 'localhost',
+    port: '4000'
+  } satisfies Config)
+
+  const createServer = create((defaultConfig) => {
+    return (config: Partial<Config>) => {
+      return `${config.server || defaultConfig.server}:${config.port || defaultConfig.port}`
+    }
+  }, defaultConfig)
+
+  const server1 = produce(createServer, value({ port: '3000' }))
+  const server2 = produce(createServer, value({ server: '127.0.0.1' }))
+
+  const scope = createScope()
+  const r = await scope.resolve({ server1, server2 })
+  expect(r.server1).toBe('localhost:3000')
+  expect(r.server2).toBe('127.0.0.1:4000')
+
+})
+
+test("provide and map should work", async () => {
+  const seed = provide(() => 4000)
+  const factor = value(-1)
+  const negate = map(factor, (factor) => (v: number) => factor * v)
+
+  const plus = map(seed, (seed) => seed + 1)
+  const nagativeSeed = map(seed, negate)
+
+  const scope = createScope()
+  const r = await scope.resolve({ plus, nagativeSeed })
+  expect(r.plus).toBe(4001)
+  expect(r.nagativeSeed).toBe(-4000)
 })
