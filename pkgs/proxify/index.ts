@@ -1,6 +1,6 @@
 const supportedType = ['object', 'array']
 
-export const proxify = <T>(value: Readonly<T>) => {
+export const proxify = <T extends object>(value: Readonly<T>) => {
   const proxied = {}
 
   if (!supportedType.includes(typeof value)) {
@@ -10,12 +10,12 @@ export const proxify = <T>(value: Readonly<T>) => {
     }
   }
 
-  let ref: object = value as any
+  let ref: object = value
 
   return {
     value: new Proxy(proxied, {
       apply(_, thisArgs, argumentList) {
-        const refFn = ref as unknown as () => any
+        const refFn = ref as unknown as () => unknown
 
         return refFn.apply(thisArgs, argumentList)
       },
@@ -28,7 +28,7 @@ export const proxify = <T>(value: Readonly<T>) => {
       }
     }) as typeof value,
     update: (newValue: T) => {
-      ref = newValue as any
+      ref = newValue
     }
   }
 }
