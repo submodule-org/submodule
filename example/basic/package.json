@@ -12,8 +12,11 @@
     "@hono/node-server": "^1.13.1",
     "@incompleto/hono": "workspace:*",
     "@incompleto/pino": "workspace:*",
+    "@incompleto/trpc": "workspace:*",
     "@submodule/core": "workspace:*",
+    "@trpc/server": "^10.45.2",
     "hono": "^4.6.3",
-    "pino": "^9.4.0"
+    "pino": "^9.4.0",
+    "zod": "^3.23.8"
   }
 }
