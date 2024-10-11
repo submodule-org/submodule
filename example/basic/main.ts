@@ -5,11 +5,18 @@ import { trpc, honos } from "./submodules"
 
 const helloProcedure = trpc.procedure(value(p => {
   return p
+    .procedure
     .input(z.string())
     .query((o) => ({ hello: o.input }))
 }))
 
-const helloRoute = trpc.router({ hello: helloProcedure })
+const helloRoute = trpc.router(
+  map(
+    helloProcedure,
+    (procedure) => (t) => t.router({ hello: procedure })
+  )
+)
+
 const caller = trpc.createCallerFactory(helloRoute)
 
 async function main() {
