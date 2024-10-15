@@ -1,0 +1,11 @@
+{
+  "name": "componento",
+  "version": "1.0.0",
+  "files": [
+    "README.md",
+    {
+      "file": "custom.ts",
+      "overwrite": true
+    }
+  ]
+}

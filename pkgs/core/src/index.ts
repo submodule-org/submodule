@@ -295,7 +295,7 @@ export function createExecution<Dependency, Input extends Array<unknown>, Output
   return new Execution(executor, dependency)
 }
 
-type EODE<D> = Executor<D> | { [key in keyof D]: Executor<D[key]> }
+export type EODE<D> = Executor<D> | { [key in keyof D]: Executor<D[key]> }
 
 /**
  * Creates an Executor for a given provider or provider class.
@@ -304,6 +304,7 @@ type EODE<D> = Executor<D> | { [key in keyof D]: Executor<D[key]> }
  * 
  * @param {ProviderClass<P>} providerClass - A provider class without dependencies
  * @returns {Executor<P>} An executor for the provided value
+ * @deprecated use provide instead
  */
 export function create<P>(providerClass: ProviderClass<P>): Executor<P>
 
@@ -314,6 +315,7 @@ export function create<P>(providerClass: ProviderClass<P>): Executor<P>
  * 
  * @param {Provider<P>} provider - A provider function without dependencies
  * @returns {Executor<P>} An executor for the provided value
+ * @deprecated use provide instead
  */
 export function create<P>(provider: Provider<P>): Executor<P>
 
@@ -326,6 +328,7 @@ export function create<P>(provider: Provider<P>): Executor<P>
  * @param {Provider<P, NoInfer<D>>} provider - A provider function with dependencies
  * @param {EODE<D>} dependencies - The dependencies required by the provider function
  * @returns {Executor<P>} An executor for the provided value
+ * @deprecated use map instead
  */
 export function create<P, D>(provider: Provider<P, NoInfer<D>>, dependencies: EODE<D>): Executor<P>
 
@@ -584,78 +587,85 @@ export function combine<
   }));
 }
 
-export interface Cacheable<K, V> {
-  get: (key: K) => V | undefined
-  set: (key: K, value: V) => unknown
-}
-
-export function cache<K, V>(): Executor<Cacheable<K, V>> {
-  return value(new Map<K, V>())
-}
-
-export function createCache<K, V extends Executor<unknown>>(executor: Executor<Cacheable<K, V>>): Executor<Cacheable<K, V>> {
-  return executor
-}
-
-type FactoryOptions<T, AT, TAT> = {
-  factory: Executor<Provider<T, TAT>> | Provider<T, TAT>,
-  keyTransform: Executor<Provider<AT, TAT>> | Provider<AT, TAT>,
-  cacheProvider?: Executor<Cacheable<AT, Executor<T>>>
+/**
+ * Utitiliy function to normalize an executor
+ * 
+ * @param valueOrExecutor value to be normalized
+ * @returns 
+ */
+export function normalize<T>(valueOrExecutor: T | Executor<T>): Executor<T> {
+  return isExecutor(valueOrExecutor) ? valueOrExecutor : value(valueOrExecutor)
 }
 
 /**
- * createFactory builds the foundation for authoring. 
+ * Utility function to turn a Provider into a template. Helpful on creating a library, reusable code block
+ * Pair with produce to create a complete module
  * 
- * Imagine situation where you needs to create a factory for a logger.
- * Mostly all well-defined, but there are certain aspects where you want to have more control.
- * 
- * The root goes to the factory, while others can have certain inputs on the change
- * 
- * @template T The type of the value to be created
- * @template AT Type of the key to be used to compare. Should be comparable 
- * @template TAT Type of the key to be used to create the value
- * 
- * @param factory The factory to create the value
- * @param keyTransform The key transform non-comparable to comparable
- * @param cacheProvider The cache provider to cache the value, by default it will be a Map
- *
- * @returns executor so end-user has more control over how to create an instance
- * @returns create as a convenient way to create an instance
+ * @param provider 
+ * @returns 
  */
-export function createFactory<T, AT, TAT = AT>(
-  { factory, keyTransform, cacheProvider }: FactoryOptions<T, AT, TAT>
-): {
-  executor: Executor<(key: TAT) => Promise<T>>,
-  create: (provider: Provider<T, Provider<T, TAT>>) => Executor<T>
-} {
-  const defaultCacheProvider = cache<AT, Executor<T>>()
+export function factorize<P, D>(
+  provider: Executor<Provider<P, D>> | Provider<P, D>
+): (key: D | Executor<D>) => Executor<P> {
+  return (key: D | Executor<D>) => create(async ({ provider, dependency }) => {
+    return provider(dependency)
+  }, { provider: normalize(provider), dependency: normalize(key) })
+}
 
-  const stdFactory = isExecutor(factory) ? factory : value(factory)
-  const stdKeyTransform = isExecutor(keyTransform) ? keyTransform : value(keyTransform)
-
-  const executor = create(async ({ scoper, keyTransform, cacheProvider, factory }) => {
-    return async (key: TAT): Promise<T> => {
-
-      const transformedKey = await keyTransform(key)
-      const maybeExecutor = cacheProvider.get(transformedKey)
-      if (maybeExecutor) {
-        return await scoper.resolve(maybeExecutor)
-      }
-
-      const executor = value(await factory(key))
-      cacheProvider.set(transformedKey, executor)
-
-      return await scoper.resolve(executor)
-    }
+/**
+ * Function to complete a template. Helpful on creating a library, reusable code block
+ * Pair with factoryize to create a complete module
+ * 
+ * @param provider 
+ * @param fulfillment 
+ * @returns 
+ */
+export function produce<P, D>(
+  provider: Executor<Provider<P, D>>,
+  fulfillment: EODE<D>
+) {
+  return create(({ provider, fulfillment }) => {
+    return provider(fulfillment)
   }, {
-    scoper,
-    factory: stdFactory,
-    keyTransform: stdKeyTransform,
-    cacheProvider: cacheProvider || defaultCacheProvider,
+    provider,
+    fulfillment: isExecutor(fulfillment) ? fulfillment : combine(fulfillment)
   })
+}
 
-  return {
-    executor,
-    create: (provider: Provider<T, Provider<T, TAT>>) => create(provider, executor),
+/**
+ * Slightly better version of create, with a few more variants
+ * @param source 
+ * @param mapper 
+ * @returns 
+ */
+export function map<P, D>(
+  source: Executor<P>,
+  mapper: Provider<D, P> | Executor<Provider<D, P>>
+): Executor<D> {
+  if (isExecutor(mapper)) {
+    return create(({ source, mapper }) => {
+      return mapper(source)
+    }, combine({ source, mapper }))
   }
+
+  return create(mapper, source)
+}
+
+export function flatMap<P, D>(
+  provider: Executor<P>,
+  mapper: Provider<Executor<D>, P>
+): Executor<D> {
+  return flat(map(provider, mapper))
+}
+
+/**
+ * Equavilant to create, but with a slightly clearer meaning
+ * 
+ * @param factory function to create the value
+ * @returns 
+ */
+export function provide<P>(
+  provider: Provider<P>
+): Executor<P> {
+  return create(provider)
 }

@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "pkg": "bun",
+  "components": [
+    {
+      "name": "componento@*",
+      "alias": "c"
+    }
+  ],
+  "installDir": "mods"
+}

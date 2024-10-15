@@ -7,7 +7,7 @@ describe('scope', () => {
   const sourceMod = create((seed: number) => {
     let _seed = seed
     return {
-      plus: () => _seed = _seed + 1,
+      plus: () => { _seed = _seed + 1 },
       get i() {
         return _seed
       }
@@ -20,13 +20,13 @@ describe('scope', () => {
     const scope1 = createScope()
     const scope2 = createScope()
 
-    const source1 = await sourceMod.resolve(scope1)
+    const source1 = await scope1.resolve(sourceMod)
     expect(source1.i).toBe(5)
 
     source1.plus()
     expect(source1.i).toBe(6)
 
-    const source2 = await sourceMod.resolve(scope2)
+    const source2 = await scope2.resolve(sourceMod)
     expect(source2.i).toBe(5)
 
     source2.plus()
@@ -36,12 +36,12 @@ describe('scope', () => {
 
   test('scope can be reset', async () => {
     const scope = createScope()
-    let source = await sourceMod.resolve(scope)
+    let source = await scope.resolve(sourceMod)
     source.plus()
     expect(source.i).toBe(6)
 
     scope.dispose()
-    source = await sourceMod.resolve(scope)
+    source = await scope.resolve(sourceMod)
     expect(source.i).toBe(5)
   })
 
@@ -49,7 +49,8 @@ describe('scope', () => {
     const scope = createScope()
 
     scope.set(seed, value(5))
-    const source = await sourceMod.resolve(scope)
+
+    const source = await scope.resolve(sourceMod)
     expect(source.i).toBe(5)
 
     source.plus()
