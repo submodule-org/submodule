@@ -24,13 +24,14 @@ const initCmd = new Command('init')
   })
 
 const addCmd = new Command('add')
-  .argument('[components...]', 'components to add')
-  .action(async (components: string[]) => {
+  .argument('<component>', 'components to add')
+  .argument('[alias]', 'alias for the component')
+  .action(async (component: string, alias: string | undefined) => {
     const scope = createScope()
     let error: undefined | unknown = undefined
 
     await scope.resolve(add)
-      .then(adder => adder(components))
+      .then(adder => adder(component, alias))
       .catch((e) => {
         error = e
       })

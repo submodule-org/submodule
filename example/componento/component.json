@@ -1,7 +1,11 @@
 {
   "name": "componento",
   "version": "1.0.0",
-  "dependencies": [
-    "@submodule/core"
+  "files": [
+    "README.md",
+    {
+      "file": "custom.ts",
+      "overwrite": true
+    }
   ]
 }
