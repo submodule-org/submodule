@@ -4,6 +4,7 @@ on:
     branches:
       - main
     paths:
+      - ".github/workflows/build-and-release-submodule.yml"
       - "pkgs/core/**"
 
 jobs:
@@ -19,12 +20,8 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "16"
-          cache: "bun"
 
-      - name: Install Bun
-        run: |
-          curl -fsSL https://bun.sh/install | bash
-          export PATH="$HOME/.bun/bin:$PATH"
+      - uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
         working-directory: pkgs/core
