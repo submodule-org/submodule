@@ -1,0 +1,68 @@
+name: Build and Release
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "pkgs/core/**"
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    name: Build and Release for @submodule/core
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+          cache: "bun"
+
+      - name: Install Bun
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          export PATH="$HOME/.bun/bin:$PATH"
+
+      - name: Install dependencies
+        working-directory: pkgs/core
+        run: bun install
+
+      - name: Run tests
+        working-directory: pkgs/core
+        run: bun run test
+
+      - name: Generate changelog and tag version
+        working-directory: pkgs/core
+        run: npx commit-and-tag-version
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.commit_and_tag_version.outputs.tag }}
+          release_name: Release ${{ steps.commit_and_tag_version.outputs.tag }}
+          body: ${{ steps.commit_and_tag_version.outputs.changelog }}
+          draft: false
+          prerelease: false
+
+      - name: Merge changelog to main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git checkout main
+          git merge ${{ steps.commit_and_tag_version.outputs.tag }}
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} main
+        working-directory: pkgs/core
+
+      - name: Publish to npm
+        working-directory: pkgs/core
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
