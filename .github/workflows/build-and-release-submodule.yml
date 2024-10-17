@@ -38,7 +38,7 @@ jobs:
 
       - name: Generate changelog and tag version
         working-directory: pkgs/core
-        run: bun run release
+        run: bun run bump
 
       - name: Create GitHub Release
         id: create_release
