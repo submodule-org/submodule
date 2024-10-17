@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@submodule/core": "workspace:*",
-    "inkk": "workspace:*"
+    "use-inkk": "workspace:*"
   },
   "scripts": {
     "try": "incompleto -h"

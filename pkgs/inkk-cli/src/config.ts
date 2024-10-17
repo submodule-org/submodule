@@ -14,7 +14,9 @@ export const configSchema = z.object({
   components: z.array(
     z.string()
       .or(z.object({ name: z.string(), alias: z.string().optional() }))
-  ).transform(c => c.map(c => typeof c === 'string' ? { name: c } : c)),
+  )
+    .default([])
+    .transform(c => c.map(c => typeof c === 'string' ? { name: c } : c)),
   installDir: z.string().optional().default('mods')
 })
 

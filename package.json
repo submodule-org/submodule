@@ -1,12 +1,5 @@
 {
   "name": "submodule-parent",
-  "dependencies": {
-    "esbuild": "^0.21.4",
-    "standard-version": "^9.5.0",
-    "tsup": "^8.1.0",
-    "tsx": "^4.11.2",
-    "typescript": "^5.4.5"
-  },
   "workspaces": [
     "pkgs/*",
     "example/*",
