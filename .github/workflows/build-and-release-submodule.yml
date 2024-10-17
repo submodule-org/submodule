@@ -31,9 +31,14 @@ jobs:
         working-directory: pkgs/core
         run: bun run test
 
+      - name: Declare maintainance
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
       - name: Generate changelog and tag version
         working-directory: pkgs/core
-        run: npx commit-and-tag-version
+        run: bun run release
 
       - name: Create GitHub Release
         id: create_release
@@ -51,11 +56,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git checkout main
           git merge ${{ steps.commit_and_tag_version.outputs.tag }}
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} main
+          git push --follow-tags https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} main
         working-directory: pkgs/core
 
       - name: Publish to npm
