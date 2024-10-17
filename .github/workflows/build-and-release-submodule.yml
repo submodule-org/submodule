@@ -31,14 +31,18 @@ jobs:
         working-directory: pkgs/core
         run: bun run test
 
+      - name: Build
+        working-directory: pkgs/core
+        run: bun run build
+
       - name: Declare maintainance
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
-      - name: Generate changelog and tag version
+      - name: Commit and tag version
         working-directory: pkgs/core
-        run: bun run bump
+        run: bunx commit-and-tag-version --path . -t @submodule/core-
 
       - name: Create GitHub Release
         id: create_release
