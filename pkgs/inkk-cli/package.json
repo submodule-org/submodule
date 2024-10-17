@@ -1,6 +1,6 @@
 {
   "name": "use-inkk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "copy and and paste made easy",
   "bin": {
     "inkk": "bin"
@@ -49,8 +49,11 @@
     "dts": true
   },
   "scripts": {
-    "build": "bunx tsup",
-    "dev": "bunx tsup --watch",
-    "clean": "bunx rimraf dist"
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "build": "tsup",
+    "preview": "commit-and-tag-version --dry-run --path . -t use-inkk- --path .",
+    "bump": "bun run build && commit-and-tag-version --path . -t use-inkk- --path .",
+    "release": "git push --follow-tags origin main && npm publish --access public"
   }
 }
