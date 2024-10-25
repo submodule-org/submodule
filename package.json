@@ -3,7 +3,6 @@
   "workspaces": [
     "pkgs/*",
     "example/*",
-    "incompleto/*",
     "docs"
   ],
   "version": "0.0.0",
