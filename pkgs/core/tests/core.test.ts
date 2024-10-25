@@ -1,6 +1,5 @@
 import { expect, test, vi } from "vitest"
 import { resolve, combine, create, execute, prepare, value, resolveValue, flat, unImplemented, createScope, factory, factorize, produce, provide, map } from "../src"
-import { server } from "typescript"
 
 test('submodule should work', async () => {
   const a = create(() => 'a' as const)

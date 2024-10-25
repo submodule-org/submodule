@@ -203,6 +203,47 @@ export function createScope(): Scope {
   return new Scope()
 }
 
+class CombinedScope extends Scope {
+  constructor(
+    private scopes: Scope[]
+  ) {
+    super()
+  }
+
+  has(executor: Executor<unknown>): boolean {
+    return this.scopes.some(s => s.has(executor)) || super.has(executor)
+  }
+
+  async resolve<T>(executor: EODE<T>): Promise<T> {
+    const _executor = executor as Executor<unknown>
+    if (super.has(_executor)) {
+      return super.get(_executor) as Promise<T>
+    }
+
+    for (const scope of this.scopes) {
+      if (scope.has(_executor)) {
+        return scope.resolve(_executor) as Promise<T>
+      }
+    }
+
+    return await super.resolve(executor)
+  }
+}
+
+/**
+ * A fallback scope will not priority to resolve the executor but rather delegate to all of fallback scopes
+ * If there's no executor resolved in the fallback scope, it will resolve to the current scope
+ * 
+ * Fallback scope is useful when you want to combine different timeline, for example, 
+ * - a request scope that may contain request specific data
+ * - a global scope that contains reusable services
+ * @param scopes 
+ * @returns instance of scope
+ */
+export function createFallbackScope(scope: Scope, ...scopes: Scope[]): Scope {
+  return new CombinedScope([scope, ...scopes])
+}
+
 /**
  * Returns the global scope instance.
  * This function provides access to the singleton global scope,
@@ -639,16 +680,18 @@ export function produce<P, D>(
  * @returns 
  */
 export function map<P, D>(
-  source: Executor<P>,
+  source: EODE<P>,
   mapper: Provider<D, P> | Executor<Provider<D, P>>
 ): Executor<D> {
+  const _source = isExecutor(source) ? source : combine(source)
+
   if (isExecutor(mapper)) {
-    return create(({ source, mapper }) => {
-      return mapper(source)
-    }, combine({ source, mapper }))
+    return create(({ _source, mapper }) => {
+      return mapper(_source)
+    }, combine({ _source, mapper }))
   }
 
-  return create(mapper, source)
+  return create(mapper, _source)
 }
 
 export function flatMap<P, D>(

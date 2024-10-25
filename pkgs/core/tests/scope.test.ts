@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { createScope, value, create, combine } from "../src"
+import { createScope, value, create, provide, createFallbackScope, map } from "../src"
 
 describe('scope', () => {
   const seed = value(5)
@@ -14,7 +14,7 @@ describe('scope', () => {
     }
   }, seed)
 
-  const combineSourceMod = create((v) => v, combine({ seed, sourceMod }))
+  const combineSourceMod = map({ seed, sourceMod }, (v) => v)
 
   test('scopes are isolated', async () => {
     const scope1 = createScope()
@@ -55,6 +55,32 @@ describe('scope', () => {
 
     source.plus()
     expect(source.i).toBe(6)
+  })
+
+  test('scope can be combined', async () => {
+    const parentScope = createScope()
+    const childScope = createScope()
+
+    let seed = 0
+    const plus = provide(() => { seed = seed + 1; return seed })
+
+    await parentScope.resolve(plus)
+    expect(seed).toBe(1)
+
+    const combinedScope = createFallbackScope(parentScope, childScope)
+    await combinedScope.resolve(plus)
+
+    expect(seed).toBe(1)
+    expect(combinedScope.has(plus)).toBe(true)
+
+    const reversedCombinedScope = createFallbackScope(childScope, parentScope)
+    await reversedCombinedScope.resolve(plus)
+    expect(seed).toBe(1)
+
+    expect(childScope.has(plus)).toBe(false)
+
+    await combinedScope.dispose()
+    expect(combinedScope.has(plus)).toBe(true)
   })
 
 })
