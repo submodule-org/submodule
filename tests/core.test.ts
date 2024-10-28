@@ -20,6 +20,29 @@ test('submodule can be used as dependencies', async () => {
   expect(result).eq('a')
 })
 
+test('array should also work as list of resolvers', async () => {
+  const a = provide(() => 1)
+  const b = provide(() => { throw 'thrown error' })
+
+  const scope = createScope()
+  await expect(async () => await scope.resolve([a, b])).rejects.toThrowError('thrown error')
+  expect(scope.has(a)).toBe(true)
+  expect(scope.has(b)).toBe(true)
+})
+
+test('safeResolve should work', async () => {
+  const scope = createScope()
+  const a = value(1)
+  const b = provide<string>(() => { throw 'thrown error' })
+
+  const result = await scope.safeResolve([a, b])
+  expect(result.type).toBe('error')
+  expect(result['error']).toBe('thrown error')
+
+  expect(scope.has(a)).toBe(true)
+  expect(scope.has(b)).toBe(true)
+})
+
 test('create should not be eager', async () => {
   const fn = vi.fn(() => 'a')
 

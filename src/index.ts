@@ -24,7 +24,7 @@ export class Scope {
 
   constructor(
     private store = new Map<Executor<unknown>, Promise<unknown>>(),
-    private resolves: OnResolve[] = [],
+    private _resolves: OnResolve[] = [],
     private defers: Defer[] = []
   ) { }
 
@@ -104,6 +104,12 @@ export class Scope {
     return combined.resolve(this, combined)
   }
 
+  async safeResolve<T>(executor: EODE<T>): Promise<{ type: 'ok', value: T, error: undefined } | { type: 'error', value: undefined, error: unknown }> {
+    return await Promise.resolve(this.resolve(executor))
+      .then(value => ({ type: 'ok', value, error: undefined } as const))
+      .catch(error => ({ type: 'error', error, value: undefined } as const))
+  }
+
   async resolveAlias<T>(alias: unknown): Promise<T | undefined> {
     const executor = this.aliases.get(alias)
     if (!executor) {
@@ -161,7 +167,7 @@ export class Scope {
    * @param {OnResolve} onResolve - The onResolve callback to add.
    */
   addOnResolves(onResolve: OnResolve) {
-    this.resolves.push(onResolve)
+    this._resolves.push(onResolve)
   }
 
   /**
@@ -169,7 +175,7 @@ export class Scope {
    * @returns {OnResolve[]} The array of onResolve callbacks.
    */
   get onResolves(): OnResolve[] {
-    return this.resolves
+    return this._resolves
   }
 
   /**
@@ -182,7 +188,7 @@ export class Scope {
 
     this.store.clear()
     this.defers = []
-    this.resolves = []
+    this._resolves = []
   }
 
   /**
@@ -568,7 +574,7 @@ export type inferProvide<T> = T extends Executor<infer S> ? S : never
  * Combines multiple Executors into a single Executor that resolves to an object.
  * 
  * @template L An object type where values are Executors
- * @param {L} layout An object where each value is an Executor
+ * @param {L} layout An object (or array) where each value is an Executor
  * @returns {Executor<{ [key in keyof L]: inferProvide<L[key]> }>} An Executor that resolves to an object with the same keys as the input, but with resolved values
  * 
  * @example
@@ -582,6 +588,11 @@ export function combine<
   L extends Record<string, Executor<unknown>>
 >(layout: L): Executor<{ [key in keyof L]: inferProvide<L[key]> }> {
   return create(new ProviderClass(async (scope) => {
+    if (Array.isArray(layout)) {
+      const resolved = await Promise.all(layout.map(e => scope.resolve(e)))
+      return resolved as unknown as { [key in keyof L]: inferProvide<L[key]> }
+    }
+
     const layoutPromise = Object.entries(layout).map(
       async ([key, executor]) => [key, await scope.resolve(executor)] as const
     );
