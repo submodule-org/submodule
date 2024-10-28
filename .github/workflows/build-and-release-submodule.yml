@@ -23,6 +23,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           release-type: node
           package-name: "@submodule/core"
+          skip-github-pull-request: true
 
       - uses: actions/checkout@v4 # v4
       - uses: actions/setup-node@v4
