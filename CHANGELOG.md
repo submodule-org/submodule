@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [7.2.0](https://github.com/submodule-org/submodule/compare/v7.1.2...v7.2.0) (2024-10-28)
+
+
+### Features
+
+* added safeResolve API ([059d6d7](https://github.com/submodule-org/submodule/commit/059d6d71d25fc3b09f34d508aa870a3f4139ee85))
+* make combine compatible with array as well ([8c4685a](https://github.com/submodule-org/submodule/commit/8c4685a11abd53ed88ab7e9532ad9e2ff740e097))
+
+
+### Miscellaneous Chores
+
+* release 7.2.0 ([e33d445](https://github.com/submodule-org/submodule/commit/e33d4456597537276ec7731867cb6a975ab9adbd))
+
 ## [7.1.2](https://github.com/submodule-org/submodule/compare/v7.1.1...v7.1.2) (2024-10-28)
 
 
