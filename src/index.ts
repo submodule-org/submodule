@@ -104,6 +104,14 @@ export class Scope {
     return combined.resolve(this, combined)
   }
 
+  /**
+   * Safe resolve would resolve the executor and catch any error that might occur
+   * This is a safer and more verbose version to handle error. When you use `resolve` and the executor throws an error, it will be thrown as is.
+   * that error will be carried when you resolve the executor. This is useful when you want to handle the error in a more controlled way.
+   * 
+   * @param executor 
+   * @returns 
+   */
   async safeResolve<T>(executor: EODE<T>): Promise<{ type: 'ok', value: T, error: undefined } | { type: 'error', value: undefined, error: unknown }> {
     return await Promise.resolve(this.resolve(executor))
       .then(value => ({ type: 'ok', value, error: undefined } as const))
@@ -581,6 +589,7 @@ export type inferProvide<T> = T extends Executor<infer S> ? S : never
  * const nameExecutor = create(() => 'John');
  * const ageExecutor = create(() => 30);
  * const combinedExecutor = combine({ name: nameExecutor, age: ageExecutor });
+ * const anothercombined = combine([nameExecutor, ageExecutor]);
  * const result = await resolve(combinedExecutor);
  * console.log(result); // { name: 'John', age: 30 }
  */
