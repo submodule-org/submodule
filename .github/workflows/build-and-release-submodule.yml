@@ -1,72 +1,43 @@
-name: Build and Release
+permissions:
+  contents: write
+  pull-requests: write
+
 on:
   push:
     branches:
       - main
     paths:
-      - ".github/workflows/build-and-release-submodule.yml"
-      - "pkgs/core/**"
+      - "src/**"
+      - "test/**"
+      - "package.json"
 
+name: release-please
 jobs:
-  build-and-release:
+  release-please:
     runs-on: ubuntu-latest
-    name: Build and Release for @submodule/core
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - uses: GoogleCloudPlatform/release-please-action@v4
+        id: release
         with:
-          node-version: "16"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release-type: node
+          package-name: "@submodule/core"
+
+      - uses: actions/checkout@v4 # v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: "https://registry.npmjs.org"
 
       - uses: oven-sh/setup-bun@v2
 
-      - name: Install dependencies
-        working-directory: pkgs/core
-        run: bun install
+      - run: bun install
+      - run: bun run test
+      - run: bun run build
+        if: ${{ steps.release.outputs.release_created }}
 
-      - name: Run tests
-        working-directory: pkgs/core
-        run: bun run test
-
-      - name: Build
-        working-directory: pkgs/core
-        run: bun run build
-
-      - name: Declare maintainance
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-
-      - name: Commit and tag version
-        working-directory: pkgs/core
-        run: bunx commit-and-tag-version --path . -t @submodule/core-
-
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
+      - run: npm publish --access public
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.commit_and_tag_version.outputs.tag }}
-          release_name: Release ${{ steps.commit_and_tag_version.outputs.tag }}
-          body: ${{ steps.commit_and_tag_version.outputs.changelog }}
-          draft: false
-          prerelease: false
-
-      - name: Merge changelog to main
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git checkout main
-          git merge ${{ steps.commit_and_tag_version.outputs.tag }}
-          git push --follow-tags https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} main
-        working-directory: pkgs/core
-
-      - name: Publish to npm
-        working-directory: pkgs/core
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+        if: ${{ steps.release.outputs.release_created }}

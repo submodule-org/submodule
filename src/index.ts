@@ -199,11 +199,11 @@ export class Scope {
  * @function
  * @returns {Scope} A new Scope instance.
  */
-export function createScope(): Scope {
-  return new Scope()
+export function createScope(...scopes: Scope[]): Scope {
+  return new FallbackScope(scopes)
 }
 
-class CombinedScope extends Scope {
+class FallbackScope extends Scope {
   constructor(
     private scopes: Scope[]
   ) {
@@ -228,20 +228,6 @@ class CombinedScope extends Scope {
 
     return await super.resolve(executor)
   }
-}
-
-/**
- * A fallback scope will not priority to resolve the executor but rather delegate to all of fallback scopes
- * If there's no executor resolved in the fallback scope, it will resolve to the current scope
- * 
- * Fallback scope is useful when you want to combine different timeline, for example, 
- * - a request scope that may contain request specific data
- * - a global scope that contains reusable services
- * @param scopes 
- * @returns instance of scope
- */
-export function createFallbackScope(scope: Scope, ...scopes: Scope[]): Scope {
-  return new CombinedScope([scope, ...scopes])
 }
 
 /**

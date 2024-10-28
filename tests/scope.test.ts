@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { createScope, value, create, provide, createFallbackScope, map } from "../src"
+import { createScope, value, create, provide, map } from "../src"
 
 describe('scope', () => {
   const seed = value(5)
@@ -67,13 +67,13 @@ describe('scope', () => {
     await parentScope.resolve(plus)
     expect(seed).toBe(1)
 
-    const combinedScope = createFallbackScope(parentScope, childScope)
+    const combinedScope = createScope(parentScope, childScope)
     await combinedScope.resolve(plus)
 
     expect(seed).toBe(1)
     expect(combinedScope.has(plus)).toBe(true)
 
-    const reversedCombinedScope = createFallbackScope(childScope, parentScope)
+    const reversedCombinedScope = createScope(childScope, parentScope)
     await reversedCombinedScope.resolve(plus)
     expect(seed).toBe(1)
 
