@@ -562,31 +562,6 @@ export async function execute<Dependent, Output>(
   return execution.executeIn(scope)
 }
 
-/**
- * Resolves an Executor to its final value in the global scope.
- * 
- * @template T The type of the value provided by the Executor
- * @param {Executor<T>} executor The Executor to resolve
- * @param {Scope} [scope=getScope()] The scope in which to resolve the Executor. Defaults to the current scope.
- * @returns {Promise<T>} A Promise that resolves to the final value of the Executor
- * 
- * @example
- * const myExecutor = create(() => 'Hello, World!');
- * const result = await resolve(myExecutor);
- * console.log(result); // 'Hello, World!'
- */
-export async function resolve<T>(executor: Executor<T>, scope: Scope = getScope()): Promise<T> {
-  return await scope.resolve(executor)
-}
-
-export function resolveValue<T>(
-  executor: Executor<T>,
-  value: T | Executor<T>,
-  scope: Scope = getScope()
-) {
-  scope.resolveValue(executor, value)
-}
-
 export type inferProvide<T> = T extends Executor<infer S> ? S : never
 
 /**

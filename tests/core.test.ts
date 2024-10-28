@@ -1,12 +1,12 @@
 import { expect, test, vi } from "vitest"
-import { resolve, combine, create, execute, prepare, value, resolveValue, flat, unImplemented, createScope, factory, factorize, produce, provide, map } from "../src"
+import { combine, create, execute, prepare, value, flat, unImplemented, createScope, factory, factorize, produce, provide, map, getScope } from "../src"
 
 test('submodule should work', async () => {
   const a = create(() => 'a' as const)
-  expect(await resolve(a)).toMatch('a')
+  expect(await getScope().resolve(a)).toMatch('a')
 
   const b = create(async () => 'b' as const)
-  expect(await resolve(b)).toMatch('b')
+  expect(await getScope().resolve(b)).toMatch('b')
 
   const d = await execute(c => c, b)
   expect(d).toBe('b')
@@ -16,7 +16,7 @@ test('submodule can be used as dependencies', async () => {
   const a = create(() => 'a')
   const b = create((x) => x, a)
 
-  const result = await resolve(b)
+  const result = await getScope().resolve(b)
   expect(result).eq('a')
 })
 
@@ -26,7 +26,7 @@ test('create should not be eager', async () => {
   const a = create(fn)
   process.nextTick(async () => {
     expect(fn).toBeCalledTimes(0)
-    await resolve(a)
+    await getScope().resolve(a)
     expect(fn).toBeCalledTimes(1)
   })
 })
@@ -39,7 +39,7 @@ test('combine should work', async () => {
   const eagerB = create(fnB)
 
   const ab = combine({ a: lazyA, b: eagerB })
-  const result = await resolve(ab)
+  const result = await getScope().resolve(ab)
   expect(result).toEqual({ a: 'a', b: 'b' })
 })
 
@@ -52,7 +52,7 @@ test('should only executed one even in combine', async () => {
 
   const ab = combine({ a: lazyA, b: eagerB })
 
-  await resolve(ab)
+  await getScope().resolve(ab)
 
   expect(fnA).toBeCalledTimes(1)
   expect(fnB).toBeCalledTimes(1)
@@ -65,7 +65,7 @@ test('submodule can be chained', async () => {
     return (req: Req) => ({ b: req.a })
   })
 
-  const fn = await resolve(transform)
+  const fn = await getScope().resolve(transform)
 
   const result = fn({ a: 'x' })
 
@@ -116,7 +116,7 @@ test('error should be carried over', async () => {
 
   const b = create((a) => 'b', a)
 
-  await expect(async () => await resolve(b)).rejects.toThrowError('test')
+  await expect(async () => await getScope().resolve(b)).rejects.toThrowError('test')
 })
 
 test('can mock easily', async () => {
@@ -127,8 +127,8 @@ test('can mock easily', async () => {
   }, config)
 
   const testConfig = { port: 4000 }
-  resolveValue(config, testConfig)
-  const result = await resolve(service)
+  getScope().resolveValue(config, testConfig)
+  const result = await getScope().resolve(service)
   expect(result).toBe(4000)
 })
 
@@ -140,10 +140,10 @@ test('can set value by early access to the root dependency', async () => {
     return port
   }, port)
 
-  resolveValue(port, value(4000))
-  resolveValue(port, value(3000))
+  getScope().resolveValue(port, value(4000))
+  getScope().resolveValue(port, value(3000))
 
-  const result = await resolve(service)
+  const result = await getScope().resolve(service)
   expect(result).toBe(4000)
 })
 
@@ -165,7 +165,7 @@ test('factory should work', async () => {
     return (value: string) => Number(value) + seed.valueOf()
   }, seed))
 
-  const result = await resolve(stringToNumber)
+  const result = await getScope().resolve(stringToNumber)
   expect(result('1')).toBe(2)
 })
 
@@ -174,8 +174,8 @@ test('expect error to be thown', async () => {
     throw new Error('test')
   })
 
-  expect(async () => await resolve(problematic)).rejects.toThrowError('test')
-  expect(async () => await resolve(problematic)).rejects.toThrowError('test')
+  expect(async () => await getScope().resolve(problematic)).rejects.toThrowError('test')
+  expect(async () => await getScope().resolve(problematic)).rejects.toThrowError('test')
 })
 
 test('can use object as dependency', async () => {
@@ -186,20 +186,20 @@ test('can use object as dependency', async () => {
     return String(intValue) + strValue
   }, combine({ intValue, strValue }))
 
-  expect(await resolve(comb)).toBe('1test')
+  expect(await getScope().resolve(comb)).toBe('1test')
 })
 
 test('submodule can be substituted', async () => {
   const intValue = value(1)
   intValue.subs(value(2))
 
-  const i = await resolve(intValue)
+  const i = await getScope().resolve(intValue)
   expect(i).toBe(2)
 })
 
 test("flat should work", async () => {
   const a = create(() => create(() => 'a'))
-  const ar = await resolve(flat(a))
+  const ar = await getScope().resolve(flat(a))
   expect(ar).toBe('a')
 })
 
