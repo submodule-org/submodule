@@ -2,6 +2,68 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [7.1.1](https://github.com/submodule-org/submodule/compare/v1.0.4...v7.1.1) (2024-10-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* prepare for next version
+* clean up `from` API
+* simplify api surface
+* completely oversimplified API
+* made core way simpler
+
+### Features
+
+* add overriding ([676a47b](https://github.com/submodule-org/submodule/commit/676a47b300c0a9ea626b5a459d12ab1d37c46a8f))
+* added booting and shutdown utilities ([766407c](https://github.com/submodule-org/submodule/commit/766407cb7efb7e56b0178a7eba89d06a65161b43))
+* added compose api ([9ca937c](https://github.com/submodule-org/submodule/commit/9ca937c9e35c953dc7ea1f17e7bde4e355861a18))
+* added createFactory, an atom to have better authoring ([b0e2018](https://github.com/submodule-org/submodule/commit/b0e20183d473fe4a37af106a32e84847f666ccac))
+* added make API ([97e968d](https://github.com/submodule-org/submodule/commit/97e968d682f630804cfefd829897d22e9b59b4ff))
+* added onError and onExecute ([08849c3](https://github.com/submodule-org/submodule/commit/08849c3cb0d9d87347e4ee07d8866417f2bbe7f5))
+* added prepare function ([938b719](https://github.com/submodule-org/submodule/commit/938b719ea08632ef4fa0718fd9cc15cf4b8a4b6d))
+* added prepare to from result ([59a5af9](https://github.com/submodule-org/submodule/commit/59a5af9b85b939d41b6099de5bbb464ac5b6e457))
+* added prepareExecutable to support serveless environment ([075e05d](https://github.com/submodule-org/submodule/commit/075e05d8203caf0b7473906de15084276f2e90fe))
+* added ProvideOption to all operations ([ea6e1cb](https://github.com/submodule-org/submodule/commit/ea6e1cbed692a67e8c506d553aa55fa0df72291e))
+* added providerOption to staged ([d1376ae](https://github.com/submodule-org/submodule/commit/d1376ae7870fcb07fda5857b392b5726b9f36a1a))
+* added proxify package ([18882da](https://github.com/submodule-org/submodule/commit/18882dac8e31f9dc96dbd3ee7f09eb728b13acce))
+* added receipes package to cover common patterns ([00fcf2d](https://github.com/submodule-org/submodule/commit/00fcf2d9309a49c8fa2aa281d6a891035fa78fc8))
+* added runing mode, added hijack to test dependencies ([937c074](https://github.com/submodule-org/submodule/commit/937c074399b7c4d28d4fc574f62d3cb663e9c472))
+* api update, executor can also be used as initArgs ([0d2b698](https://github.com/submodule-org/submodule/commit/0d2b698340fb095e996285ed5e34494a42d35c3f))
+* bring back the template, remove stage and unstage ([b6b2cf8](https://github.com/submodule-org/submodule/commit/b6b2cf8dde79bc107f2ef05880111654dcda919f))
+* bundle ts-toolbelt ([10cb739](https://github.com/submodule-org/submodule/commit/10cb739521575d30039c0098b2eed80beb700f52))
+* change API to get and execute (from execute like get) ([d6669b4](https://github.com/submodule-org/submodule/commit/d6669b4bb0078d85456aa343c50e30d0741d561d))
+* change for 2.1 ([0f54ba4](https://github.com/submodule-org/submodule/commit/0f54ba4722ee4d2b723a6bfed631b0c39ff9abd7))
+* clean up `from` API ([c97e506](https://github.com/submodule-org/submodule/commit/c97e5066b6417601a25c7867d8be83d187a0cf9f))
+* completely oversimplified API ([5a4d721](https://github.com/submodule-org/submodule/commit/5a4d7216689d04270cdb05165a6a016290f91ced))
+* finalized instrument api ([5807e1e](https://github.com/submodule-org/submodule/commit/5807e1e7ca0888f018cc865de25645b13e0ecdaa))
+* made core way simpler ([c128d43](https://github.com/submodule-org/submodule/commit/c128d43a609116be8d8ee8d0d9e609a9803fd5e4))
+* magic function can accept variadic arguments ([9432bf5](https://github.com/submodule-org/submodule/commit/9432bf58443ada3fad34631e0e91291700a4e0f3))
+* make prepare to take variadic arguments ([7d242ab](https://github.com/submodule-org/submodule/commit/7d242ab73141e279dde513541167151d93cfc8d9))
+* moved to bun, added few fancy API ([a73b951](https://github.com/submodule-org/submodule/commit/a73b951caecd0158a9a4687f07a6cfd2c147aec0))
+* prepare flow release ([8729869](https://github.com/submodule-org/submodule/commit/87298698754fe843548857f6d6d88e689af1f715))
+* prepare for next version ([6ea6394](https://github.com/submodule-org/submodule/commit/6ea63941a4123cf63685b81d8ed0c987f6f6b449))
+* prepare to release new instrument api ([854d15b](https://github.com/submodule-org/submodule/commit/854d15b9acf62473e0a8b15ee77b6d154a86a723))
+* restructure stage apis ([db70c7d](https://github.com/submodule-org/submodule/commit/db70c7da9e9484c1a168ed1b00be91aeae6e3309))
+* simplify api surface ([9e76b20](https://github.com/submodule-org/submodule/commit/9e76b20f50c1370e4bd933cef5254b56ffd22b4d))
+* **submodule:** added combineScope API ([316825e](https://github.com/submodule-org/submodule/commit/316825ef8710e2dd05af581aca6be5fc75a5d5f4))
+
+
+### Bug Fixes
+
+* build ([c262bea](https://github.com/submodule-org/submodule/commit/c262beab6c94e67d36e89cbd9650d0e86631d093))
+* build ([33538e9](https://github.com/submodule-org/submodule/commit/33538e9e65ef25c9ffa7695ed2218bd0ba8d6984))
+* correct parameter extraction logic ([7d242ab](https://github.com/submodule-org/submodule/commit/7d242ab73141e279dde513541167151d93cfc8d9))
+* corrected how arg work ([9f773d7](https://github.com/submodule-org/submodule/commit/9f773d7ca5eadf4c45f16d77af4d926e2903b399))
+* corrected run path ([4c3f374](https://github.com/submodule-org/submodule/commit/4c3f374004675aa8385dd07023ef8972119c0d23))
+* throw error on initialization failure ([af0462c](https://github.com/submodule-org/submodule/commit/af0462cb90b4e54ae34816fc1f33b021baa97d9f))
+* wrong build ([b15cb6a](https://github.com/submodule-org/submodule/commit/b15cb6a226f53be10abb36b9ca3715ff23070f06))
+
+
+### Miscellaneous Chores
+
+* release 7.1.1 ([d38c9db](https://github.com/submodule-org/submodule/commit/d38c9db88199e082981f87bbca517258ee470ddd))
+
 ## [7.1.0](https://github.com/submodule-js/submodule/compare/@submodule/core6.1.0...@submodule/core7.1.0) (2024-10-25)
 
 
