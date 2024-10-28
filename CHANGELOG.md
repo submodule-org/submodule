@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [7.1.2](https://github.com/submodule-org/submodule/compare/v7.1.1...v7.1.2) (2024-10-28)
+
+
+### Miscellaneous Chores
+
+* change dependency type, this package has no dependency ([f978d6c](https://github.com/submodule-org/submodule/commit/f978d6c0d13e3a740ce937f6e383b363afd7349f))
+
 ## [7.1.1](https://github.com/submodule-org/submodule/compare/v1.0.4...v7.1.1) (2024-10-28)
 
 
