@@ -197,6 +197,7 @@ export class Scope {
 /**
  * Creates and returns a new Scope instance.
  * @function
+ * @param {...Scope} scopes - Those scopes will be used as fallbacks.
  * @returns {Scope} A new Scope instance.
  */
 export function createScope(...scopes: Scope[]): Scope {
