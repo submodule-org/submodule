@@ -5,8 +5,7 @@
   "author": "Lagz0ne <duke@silentium.io>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/submodule-js/submodule.git",
-    "directory": "pkgs/core"
+    "url": "git+https://github.com/submodule-js/submodule.git"
   },
   "keywords": [
     "ioc",
