@@ -129,6 +129,7 @@ export class Scope {
 
   /**
    * Executes a provider with its dependencies.
+   * @deprecated use run instead
    * @template Dependent
    * @template Output
    * @param {Provider<Output, Dependent>} executable - The provider to execute.
@@ -141,6 +142,31 @@ export class Scope {
   ): Promise<Awaited<Output>> {
     const value = await this.resolve(dependency)
     return await executable(value)
+  }
+
+  /**
+   * Executes a function using the resolved value of an executor.
+   * @param dependency 
+   * @param runner 
+   * @param inputs 
+   * @returns 
+   */
+  async safeRun<Dependent, Output, Input extends Array<unknown>>(
+    dependency: EODE<Dependent>,
+    runner: (provide: Dependent, ...inputs: Input) => Output | Promise<Output>,
+    ...inputs: Input
+  ): Promise<{ type: 'ok', data: Awaited<Output>, error: undefined } | { type: 'error', error: unknown, data: undefined }> {
+    return await this.resolve(dependency)
+      .catch(e => {
+        throw new Error('dependency error', { cause: e })
+      })
+      .then(async (dependency) => {
+        const output = await runner(dependency, ...inputs)
+        return { type: 'ok', data: output, error: undefined } as const
+      })
+      .catch((error) => {
+        return { type: 'error', error, data: undefined } as const
+      })
   }
 
   /**

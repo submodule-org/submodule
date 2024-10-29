@@ -37,10 +37,43 @@ test('safeResolve should work', async () => {
 
   const result = await scope.safeResolve([a, b])
   expect(result.type).toBe('error')
-  expect(result['error']).toBe('thrown error')
+  expect(result.error).toBe('thrown error')
 
   expect(scope.has(a)).toBe(true)
   expect(scope.has(b)).toBe(true)
+})
+
+test('safeRun should work', async () => {
+  const scope = createScope()
+
+  const goodValue = value(1)
+  const anotherGoodValue = value('good')
+  const badValue = provide(() => Promise.reject('error'))
+
+  const errorResult = await scope.safeRun(
+    { goodValue, badValue },
+    async () => { }
+  )
+
+  expect(errorResult.type).toBe('error')
+
+  const goodResult = await scope.safeRun({ goodValue, anotherGoodValue }, async ({ goodValue, anotherGoodValue }) => {
+    return goodValue + anotherGoodValue
+  })
+
+  expect(goodResult.type).toBe('ok')
+  expect(goodResult.data).toBe('1good')
+
+  const r = await scope.safeRun(
+    [goodValue, anotherGoodValue],
+    async ([goodValue, anotherGoodValue], factor: string) => {
+      return goodValue + anotherGoodValue + factor
+    },
+    'factor'
+  )
+
+  expect(r.type).toBe('ok')
+  expect(r.data).toBe('1goodfactor')
 })
 
 test('create should not be eager', async () => {
