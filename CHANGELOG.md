@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [7.3.0](https://github.com/submodule-org/submodule/compare/v7.2.0...v7.3.0) (2024-10-29)
+
+
+### Features
+
+* added safeRun API (to replace execute) ([e081526](https://github.com/submodule-org/submodule/commit/e0815265b7823fe7b21b8537c174c168c44e888a))
+
 ## [7.2.0](https://github.com/submodule-org/submodule/compare/v7.1.2...v7.2.0) (2024-10-28)
 
 
