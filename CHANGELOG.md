@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [7.4.0](https://github.com/submodule-org/submodule/compare/v7.3.0...v7.4.0) (2024-11-01)
+
+
+### Features
+
+* added codemod to convert create to provide and map ([e6710c0](https://github.com/submodule-org/submodule/commit/e6710c0806caf334968539163cbb0e0e57d911c2))
+
 ## [7.3.0](https://github.com/submodule-org/submodule/compare/v7.2.0...v7.3.0) (2024-10-29)
 
 
