@@ -26,6 +26,9 @@
     "bump": "bun run build && commit-and-tag-version --path . -t @submodule/core",
     "release": "git push --follow-tags origin main && npm publish --access public"
   },
+  "bin": {
+    "submod": "./code-mod"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
@@ -37,15 +40,16 @@
   "exports": {
     ".": {
       "source": "./src/index.ts",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "require": "./dist/src/index.js",
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
     },
     "./package.json": "./package.json"
   },
   "tsup": {
     "entry": [
-      "src/index.ts"
+      "src/index.ts",
+      "mods/**/*.ts"
     ],
     "minify": false,
     "treeshake": false,

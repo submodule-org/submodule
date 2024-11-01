@@ -1,0 +1,31 @@
+#!/usr/bin/env node
+
+const utils = require('node:util')
+
+const { positionals } = utils.parseArgs({ allowPositionals: true });
+
+if (positionals.length < 1) {
+  console.error('please provide command.');
+  console.log('command can be on of the following:');
+  console.log('  - deprecate-create');
+  process.exit(1);
+}
+
+if (positionals[0] === 'deprecate-create') {
+  const dcOptions = utils.parseArgs({
+    allowPositionals: true,
+    options: { 'dry-run': { type: 'boolean' } }  
+  })
+
+  if (dcOptions.positionals.length < 2) {
+    console.error('please provide the file path to process');
+    console.log('example: code-mod deprecate-create ./src/index.js');
+    process.exit(1);
+  }
+  
+  const mod = require('./dist/mods/deprecate-create');
+
+  console.log('running this code mode may requires you to reformat the code afterward, so deal file by file is the best')
+  mod.processFile(dcOptions.positionals[1], dcOptions.values['dry-run']);
+}
+
