@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [7.4.1](https://github.com/submodule-org/submodule/compare/v7.4.0...v7.4.1) (2024-11-05)
+
+
+### Features
+
+* added executor#separate to combine to retrieve the original pre combined executor ([c5d457c](https://github.com/submodule-org/submodule/commit/c5d457cbe89fa809114f16c090a521978e2a1f5f))
+
+
+### Bug Fixes
+
+* use jscodeshift instead of typescript on its own for codemod ([141830b](https://github.com/submodule-org/submodule/commit/141830b5d92f91e105ec0ca3b55132923ea10901))
+
 ## [7.4.0](https://github.com/submodule-org/submodule/compare/v7.3.0...v7.4.0) (2024-11-01)
 
 
