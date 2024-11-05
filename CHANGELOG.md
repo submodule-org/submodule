@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [7.4.2](https://github.com/submodule-org/submodule/compare/v7.4.1...v7.4.2) (2024-11-05)
+
+
+### Bug Fixes
+
+* remove codemod so the path became normal ([c720f38](https://github.com/submodule-org/submodule/commit/c720f38c7f3eff886c41e40c2bd0a5dcca7d3d3e))
+
 ## [7.4.1](https://github.com/submodule-org/submodule/compare/v7.4.0...v7.4.1) (2024-11-05)
 
 
