@@ -505,12 +505,13 @@ export const value = <Provide>(value: Provide): Executor<Provide> => create(() =
  * const groupedExecutor = group(executor1, executor2);
  * // groupedExecutor will resolve to [1, 2]
  */
-
+/* v8 ignore start */
 export const group = <Provide>(...values: Executor<Provide>[]): Executor<Provide[]> => create(
   new ProviderClass(
     async (scope) => Promise.all(values.map(v => scope.resolve(v))),
   )
 )
+/* v8 ignore stop */
 
 /**
  * Creates a unimplemented executor that throws an error when resolved.
@@ -714,12 +715,14 @@ export function map<P, D>(
   return create(mapper, _source)
 }
 
+/* v8 ignore start */
 export function flatMap<P, D>(
   provider: Executor<P>,
   mapper: Provider<Executor<D>, P>
 ): Executor<D> {
   return flat(map(provider, mapper))
 }
+/* v8 ignore stop */
 
 /**
  * Equavilant to create, but with a slightly clearer meaning

@@ -21,6 +21,7 @@
   "scripts": {
     "dev": "tsup --watch",
     "test": "vitest run",
+    "coverage": "vitest run --coverage",
     "build": "tsup",
     "preview": "commit-and-tag-version --dry-run --path . -t @submodule/core",
     "bump": "bun run build && commit-and-tag-version --path . -t @submodule/core",
@@ -64,6 +65,7 @@
   "devDependencies": {
     "@types/jscodeshift": "^0.12.0",
     "@types/node": "^18.11.18",
+    "@vitest/coverage-v8": "2.1.3",
     "jscodeshift": "^17.1.1",
     "tsup": "^8.3.5",
     "typescript": "^5.4.0",
