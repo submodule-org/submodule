@@ -99,6 +99,16 @@ test('combine should work', async () => {
   expect(result).toEqual({ a: 'a', b: 'b' })
 })
 
+test('combined can be separated', async () => {
+  const a = provide(() => 'a')
+  const b = provide(() => 'b')
+  const ab = combine({ a, b })
+
+  const separated = ab.separate()
+  expect(separated.a).toBe(a)
+  expect(separated.b).toBe(b)
+})
+
 test('should only executed one even in combine', async () => {
   const fnA = vi.fn(() => 'a')
   const lazyA = create(fnA)

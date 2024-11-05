@@ -621,19 +621,31 @@ export type inferProvide<T> = T extends Executor<infer S> ? S : never
  */
 export function combine<
   L extends Record<string, Executor<unknown>>
->(layout: L): Executor<{ [key in keyof L]: inferProvide<L[key]> }> {
-  return create(new ProviderClass(async (scope) => {
+>(layout: L): Executor<{ [key in keyof L]: inferProvide<L[key]> }> & { separate: () => L } {
+  function separate() {
+    return layout as L
+  }
+
+  const executor = create(new ProviderClass(async (scope) => {
+
     if (Array.isArray(layout)) {
       const resolved = await Promise.all(layout.map(e => scope.resolve(e)))
-      return resolved as unknown as { [key in keyof L]: inferProvide<L[key]> }
+
+
+      return resolved as unknown as ({ [key in keyof L]: inferProvide<L[key]> } & { separate: () => L })
     }
 
     const layoutPromise = Object.entries(layout).map(
       async ([key, executor]) => [key, await scope.resolve(executor)] as const
     );
+
     const result = Object.fromEntries(await Promise.all(layoutPromise));
-    return result as { [key in keyof L]: inferProvide<L[key]> };
+    return result as ({ [key in keyof L]: inferProvide<L[key]> } & { separate: () => L });
   }));
+
+  Object.defineProperty(executor, 'separate', { value: separate })
+
+  return executor as unknown as Executor<{ [key in keyof L]: inferProvide<L[key]> }> & { separate: () => L }
 }
 
 /**
