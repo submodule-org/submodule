@@ -735,3 +735,63 @@ export function provide<P>(
 ): Executor<P> {
   return create(provider)
 }
+
+type KeyedExecutor<K, P> = Executor<(key: K) => P>
+type FamilyOptions<K, P> = {
+  init?: [K, Executor<P>][],
+  limitToProvided?: boolean,
+  keyBuilder?: (key: K) => string
+}
+
+const sortedStringifyKeyBuilder = (key: unknown): string => {
+  if (typeof key !== 'object' || key === null) {
+    return JSON.stringify(key)
+  }
+
+  const sortedKeys = Object.keys(key).sort()
+  const sortedObject = sortedKeys.reduce((acc, k) => {
+    const value = (key as Record<string, unknown>)[k]
+    acc[k] = typeof value === 'object' && value !== null ? sortedStringifyKeyBuilder(value) : value
+    return acc
+  }, {} as Record<string, unknown>)
+  return JSON.stringify(sortedObject)
+}
+
+/**
+ * createFamily is a function that creates a family of executors.
+ * The family can then provide a corresponding executor based on the key.
+ * 
+ * @param executor 
+ * @param options 
+ * @returns 
+ */
+export function createFamily<K, P>(executor: KeyedExecutor<K, P>, options?: FamilyOptions<K, P>): ((key: K) => Executor<P>) {
+  const pool = new Map<string, Executor<P>>()
+  const keyBuilder = options?.keyBuilder ?? sortedStringifyKeyBuilder
+  const limitToProvided = options?.limitToProvided ?? false
+
+  if (limitToProvided && !options?.init) {
+    throw new Error('limitToProvided is set to true but no init is provided')
+  }
+
+  if (options?.init) {
+    for (const [key, value] of options.init) {
+      const keyString = keyBuilder(key)
+      pool.set(keyString, value)
+    }
+  }
+
+  return (key: K) => {
+    const keyString = keyBuilder(key)
+
+    if (limitToProvided && !pool.has(keyString)) {
+      return provide(() => { throw new Error(`key ${keyString} is not provided`) })
+    }
+
+    if (!pool.has(keyString)) {
+      pool.set(keyString, flat(map(executor, (fn) => provide(() => fn(key)))))
+    }
+
+    return pool.get(keyString) as Executor<P>
+  }
+}
