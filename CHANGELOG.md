@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [7.5.0](https://github.com/submodule-org/submodule/compare/v7.4.2...v7.5.0) (2024-11-06)
+
+
+### Features
+
+* added createFamily API to address building actor-like, multiple instances ([a2cb489](https://github.com/submodule-org/submodule/commit/a2cb489f0503785e4f0593f0b70ddb959459c085))
+
 ## [7.4.2](https://github.com/submodule-org/submodule/compare/v7.4.1...v7.4.2) (2024-11-05)
 
 
