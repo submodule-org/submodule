@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [7.5.6](https://github.com/submodule-org/submodule/compare/v7.5.5...v7.5.6) (2024-11-07)
+
+
+### Bug Fixes
+
+* correct the case handling function as key ([ce0ac36](https://github.com/submodule-org/submodule/commit/ce0ac367ade3de7fef20eaeea74e36948c6a99a3))
+
 ## [7.5.5](https://github.com/submodule-org/submodule/compare/v7.5.4...v7.5.5) (2024-11-07)
 
 
