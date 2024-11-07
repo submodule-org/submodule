@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [7.5.2](https://github.com/submodule-org/submodule/compare/v7.5.1...v7.5.2) (2024-11-07)
+
+
+### Bug Fixes
+
+* corrected types for group ([5cc0565](https://github.com/submodule-org/submodule/commit/5cc0565c00aab726b509dc528010ca37d8b41b90))
+
 ## [7.5.1](https://github.com/submodule-org/submodule/compare/v7.5.0...v7.5.1) (2024-11-07)
 
 
