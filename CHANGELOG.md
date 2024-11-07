@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [7.5.1](https://github.com/submodule-org/submodule/compare/v7.5.0...v7.5.1) (2024-11-07)
+
+
+### Features
+
+* refined options for createFamily, with cacheControl ([20d2a53](https://github.com/submodule-org/submodule/commit/20d2a539f69d6be425b44daa93ad62a9338ef571))
+
 ## [7.5.0](https://github.com/submodule-org/submodule/compare/v7.4.2...v7.5.0) (2024-11-06)
 
 
