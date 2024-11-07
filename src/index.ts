@@ -737,11 +737,7 @@ export function provide<P>(
 }
 
 type KeyedExecutor<K, P> = Executor<(key: K) => P>
-type FamilyOptions<K, P> = {
-  init?: [K, Executor<P>][],
-  limitToProvided?: boolean,
-  keyBuilder?: (key: K) => string
-}
+
 
 const sortedStringifyKeyBuilder = (key: unknown): string => {
   if (typeof key !== 'object' || key === null) {
@@ -757,6 +753,16 @@ const sortedStringifyKeyBuilder = (key: unknown): string => {
   return JSON.stringify(sortedObject)
 }
 
+type FamilyOptions<K, P> = {
+  keyBuilder?: (key: K) => string | undefined
+  poolControl?: (
+    pool: Map<string, [K, Executor<P>]>,
+    param: { key: string, rawKey: K, executor: Executor<P> }
+  ) => void
+}
+
+type Family<K, P> = ((key: K) => Executor<P>) & { size: () => number, members: () => [K, Executor<P>] }
+
 /**
  * createFamily is a function that creates a family of executors.
  * The family can then provide a corresponding executor based on the key.
@@ -765,33 +771,32 @@ const sortedStringifyKeyBuilder = (key: unknown): string => {
  * @param options 
  * @returns 
  */
-export function createFamily<K, P>(executor: KeyedExecutor<K, P>, options?: FamilyOptions<K, P>): ((key: K) => Executor<P>) {
-  const pool = new Map<string, Executor<P>>()
+export function createFamily<K, P>(executor: KeyedExecutor<K, P>, options?: FamilyOptions<K, P>): Family<K, P> {
+  const pool = new Map<string, [K, Executor<P>]>()
   const keyBuilder = options?.keyBuilder ?? sortedStringifyKeyBuilder
-  const limitToProvided = options?.limitToProvided ?? false
-
-  if (limitToProvided && !options?.init) {
-    throw new Error('limitToProvided is set to true but no init is provided')
+  const defaultPoolControl = (pool: Map<string, [K, Executor<P>]>, { key, rawKey, executor }: { key: string, rawKey: K, executor: Executor<P> }) => {
+    pool.set(key, [rawKey, executor])
   }
 
-  if (options?.init) {
-    for (const [key, value] of options.init) {
-      const keyString = keyBuilder(key)
-      pool.set(keyString, value)
-    }
-  }
+  const poolControl = options?.poolControl ?? defaultPoolControl
 
-  return (key: K) => {
+  const fn = (key: K) => {
     const keyString = keyBuilder(key)
-
-    if (limitToProvided && !pool.has(keyString)) {
-      return provide(() => { throw new Error(`key ${keyString} is not provided`) })
+    if (!keyString) {
+      throw new Error(`${key} is not a valid key`)
     }
 
     if (!pool.has(keyString)) {
-      pool.set(keyString, flat(map(executor, (fn) => provide(() => fn(key)))))
+      const exec = flat(map(executor, (fn) => provide(() => fn(key))))
+      poolControl(pool, { key: keyString, rawKey: key, executor: exec })
     }
 
-    return pool.get(keyString) as Executor<P>
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    return pool.get(keyString)![1]
   }
+
+  fn.size = () => pool.size
+  fn.members = () => Array.from(pool.values())
+
+  return fn as Family<K, P>
 }

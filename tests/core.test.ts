@@ -403,6 +403,11 @@ test('createFamily should work', async () => {
   expect(result12).toBe('value for key1')
 
   expect(fn).toBeCalledTimes(2)
+
+  // Check length and members
+  expect(family.size()).toBe(2)
+  const members = family.members()
+  expect(members).toHaveLength(2)
 })
 
 test('createFamily should work with object keys', async () => {
@@ -421,6 +426,15 @@ test('createFamily should work with object keys', async () => {
   expect(result12).toBe('value for 1')
 
   expect(fn).toBeCalledTimes(2)
+
+  // Check length and members
+  expect(family.size()).toBe(2)
+  const members = family.members()
+  expect(members).toHaveLength(2)
+  expect(members).toEqual(expect.arrayContaining([
+    [{ id: 1 }, expect.anything()],
+    [{ id: 2 }, expect.anything()]
+  ]))
 })
 
 test('createFamily should work with nested object keys', async () => {
@@ -441,48 +455,16 @@ test('createFamily should work with nested object keys', async () => {
   expect(result12).toBe('value for 1-1')
 
   expect(fn).toBeCalledTimes(3)
-})
 
-test('createFamily should work with limitToProvided option', async () => {
-  const fn = vi.fn((key: string) => `value for ${key}`)
-  const executor = provide(() => fn)
-  const family = createFamily(executor, { init: [['key1', value('value for key1')]], limitToProvided: true })
-
-  const scope = createScope()
-
-  const result1 = await scope.resolve(family('key1'))
-  await expect(scope.resolve(family('key2'))).rejects.toThrowError('key "key2" is not provided')
-
-  expect(result1).toBe('value for key1')
-  expect(fn).toBeCalledTimes(0)
-})
-
-test('createFamily should work without limitToProvided option', async () => {
-  const fn = vi.fn((key: string) => `value for ${key}`)
-  const executor = provide(() => fn)
-  const family = createFamily(executor)
-
-  const scope = createScope()
-  const result1 = await scope.resolve(family('key1'))
-  const result2 = await scope.resolve(family('key2'))
-
-  expect(result1).toBe('value for key1')
-  expect(result2).toBe('value for key2')
-  expect(fn).toBeCalledTimes(2)
-})
-
-test('createFamily should work with init option', async () => {
-  const fn = vi.fn((key: string) => `value for ${key}`)
-  const executor = provide(() => fn)
-  const family = createFamily(executor, { init: [['key1', value('initial value')]] })
-
-  const scope = createScope()
-  const result1 = await scope.resolve(family('key1'))
-  const result2 = await scope.resolve(family('key2'))
-
-  expect(result1).toBe('initial value')
-  expect(result2).toBe('value for key2')
-  expect(fn).toBeCalledTimes(1)
+  // Check length and members
+  expect(family.size()).toBe(3)
+  const members = family.members()
+  expect(members).toHaveLength(3)
+  expect(members).toEqual(expect.arrayContaining([
+    [{ id: 1, nested: { subId: 1 } }, expect.anything()],
+    [{ id: 1, nested: { subId: 2 } }, expect.anything()],
+    [{ id: 2, nested: { subId: 1 } }, expect.anything()]
+  ]))
 })
 
 test('createFamily should work with custom keyBuilder option', async () => {
@@ -502,84 +484,41 @@ test('createFamily should work with custom keyBuilder option', async () => {
   expect(result12).toBe('value for 1')
 
   expect(fn).toBeCalledTimes(2)
+
+  // Check length and members
+  expect(family.size()).toBe(2)
+  const members = family.members()
+  expect(members).toHaveLength(2)
+  expect(members).toEqual(expect.arrayContaining([
+    [{ id: 1 }, expect.anything()],
+    [{ id: 2 }, expect.anything()]
+  ]))
 })
 
-test('createFamily should work with limitToProvided and init options', async () => {
+test('createFamily should auto-expire cache items', async () => {
   const fn = vi.fn((key: string) => `value for ${key}`)
   const executor = provide(() => fn)
-  const family = createFamily(executor, { limitToProvided: true, init: [['key1', value('initial value')]] })
+  const family = createFamily(executor, {
+    poolControl: (pool, { key, rawKey, executor }) => {
+      pool.set(key, [rawKey, executor])
+      setTimeout(() => pool.delete(key), 100) // Auto-expire after 100ms
+    }
+  })
 
   const scope = createScope()
   const result1 = await scope.resolve(family('key1'))
-  await expect(scope.resolve(family('key2'))).rejects.toThrowError('key "key2" is not provided')
-
-  expect(result1).toBe('initial value')
-  expect(fn).toBeCalledTimes(0)
-})
-
-test('createFamily should throw error if limitToProvided is true but no init is set', async () => {
-  const fn = vi.fn((key: string) => `value for ${key}`)
-  const executor = provide(() => fn)
-
-  expect(() => createFamily(executor, { limitToProvided: true })).toThrowError('limitToProvided is set to true but no init is provided')
-})
-
-test('createFamily should work without limitToProvided option', async () => {
-  const fn = vi.fn((key: string) => `value for ${key}`)
-  const executor = provide(() => fn)
-  const family = createFamily(executor)
-
-  const scope = createScope()
-  const result1 = await scope.resolve(family('key1'))
-  const result2 = await scope.resolve(family('key2'))
-
   expect(result1).toBe('value for key1')
-  expect(result2).toBe('value for key2')
-  expect(fn).toBeCalledTimes(2)
-})
-
-test('createFamily should work with init option', async () => {
-  const fn = vi.fn((key: string) => `value for ${key}`)
-  const executor = provide(() => fn)
-  const family = createFamily(executor, { init: [['key1', value('initial value')]] })
-
-  const scope = createScope()
-  const result1 = await scope.resolve(family('key1'))
-  const result2 = await scope.resolve(family('key2'))
-
-  expect(result1).toBe('initial value')
-  expect(result2).toBe('value for key2')
   expect(fn).toBeCalledTimes(1)
-})
 
-test('createFamily should work with custom keyBuilder option', async () => {
-  const fn = vi.fn((key: { id: number }) => `value for ${key.id}`)
-  const executor = provide(() => fn)
-  const customKeyBuilder = (key: { id: number }) => `custom-${key.id}`
-  const family = createFamily(executor, { keyBuilder: customKeyBuilder })
+  // Wait for 150ms to ensure the cache item expires
+  await new Promise(resolve => setTimeout(resolve, 150))
 
-  const scope = createScope()
-  const result1 = await scope.resolve(family({ id: 1 }))
-  const result2 = await scope.resolve(family({ id: 2 }))
+  const result2 = await scope.resolve(family('key1'))
+  expect(result2).toBe('value for key1')
+  expect(fn).toBeCalledTimes(2) // Called again after expiration
 
-  const result12 = await scope.resolve(family({ id: 1 }))
-
-  expect(result1).toBe('value for 1')
-  expect(result2).toBe('value for 2')
-  expect(result12).toBe('value for 1')
-
-  expect(fn).toBeCalledTimes(2)
-})
-
-test('createFamily should work with limitToProvided and init options', async () => {
-  const fn = vi.fn((key: string) => `value for ${key}`)
-  const executor = provide(() => fn)
-  const family = createFamily(executor, { limitToProvided: true, init: [['key1', value('initial value')]] })
-
-  const scope = createScope()
-  const result1 = await scope.resolve(family('key1'))
-  await expect(scope.resolve(family('key2'))).rejects.toThrowError('key "key2" is not provided')
-
-  expect(result1).toBe('initial value')
-  expect(fn).toBeCalledTimes(0)
+  // Check length and members
+  expect(family.size()).toBe(1)
+  const members = family.members()
+  expect(members).toHaveLength(1)
 })
