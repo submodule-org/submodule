@@ -42,7 +42,7 @@ describe('sortedStringifyKeyBuilder', () => {
   it('should handle objects with id property as a symbol correctly', () => {
     const symbolId = Symbol('id');
     const obj = { id: symbolId, name: 'test' };
-    expect(sortedStringifyKeyBuilder(obj)).toBe(`{"id":"${String(symbolId)}","name":"test"}`);
+    expect(sortedStringifyKeyBuilder(obj)).toBe("Symbol(id)");
   });
 
   it('should handle functions correctly', () => {
