@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [7.5.4](https://github.com/submodule-org/submodule/compare/v7.5.3...v7.5.4) (2024-11-07)
+
+
+### Bug Fixes
+
+* loosen type for createFamily ([05262dd](https://github.com/submodule-org/submodule/commit/05262ddd9035f7249b3b2b1ae8aba8ea74627256))
+
 ## [7.5.3](https://github.com/submodule-org/submodule/compare/v7.5.2...v7.5.3) (2024-11-07)
 
 
