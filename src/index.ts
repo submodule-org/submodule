@@ -302,6 +302,8 @@ export function dispose(): void {
  * @template Value The type of value this executor resolves to.
  */
 export interface Executor<Value> {
+  id: symbol
+
   /**
    * Resolves the value within the given scope.
    * @param scope The scope in which to resolve the value.
@@ -469,7 +471,7 @@ export function create<P, D>(provider: Provider<P, D> | ProviderClass<P>, depend
     substitution = undefined
   }
 
-  const executor: Executor<P> = { subs, reset, resolve, [Symbol.for('$submodule')]: true }
+  const executor: Executor<P> = { id: Symbol(), subs, reset, resolve, [Symbol.for('$submodule')]: true }
 
   return executor
 }
@@ -741,12 +743,14 @@ export function provide<P>(
   return create(provider)
 }
 
-type KeyedExecutor<K, P> = Executor<(key: K) => P>
-
 
 const sortedStringifyKeyBuilder = (key: unknown): string => {
   if (typeof key !== 'object' || key === null) {
     return JSON.stringify(key)
+  }
+
+  if ('id' in key) {
+    return String(key.id)
   }
 
   const sortedKeys = Object.keys(key).sort()
@@ -759,14 +763,15 @@ const sortedStringifyKeyBuilder = (key: unknown): string => {
 }
 
 type FamilyOptions<K, P> = {
-  keyBuilder?: (key: K) => string | undefined
+  keyBuilder?: (key: K | Executor<K>) => string | undefined
   poolControl?: (
     pool: Map<string, [K, Executor<P>]>,
     param: { key: string, rawKey: K, executor: Executor<P> }
   ) => void
 }
 
-type Family<K, P> = ((key: K) => Executor<P>) & {
+type KeyedExecutor<K, P> = Executor<(key: K) => P> | ((key: K) => P)
+type Family<K, P> = ((key: K | Executor<K>) => Executor<P>) & {
   size: () => number
   rawMembers: () => [K, Executor<P>][]
   members: () => Executor<P>[]
@@ -781,23 +786,33 @@ type Family<K, P> = ((key: K) => Executor<P>) & {
  * @param options 
  * @returns 
  */
-export function createFamily<K, P>(executor: KeyedExecutor<K, P>, options?: FamilyOptions<K, P>): Family<K, P> {
+export function createFamily<K, P>(
+  executor: KeyedExecutor<K, P>,
+  options?: FamilyOptions<K, P>
+): Family<K, P> {
   const pool = new Map<string, [K, Executor<P>]>()
   const keyBuilder = options?.keyBuilder ?? sortedStringifyKeyBuilder
-  const defaultPoolControl = (pool: Map<string, [K, Executor<P>]>, { key, rawKey, executor }: { key: string, rawKey: K, executor: Executor<P> }) => {
+  const defaultPoolControl = (
+    pool: Map<string, [K | Executor<K>, Executor<P>]>,
+    { key, rawKey, executor }: { key: string, rawKey: K | Executor<K>, executor: Executor<P> }
+  ) => {
     pool.set(key, [rawKey, executor])
   }
 
   const poolControl = options?.poolControl ?? defaultPoolControl
 
-  const fn = (key: K) => {
+  const fn = (key: K | Executor<K>) => {
     const keyString = keyBuilder(key)
+
     if (!keyString) {
-      throw new Error(`${key} is not a valid key`)
+      throw new Error(`invalid key: ${key}`)
     }
 
+    const normalizedKey = isExecutor(key) ? key : value(key)
+    const normalizedFn = isExecutor(executor) ? executor : value(executor)
+
     if (!pool.has(keyString)) {
-      const exec = flat(map(executor, (fn) => provide(() => fn(key))))
+      const exec = map({ fn: normalizedFn, key: normalizedKey }, ({ fn, key }) => fn(key))
       poolControl(pool, { key: keyString, rawKey: key, executor: exec })
     }
 

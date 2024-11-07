@@ -1,5 +1,5 @@
 import { expect, test, vi, assertType, expectTypeOf } from "vitest"
-import { combine, create, execute, prepare, value, flat, unImplemented, createScope, factory, factorize, produce, provide, map, getScope, createFamily, group, type Executor } from "../src"
+import { combine, create, execute, prepare, value, flat, unImplemented, createScope, factory, factorize, produce, provide, map, getScope, createFamily, group, type Executor, isExecutor } from "../src"
 
 test('submodule should work', async () => {
   const a = create(() => 'a' as const)
@@ -422,13 +422,14 @@ test('createFamily resolve the same', async () => {
 })
 
 test('createFamily should work with object keys', async () => {
-  const fn = vi.fn((key: { id: number }) => `value for ${key.id}`)
-  const executor = provide(() => fn)
+  const ofn = (key: { id: number }) => `value for ${key.id}`
+  const fn = vi.fn(ofn)
+  const executor = provide(() => fn as typeof ofn)
   const family = createFamily(executor)
 
   const scope = createScope()
   const result1 = await scope.resolve(family({ id: 1 }))
-  const result2 = await scope.resolve(family({ id: 2 }))
+  const result2 = await scope.resolve(family(value({ id: 2 })))
 
   const result12 = await scope.resolve(family({ id: 1 }))
 
@@ -448,7 +449,7 @@ test('createFamily should work with object keys', async () => {
 test('createFamily should work with custom keyBuilder option', async () => {
   const fn = vi.fn((key: { id: number }) => `value for ${key.id}`)
   const executor = provide(() => fn)
-  const customKeyBuilder = (key: { id: number }) => `custom-${key.id}`
+  const customKeyBuilder = (key: { id: number } | Executor<{ id: number }>) => `custom-${isExecutor(key) ? key.id.toString() : key.id}`
   const family = createFamily(executor, { keyBuilder: customKeyBuilder })
 
   const scope = createScope()
