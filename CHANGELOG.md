@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [7.5.7](https://github.com/submodule-org/submodule/compare/v7.5.6...v7.5.7) (2024-11-07)
+
+
+### Bug Fixes
+
+* corrected test ([126c554](https://github.com/submodule-org/submodule/commit/126c5544054754fb50cd97fa1212efdfa89abcab))
+
+
+### Miscellaneous Chores
+
+* release 7.5.7 ([f498446](https://github.com/submodule-org/submodule/commit/f49844644ef30d485c8c1e109f62f5f7a2c8dc1b))
+
 ## [7.5.6](https://github.com/submodule-org/submodule/compare/v7.5.5...v7.5.6) (2024-11-07)
 
 
