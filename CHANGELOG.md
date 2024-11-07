@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [7.5.3](https://github.com/submodule-org/submodule/compare/v7.5.2...v7.5.3) (2024-11-07)
+
+
+### Bug Fixes
+
+* improved createFamily typing ([6bdd907](https://github.com/submodule-org/submodule/commit/6bdd9071a400b0e055568b0cb0012fa39c199066))
+
 ## [7.5.2](https://github.com/submodule-org/submodule/compare/v7.5.1...v7.5.2) (2024-11-07)
 
 
