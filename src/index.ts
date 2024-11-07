@@ -408,7 +408,7 @@ export function create<P, D>(provider: Provider<P, NoInfer<D>>, dependencies: EO
  * @template P The type of the provided value
  * @template D The type of the dependencies (if unknown)
  * 
- * @param {Provider<P, D> | ProviderClass<P, D>} provider - A provider function or class
+ * @param {Provider<P, D> | ProviderClass<P>} provider - A provider function or class
  * @param {EODE<D>} [dependencies] - Optional dependencies required by the provider
  * @returns {Executor<P>} An executor for the provided value
  */
@@ -744,22 +744,34 @@ export function provide<P>(
 }
 
 
-const sortedStringifyKeyBuilder = (key: unknown): string => {
+export const sortedStringifyKeyBuilder = (key: unknown): string => {
   if (typeof key !== 'object' || key === null) {
     return JSON.stringify(key)
+  }
+
+  if (Array.isArray(key)) {
+    return JSON.stringify(key.map(item => typeof item === 'object' && item !== null ? sortObjectKeys(item as Record<string, unknown>) : item))
   }
 
   if ('id' in key) {
     return String(key.id)
   }
 
-  const sortedKeys = Object.keys(key).sort()
-  const sortedObject = sortedKeys.reduce((acc, k) => {
-    const value = (key as Record<string, unknown>)[k]
-    acc[k] = typeof value === 'object' && value !== null ? sortedStringifyKeyBuilder(value) : value
+  const sortedObject = sortObjectKeys(key as Record<string, unknown>)
+  return JSON.stringify(sortedObject)
+}
+
+const sortObjectKeys = (obj: Record<string, unknown>): Record<string, unknown> => {
+  const sortedKeys = Object.keys(obj).sort()
+  return sortedKeys.reduce((acc, k) => {
+    const value = obj[k]
+    acc[k] = Array.isArray(value)
+      ? value.map(item => typeof item === 'object' && item !== null ? sortObjectKeys(item as Record<string, unknown>) : item)
+      : typeof value === 'object' && value !== null
+        ? sortObjectKeys(value as Record<string, unknown>)
+        : value
     return acc
   }, {} as Record<string, unknown>)
-  return JSON.stringify(sortedObject)
 }
 
 type FamilyOptions<K, P> = {
