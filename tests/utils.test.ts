@@ -38,4 +38,15 @@ describe('sortedStringifyKeyBuilder', () => {
     const arr = [{ b: 2, a: 1 }, { d: 4, c: 3 }];
     expect(sortedStringifyKeyBuilder(arr)).toBe('[{"a":1,"b":2},{"c":3,"d":4}]');
   });
+
+  it('should handle objects with id property as a symbol correctly', () => {
+    const symbolId = Symbol('id');
+    const obj = { id: symbolId, name: 'test' };
+    expect(sortedStringifyKeyBuilder(obj)).toBe(`{"id":"${String(symbolId)}","name":"test"}`);
+  });
+
+  it('should handle functions correctly', () => {
+    const func = function testFunc() { return 'test'; };
+    expect(sortedStringifyKeyBuilder(func)).toBe(func.toString());
+  });
 });

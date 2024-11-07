@@ -745,6 +745,10 @@ export function provide<P>(
 
 
 export const sortedStringifyKeyBuilder = (key: unknown): string => {
+  if (typeof key === 'function') {
+    return key.toString()
+  }
+
   if (typeof key !== 'object' || key === null) {
     return JSON.stringify(key)
   }
