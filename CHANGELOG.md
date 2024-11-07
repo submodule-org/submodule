@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [7.5.5](https://github.com/submodule-org/submodule/compare/v7.5.4...v7.5.5) (2024-11-07)
+
+
+### Bug Fixes
+
+* corrected keybuilder behavior ([82e322e](https://github.com/submodule-org/submodule/commit/82e322e3d8774200c1f80a22bb7fd77d41222f40))
+
 ## [7.5.4](https://github.com/submodule-org/submodule/compare/v7.5.3...v7.5.4) (2024-11-07)
 
 
