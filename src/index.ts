@@ -766,7 +766,12 @@ type FamilyOptions<K, P> = {
   ) => void
 }
 
-type Family<K, P> = ((key: K) => Executor<P>) & { size: () => number, members: () => [K, Executor<P>] }
+type Family<K, P> = ((key: K) => Executor<P>) & {
+  size: () => number
+  rawMembers: () => [K, Executor<P>][]
+  members: () => Executor<P>[]
+  groupedMembers: () => Executor<P[]>
+}
 
 /**
  * createFamily is a function that creates a family of executors.
@@ -801,7 +806,9 @@ export function createFamily<K, P>(executor: KeyedExecutor<K, P>, options?: Fami
   }
 
   fn.size = () => pool.size
-  fn.members = () => Array.from(pool.values())
+  fn.rawMembers = () => Array.from(pool.values())
+  fn.members = () => Array.from(pool.values()).map(([_, executor]) => executor)
+  fn.groupedMembers = () => group(...Array.from(pool.values()).map(([_, executor]) => executor))
 
   return fn as Family<K, P>
 }

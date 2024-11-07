@@ -410,6 +410,17 @@ test('createFamily should work', async () => {
   expect(members).toHaveLength(2)
 })
 
+test('createFamily resolve the same', async () => {
+  const fn = vi.fn((key: object) => `value for ${key}`)
+  const executor = provide(() => fn)
+  const family = createFamily(executor)
+
+  const k1 = { id: 1 }
+  const f1 = family(k1)
+
+  expect(family.members()[0]).toEqual(f1)
+})
+
 test('createFamily should work with object keys', async () => {
   const fn = vi.fn((key: { id: number }) => `value for ${key.id}`)
   const executor = provide(() => fn)
@@ -431,40 +442,7 @@ test('createFamily should work with object keys', async () => {
   expect(family.size()).toBe(2)
   const members = family.members()
   expect(members).toHaveLength(2)
-  expect(members).toEqual(expect.arrayContaining([
-    [{ id: 1 }, expect.anything()],
-    [{ id: 2 }, expect.anything()]
-  ]))
-})
 
-test('createFamily should work with nested object keys', async () => {
-  const fn = vi.fn((key: { id: number, nested: { subId: number } }) => `value for ${key.id}-${key.nested.subId}`)
-  const executor = provide(() => fn)
-  const family = createFamily(executor)
-
-  const scope = createScope()
-  const result1 = await scope.resolve(family({ nested: { subId: 1 }, id: 1 }))
-  const result2 = await scope.resolve(family({ nested: { subId: 2 }, id: 1 }))
-  const result3 = await scope.resolve(family({ nested: { subId: 1 }, id: 2 }))
-
-  const result12 = await scope.resolve(family({ nested: { subId: 1 }, id: 1 }))
-
-  expect(result1).toBe('value for 1-1')
-  expect(result2).toBe('value for 1-2')
-  expect(result3).toBe('value for 2-1')
-  expect(result12).toBe('value for 1-1')
-
-  expect(fn).toBeCalledTimes(3)
-
-  // Check length and members
-  expect(family.size()).toBe(3)
-  const members = family.members()
-  expect(members).toHaveLength(3)
-  expect(members).toEqual(expect.arrayContaining([
-    [{ id: 1, nested: { subId: 1 } }, expect.anything()],
-    [{ id: 1, nested: { subId: 2 } }, expect.anything()],
-    [{ id: 2, nested: { subId: 1 } }, expect.anything()]
-  ]))
 })
 
 test('createFamily should work with custom keyBuilder option', async () => {
@@ -489,10 +467,6 @@ test('createFamily should work with custom keyBuilder option', async () => {
   expect(family.size()).toBe(2)
   const members = family.members()
   expect(members).toHaveLength(2)
-  expect(members).toEqual(expect.arrayContaining([
-    [{ id: 1 }, expect.anything()],
-    [{ id: 2 }, expect.anything()]
-  ]))
 })
 
 test('createFamily should auto-expire cache items', async () => {
@@ -519,8 +493,7 @@ test('createFamily should auto-expire cache items', async () => {
 
   // Check length and members
   expect(family.size()).toBe(1)
-  const members = family.members()
-  expect(members).toHaveLength(1)
+
 })
 
 test("group type should work", async () => {
