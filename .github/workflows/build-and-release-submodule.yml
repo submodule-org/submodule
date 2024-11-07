@@ -17,13 +17,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: GoogleCloudPlatform/release-please-action@v4
-        id: release
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          release-type: node
-          package-name: "@submodule/core"
-
       - uses: actions/checkout@v4 # v4
       - uses: actions/setup-node@v4
         with:
@@ -35,6 +28,14 @@ jobs:
       - run: bun install
       - run: bun run test
       - run: bun run test:types
+
+      - uses: GoogleCloudPlatform/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release-type: node
+          package-name: "@submodule/core"
+
       - run: bun run build
         if: ${{ steps.release.outputs.release_created }}
 
