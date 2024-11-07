@@ -21,6 +21,7 @@
   "scripts": {
     "dev": "tsup --watch",
     "test": "vitest run",
+    "test:types": "tsc -p tsconfig.test.json",
     "coverage": "vitest run --coverage",
     "build": "tsup",
     "preview": "commit-and-tag-version --dry-run --path . -t @submodule/core",

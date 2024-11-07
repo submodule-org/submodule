@@ -23,3 +23,4 @@ jobs:
 
       - run: bun install
       - run: bun run test
+      - run: bun run test:types
