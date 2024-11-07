@@ -506,9 +506,14 @@ export const value = <Provide>(value: Provide): Executor<Provide> => create(() =
  * // groupedExecutor will resolve to [1, 2]
  */
 /* v8 ignore start */
-export const group = <Provide>(...values: Executor<Provide>[]): Executor<Provide[]> => create(
+export const group = <
+  E extends Executor<unknown>[]
+>(...values: E): Executor<{ [K in keyof E]: inferProvide<E[K]> }> => create(
   new ProviderClass(
-    async (scope) => Promise.all(values.map(v => scope.resolve(v))),
+    async (scope) => {
+      const resolved = await Promise.all(values.map(v => scope.resolve(v)))
+      return resolved as { [K in keyof E]: inferProvide<E[K]> }
+    }
   )
 )
 /* v8 ignore stop */

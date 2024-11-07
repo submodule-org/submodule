@@ -1,5 +1,5 @@
-import { expect, test, vi } from "vitest"
-import { combine, create, execute, prepare, value, flat, unImplemented, createScope, factory, factorize, produce, provide, map, getScope, createFamily } from "../src"
+import { expect, test, vi, assertType, expectTypeOf } from "vitest"
+import { combine, create, execute, prepare, value, flat, unImplemented, createScope, factory, factorize, produce, provide, map, getScope, createFamily, group, type Executor } from "../src"
 
 test('submodule should work', async () => {
   const a = create(() => 'a' as const)
@@ -521,4 +521,11 @@ test('createFamily should auto-expire cache items', async () => {
   expect(family.size()).toBe(1)
   const members = family.members()
   expect(members).toHaveLength(1)
+})
+
+test("group type should work", async () => {
+  const a = value(1)
+  const b = value('a')
+
+  group(a, b) satisfies Executor<[number, string]>
 })
