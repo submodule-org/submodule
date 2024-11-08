@@ -1,5 +1,5 @@
 import { expect, test, vi, assertType, expectTypeOf } from "vitest"
-import { combine, create, execute, prepare, value, flat, unImplemented, createScope, factory, factorize, produce, provide, map, getScope, createFamily, group, type Executor, isExecutor } from "../src"
+import { combine, create, execute, prepare, value, flat, unImplemented, createScope, factory, factorize, produce, provide, map, getScope, createFamily, group, type Executor, isExecutor, presetFn } from "../src"
 
 test('submodule should work', async () => {
   const a = create(() => 'a' as const)
@@ -143,11 +143,13 @@ test('magic function', async () => {
   const demand = async (fn: (x: string) => string | Promise<string>): Promise<string> => {
     return await fn('a')
   }
+
+  const scope = createScope()
   const b = value('b')
 
-  const c = await demand(prepare((v, i) => {
-    return v + i
-  }, b))
+  const fulfilledFn = map(b, (b) => (v: string) => b + v)
+  const fn = presetFn(scope, fulfilledFn)
+  const c = await demand(fn)
 
   expect(c).toEqual('ba')
 })

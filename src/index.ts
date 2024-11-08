@@ -331,12 +331,68 @@ export interface Executor<Value> {
   readonly [x: symbol]: true
 }
 
+export interface PresetExecutor<Value> {
+  setScope: (scope: Scope) => void
+  (): Promise<Value>
+}
+
+/**
+ * Preset may give a better way to integrate with frameworks without sacrificing testing abilities
+ * By using preset, you can set and manage scope in a more controlled way
+ * @experimental
+ * @param scope 
+ * @param executor 
+ * @returns 
+ */
+export const preset = <P>(scope: Scope, executor: Executor<P>): PresetExecutor<P> => {
+  let innerScope: Scope = scope
+
+  const fn = async () => {
+    return await innerScope.resolve(executor)
+  }
+
+  const setScope = (scope: Scope) => { innerScope = scope }
+
+  return Object.assign(fn, { setScope }) as PresetExecutor<P>
+}
+
+export interface PresetExecution<Value, Input extends Array<unknown>> {
+  setScope: (scope: Scope) => void
+  (...input: Input): Promise<Value>
+}
+
+/**
+ * Similar to preset but to resolve to function instead of value
+ * @experimental
+ * @param scope 
+ * @param executor 
+ * @returns 
+ */
+export const presetFn = <P, I extends Array<unknown>>(
+  scope: Scope,
+  executor: Executor<(...input: I) => P | Promise<P>>
+): PresetExecution<P, I> => {
+  let innerScope: Scope = scope
+
+  const fn = async (...input: I) => {
+    const execution = await innerScope.resolve(executor)
+    return await execution(...input)
+  }
+
+  const setScope = (scope: Scope) => { innerScope = scope }
+
+  return Object.assign(fn, { setScope }) as PresetExecution<P, I>
+}
+
 const executorSymbol = Symbol.for('$submodule')
 
 export function isExecutor<P, D>(obj: unknown): obj is Executor<P> {
   return obj?.[executorSymbol]
 }
 
+/**
+ * @deprecated
+ */
 export class Execution<Input extends Array<unknown>, Output, Dependency> {
   constructor(
     private executor: (dependency: Dependency, ...input: Input) => Output | Promise<Output>,
