@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [7.5.8](https://github.com/submodule-org/submodule/compare/v7.5.7...v7.5.8) (2024-11-08)
+
+
+### Features
+
+* added experimental preset* API ([bee39e0](https://github.com/submodule-org/submodule/commit/bee39e0766f9d86ba747c6e3fffe13e933266300))
+
+
+### Miscellaneous Chores
+
+* release 7.5.8 ([f9a9360](https://github.com/submodule-org/submodule/commit/f9a9360ccdb394f34a6ea09c0cd5dbbc05ca46a4))
+
 ## [7.5.7](https://github.com/submodule-org/submodule/compare/v7.5.6...v7.5.7) (2024-11-07)
 
 
