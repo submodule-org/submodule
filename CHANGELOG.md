@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [7.6.0](https://github.com/submodule-org/submodule/compare/v7.5.8...v7.6.0) (2024-11-13)
+
+
+### Features
+
+* added defaults API ([5d18bd1](https://github.com/submodule-org/submodule/commit/5d18bd114ce777b35572faddd5966f9df61bf06e))
+
 ## [7.5.8](https://github.com/submodule-org/submodule/compare/v7.5.7...v7.5.8) (2024-11-08)
 
 
