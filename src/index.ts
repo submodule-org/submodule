@@ -779,11 +779,23 @@ export function map<P, D>(
 }
 
 /* v8 ignore start */
+/**
+ * Shortcut for flat(map(...))
+ */
 export function flatMap<P, D>(
   provider: Executor<P>,
   mapper: Provider<Executor<D>, P>
 ): Executor<D> {
   return flat(map(provider, mapper))
+}
+
+/**
+ * Shortcut for flat(provide(...))
+ */
+export function flatProvide<P>(
+  provider: Executor<Executor<P>>
+): Executor<P> {
+  return flat(provider)
 }
 /* v8 ignore stop */
 
@@ -899,4 +911,22 @@ export function createFamily<K, P>(
   fn.groupedMembers = () => group(...Array.from(pool.values()).map(([_, executor]) => executor))
 
   return fn as Family<K, P>
+}
+
+/**
+ * Utility function to preset defaults value for a provider
+ */
+export function defaults<
+  D,
+  I extends Partial<D>,
+  C extends Omit<Omit<D, keyof I> & Partial<D>, never>,
+  P
+>(
+  original: Executor<(dependency: D) => P>,
+  defaults: EODE<I>
+): Executor<(dependency: C) => P> {
+  return map(
+    { original, defaults: isExecutor(defaults) ? defaults : combine(defaults) },
+    ({ original, defaults }) => (dependency: C) => original({ ...defaults, ...dependency } as D)
+  )
 }

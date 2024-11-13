@@ -1,5 +1,5 @@
 import { expect, test, vi, assertType, expectTypeOf } from "vitest"
-import { combine, create, execute, prepare, value, flat, unImplemented, createScope, factory, factorize, produce, provide, map, getScope, createFamily, group, type Executor, isExecutor, presetFn } from "../src"
+import { combine, create, execute, prepare, value, flat, unImplemented, createScope, factory, factorize, produce, provide, map, getScope, createFamily, group, type Executor, isExecutor, presetFn, defaults } from "../src"
 
 test('submodule should work', async () => {
   const a = create(() => 'a' as const)
@@ -504,4 +504,18 @@ test("group type should work", async () => {
   const b = value('a')
 
   group(a, b) satisfies Executor<[number, string]>
+})
+
+test("defaults should work", async () => {
+  const a = value(1)
+  const b = value('a')
+
+  const c = value(({ a, b }: { a: number, b: string }) => a + b)
+  const dc = defaults(c, value({ a: 2 }))
+  const scope = createScope()
+  const fulfilled = produce(dc, value({ b: 'abc' }))
+
+  const result = await scope.resolve(fulfilled)
+  // biome-ignore lint/style/useTemplate: <explanation>
+  expect(result).toBe(2 + 'abc')
 })
