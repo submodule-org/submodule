@@ -116,6 +116,20 @@ const seed = flat(map(
 ))
 ```
 
+And `flatMap` does exactly so
+```typescript
+const seed = flatMap(
+  combine({
+    constantSeed: value(constantSeed), // wrap inside value so it won't be resolved
+    randomSeed: value(randomSeed), // wrap inside value so it won't be resolved
+  }),
+  async ({ 
+    constantSeed,
+    randomSeed
+  }) => condition ? constantSeed : randomSeed
+)
+```
+
 # Testing
 Main purpose of submodule is to make the code
 - side-effect free (app'll be faster to start)
