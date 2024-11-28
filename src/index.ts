@@ -1,14 +1,20 @@
 export class ProviderClass<Provide> {
   constructor(
-    public provider: (scope: Scope, self: Executor<Provide>) => Provide | Promise<Provide>,
+    public provider: (
+      scope: Scope,
+      self: Executor<Provide>,
+      ref?: Executor<unknown>
+    ) => Provide | Promise<Provide>,
   ) { }
 }
+type SyncProvider<Provide, Input = unknown> = (input: Input) => Provide
+type AsyncProvider<Provide, Input = unknown> = (input: Input) => Promise<Provide>
 
 type Provider<Provide, Input = unknown> = (input: Input) => Provide | Promise<Provide>
 
 type OnResolve = {
-  filter: (target: unknown) => boolean,
-  cb: <T>(target: T) => T
+  filter: (target: unknown, source: Executor<unknown>, ref?: Executor<unknown>) => boolean,
+  cb: <T>(target: T, source: Executor<unknown>, ref?: Executor<unknown>) => T
 }
 
 type Defer = (e?: unknown) => void | Promise<void>
@@ -19,7 +25,37 @@ type Defer = (e?: unknown) => void | Promise<void>
  * Middleware can be applied at the scope level.
  * While there's a default global scope, multiple scopes can be created as needed.
  */
-export class Scope {
+export interface Scope {
+  has(executor: Executor<unknown>): boolean;
+  get<T>(executor: Executor<T>): Promise<T | undefined>;
+
+  setAlias<T>(alias: unknown, executor: Executor<T>): void;
+  resolveValue<T>(executor: Executor<T>, value: T | Executor<T>): void;
+  resolve<T>(executor: EODE<T>): Promise<T>;
+  safeResolve<T>(executor: EODE<T>): Promise<{ type: 'ok', value: T, error: undefined } | { type: 'error', value: undefined, error: unknown }>;
+  resolveAlias<T>(alias: unknown): Promise<T | undefined>;
+  execute<Dependent, Output>(executable: Provider<Output, Dependent>, dependency: EODE<Dependent>): Promise<Awaited<Output>>;
+  safeRun<Dependent, Output, Input extends Array<unknown>>(dependency: EODE<Dependent>, runner: (provide: Dependent, ...inputs: Input) => Output | Promise<Output>, ...inputs: Input): Promise<{ type: 'ok', data: Awaited<Output>, error: undefined } | { type: 'error', error: unknown, data: undefined }>;
+  prepare<Dependent, Input extends Array<unknown>, Output>(provider: (provide: Dependent, ...input: Input) => Output, dependency: EODE<Dependent>): (...input: Input) => Promise<Awaited<ReturnType<typeof provider>>>;
+
+  dispose(): Promise<void>;
+}
+
+interface ScopeInner {
+  set<T>(executor: Executor<T>, v: T | Promise<T> | Executor<T>): void;
+  addDefer(deferer: Defer): void;
+  addOnResolves(onResolve: OnResolve): void;
+  onResolves: OnResolve[];
+  remove(executor: Executor<unknown>): Promise<void>;
+  _resolve(
+    provider: Provider<unknown, unknown> | ProviderClass<unknown>,
+    substitution: Executor<unknown> | undefined,
+    ref: Executor<unknown>,
+    dependency: Executor<unknown> | undefined,
+  ): Promise<unknown>;
+}
+
+class _Scope implements Scope, ScopeInner {
   private aliases: Map<unknown, Executor<unknown>>
 
   constructor(
@@ -102,6 +138,54 @@ export class Scope {
 
     const combined = combine(executor)
     return combined.resolve(this, combined)
+  }
+
+  async _resolve(
+    provider: Provider<unknown, unknown>,
+    substitution: Executor<unknown> | undefined,
+    executor: Executor<unknown>,
+    dependency: Executor<unknown> | undefined
+  ): Promise<unknown> {
+    if (this.has(executor)) {
+      return await this.get(executor)
+    }
+
+    if (substitution) {
+      return await this.resolve(substitution)
+    }
+
+    const promise = Promise.resolve()
+      .then(() => dependency ? this.resolve(dependency) : undefined)
+      .then(async (actualized) => {
+        if (provider instanceof ProviderClass) {
+          return provider.provider(this, executor)
+        }
+
+        if (provider.length > 0 && actualized === undefined) {
+          throw new Error(`invalid state, provider ${provider.toString()} requires dependent but not provided`)
+        }
+
+        return provider(actualized)
+      })
+      .then((actualized) => {
+        for (const onResolve of this.onResolves) {
+          if (onResolve.filter(actualized, executor, dependency)) {
+            return onResolve.cb(actualized, executor, dependency)
+          }
+        }
+
+        if (actualized === undefined || actualized === null) {
+          this.remove(executor)
+        }
+
+        return actualized
+      })
+      .catch((e) => {
+        throw e
+      })
+
+    this.set(executor, promise)
+    return await promise
   }
 
   /**
@@ -244,7 +328,7 @@ export function createScope(...scopes: Scope[]): Scope {
   return new FallbackScope(scopes)
 }
 
-class FallbackScope extends Scope {
+class FallbackScope extends _Scope {
   constructor(
     private scopes: Scope[]
   ) {
@@ -471,53 +555,14 @@ export function create<P, D>(provider: Provider<P, NoInfer<D>>, dependencies: EO
 export function create<P, D>(provider: Provider<P, D> | ProviderClass<P>, dependencies?: EODE<D>): Executor<P> {
   let substitution: Executor<P> | undefined
 
-  const modifiableDependency = dependencies
+  const normalizedDependency = dependencies
     ? isExecutor(dependencies) ? dependencies : combine(dependencies)
     : undefined
 
   async function resolve(scope: Scope, ref: Executor<P>): Promise<P> {
-    if (scope.has(executor)) {
-      return await scope.get(executor) as Promise<P>
-    }
-
-    if (substitution) {
-      return await scope.resolve(substitution)
-    }
-
-    const promise = Promise.resolve()
-      .then(() => modifiableDependency?.resolve(scope, modifiableDependency))
-      .then(async (actualized) => {
-        if (provider instanceof ProviderClass) {
-          return provider.provider(scope, ref)
-        }
-
-        if (provider.length > 0 && actualized === undefined) {
-          throw new Error(`invalid state, provider ${provider.toString()} requires dependent but not provided`)
-        }
-
-        return provider(actualized as D)
-      })
-      .then((actualized) => {
-        for (const onResolve of scope.onResolves) {
-          if (onResolve.filter(actualized)) {
-            return onResolve.cb(actualized)
-          }
-        }
-
-        if (actualized === undefined || actualized === null) {
-          scope.remove(ref)
-        }
-
-        return actualized
-      })
-      .catch((e) => {
-        throw e
-      })
-
-    scope.set(executor, promise)
-    return await promise
+    const scopeInner = scope as unknown as ScopeInner
+    return await scopeInner._resolve(provider, substitution, ref, normalizedDependency) as P
   }
-
 
   function subs(executor: Executor<P>) {
     substitution = executor
