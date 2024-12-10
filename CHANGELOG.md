@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [8.0.0](https://github.com/submodule-org/submodule/compare/v7.6.0...v8.0.0) (2024-12-10)
+
+
+### Features
+
+* added experimental publisher ([aa47ec4](https://github.com/submodule-org/submodule/commit/aa47ec4bfb3604a6f7e8d6e175e552eedd3654c2))
+* added more capability to filter ([aa47ec4](https://github.com/submodule-org/submodule/commit/aa47ec4bfb3604a6f7e8d6e175e552eedd3654c2))
+* added more meaningful id to each executor ([aa47ec4](https://github.com/submodule-org/submodule/commit/aa47ec4bfb3604a6f7e8d6e175e552eedd3654c2))
+* added update API to trigger changes ([aa47ec4](https://github.com/submodule-org/submodule/commit/aa47ec4bfb3604a6f7e8d6e175e552eedd3654c2))
+* move resolve logic to scope (instead of individual executor) ([aa47ec4](https://github.com/submodule-org/submodule/commit/aa47ec4bfb3604a6f7e8d6e175e552eedd3654c2))
+
+
+### Bug Fixes
+
+* use Map instead of WeakMap ([ee29eba](https://github.com/submodule-org/submodule/commit/ee29ebaa359434ca23f92f76598d144fc33ae86e))
+
+
+### Tests
+
+* added leak test ([8ae3f79](https://github.com/submodule-org/submodule/commit/8ae3f79dd835d6c87520259e75a37eade4b850e8))
+
 ## [7.6.0](https://github.com/submodule-org/submodule/compare/v7.5.8...v7.6.0) (2024-11-13)
 
 
