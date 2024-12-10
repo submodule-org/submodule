@@ -35,7 +35,7 @@ export const $registry = new Map<symbol, Executor<unknown>>()
  */
 export class Scope {
   constructor(
-    private store = new WeakMap<Executor<unknown>, Promise<unknown> | unknown>(),
+    private store = new Map<Executor<unknown>, Promise<unknown> | unknown>(),
     private _resolves: OnResolve[] = [],
     private defers: Defer[] = [],
     private listeners = new Map<Executor<unknown>, Set<(p: unknown) => void>>(),
@@ -295,8 +295,10 @@ export class Scope {
       d();
     }
 
+    this.store.clear()
     this.defers = []
     this._resolves = []
+    this.listeners.clear()
   }
 
   /**

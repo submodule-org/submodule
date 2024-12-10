@@ -63,5 +63,4 @@ test("leak test protection", async () => {
   scope = undefined
 
   expect(await detector.isLeaking()).toBe(false)
-  console.log($registry)
 })
