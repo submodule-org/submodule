@@ -1,17 +1,35 @@
 export class ProviderClass<Provide> {
   constructor(
-    public provider: (scope: Scope, self: Executor<Provide>) => Provide | Promise<Provide>,
+    public provider: (
+      scope: Scope,
+      self: Executor<unknown>,
+      ref?: Executor<unknown>
+    ) => Provide | Promise<Provide>,
   ) { }
 }
 
-type Provider<Provide, Input = unknown> = (input: Input) => Provide | Promise<Provide>
+type Fn<Provide, Input> = (input: Input) => (Provide | Promise<Provide>)
+
+type Provider<Provide, Input = unknown> = (
+  input: Input,
+) => Provide | Promise<Provide>
 
 type OnResolve = {
-  filter: (target: unknown) => boolean,
-  cb: <T>(target: T) => T
+  filter: (target: unknown, self: Executor<unknown>, ref?: Executor<unknown>) => boolean,
+  cb: <T>(target: T,) => T
 }
 
 type Defer = (e?: unknown) => void | Promise<void>
+
+function isPromise(value: unknown): value is Promise<Awaited<typeof value>> {
+  return value instanceof Promise
+}
+
+const registry = new Map<symbol, Executor<unknown>>()
+
+export function debug() {
+  console.log(registry)
+}
 
 /**
  * Represents a scope in the dependency injection system.
@@ -20,12 +38,11 @@ type Defer = (e?: unknown) => void | Promise<void>
  * While there's a default global scope, multiple scopes can be created as needed.
  */
 export class Scope {
-  private aliases: Map<unknown, Executor<unknown>>
-
   constructor(
-    private store = new Map<Executor<unknown>, Promise<unknown>>(),
+    private store = new Map<Executor<unknown>, Promise<unknown> | unknown>(),
     private _resolves: OnResolve[] = [],
-    private defers: Defer[] = []
+    private defers: Defer[] = [],
+    private listeners = new Map<Executor<unknown>, Set<(p: unknown) => void>>(),
   ) { }
 
   /**
@@ -33,7 +50,7 @@ export class Scope {
    * @param {Executor<unknown>} executor - The executor to check.
    * @returns {boolean} True if the executor has been resolved, false otherwise.
    */
-  has(executor: Executor<unknown>): boolean {
+  has<P>(executor: Executor<P>): boolean {
     return this.store.has(executor)
   }
 
@@ -59,15 +76,11 @@ export class Scope {
     }
 
     if (isExecutor(v)) {
-      this.store.set(executor, v.resolve(this, executor))
+      this.store.set(executor, this.resolve(v))
       return
     }
 
     this.store.set(executor, Promise.resolve(v))
-  }
-
-  setAlias<T>(alias: unknown, executor: Executor<T>) {
-    this.aliases.set(alias, executor)
   }
 
   /**
@@ -82,11 +95,38 @@ export class Scope {
     }
 
     if (isExecutor(value)) {
-      this.store.set(executor, value.resolve(this, value))
+      this.store.set(executor, this.resolve(value))
       return
     }
 
     this.store.set(executor, Promise.resolve(value))
+  }
+
+  update(executor: Executor<unknown>, value: unknown, equality: (a: unknown, b: unknown) => boolean = Object.is) {
+    if (!this.store.has(executor)) {
+      console.warn('executor not found')
+      return
+    }
+
+    const currentValue = this.store.get(executor)
+
+    if (isPromise(currentValue)) {
+      console.warn('executor is still resolving')
+      return
+    }
+
+    if (equality(currentValue, value)) {
+      return
+    }
+
+    this.store.set(executor, value)
+
+    const listeners = this.listeners.get(executor)
+    if (listeners) {
+      for (const listener of listeners) {
+        listener(value)
+      }
+    }
   }
 
   /**
@@ -97,11 +137,59 @@ export class Scope {
    */
   async resolve<T>(executor: EODE<T>): Promise<T> {
     if (isExecutor(executor)) {
-      return executor.resolve(this, executor)
+      if (this.has(executor)) {
+        return await this.get(executor) as Promise<T>
+      }
+
+      const self = executor
+
+      const ref = executor.input
+        ? isExecutor(executor.input) ? executor.input : combine(executor.input)
+        : undefined
+
+      const promise = Promise.resolve()
+        .then(() => {
+          return ref ? this.resolve(ref) : undefined
+        })
+        .then(async (actualized) => {
+          if (executor.provider instanceof ProviderClass) {
+            return executor.provider.provider(this, self, ref)
+          }
+
+          if (executor.provider.length > 2 && actualized === undefined) {
+            throw new Error(`invalid state, provider ${executor.provider.toString()} requires dependent but not provided`)
+          }
+
+          return executor.provider(actualized as T)
+        })
+        .then((actualized) => {
+
+          for (const onResolve of this.onResolves) {
+            if (onResolve.filter(actualized, executor, ref)) {
+              return onResolve.cb(actualized)
+            }
+          }
+
+          if (actualized === undefined || actualized === null) {
+            this.remove(executor)
+          }
+
+          return actualized
+        })
+        .then(actualized => {
+          this.store.set(executor, actualized)
+          return actualized
+        })
+        .catch((e) => {
+          throw e
+        })
+
+      this.set(executor, promise)
+      return await promise
     }
 
     const combined = combine(executor)
-    return combined.resolve(this, combined)
+    return this.resolve(combined)
   }
 
   /**
@@ -118,15 +206,6 @@ export class Scope {
       .catch(error => ({ type: 'error', error, value: undefined } as const))
   }
 
-  async resolveAlias<T>(alias: unknown): Promise<T | undefined> {
-    const executor = this.aliases.get(alias)
-    if (!executor) {
-      return
-    }
-
-    return await this.resolve(executor) as T
-  }
-
   /**
    * Executes a provider with its dependencies.
    * @deprecated use run instead
@@ -137,7 +216,7 @@ export class Scope {
    * @returns {Promise<Awaited<Output>>} A promise that resolves to the output of the provider.
    */
   async execute<Dependent, Output>(
-    executable: Provider<Output, Dependent>,
+    executable: Fn<Output, Dependent>,
     dependency: EODE<Dependent>
   ): Promise<Awaited<Output>> {
     const value = await this.resolve(dependency)
@@ -232,6 +311,63 @@ export class Scope {
   async remove(executor: Executor<unknown>) {
     this.store.delete(executor)
   }
+
+  /** Listen to executor changes (including initialization)
+   * @param executor - executor to listen to
+   * @returns a function to unsubscribe
+   */
+  subscribe<P>(
+    executor: Observable<P>,
+    listener: (p: P) => void
+  ): () => void {
+    const unlisteners = new Set<() => void>()
+
+    const sources = findSources(executor)
+    for (const source of sources) {
+      if (!this.listeners.has(source)) {
+        this.listeners.set(source, new Set())
+      }
+
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      this.listeners.get(source)!.add(listener)
+      unlisteners.add(() => {
+        // biome-ignore lint/style/noNonNullAssertion: <explanation>
+        this.listeners.get(source)!.delete(listener)
+      })
+    }
+
+    return () => {
+      for (const unlistener of unlisteners) {
+        unlistener()
+      }
+    }
+  }
+}
+
+function findSources(executor: Executor<unknown>): Executor<unknown>[] {
+  const visited = new Set<Executor<unknown>>()
+  const stack = [executor]
+
+  while (stack.length > 0) {
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    const current = stack.pop()!
+    if (visited.has(current)) {
+      continue
+    }
+    visited.add(current)
+
+    if (current.source) {
+      return [current]
+    }
+
+    if (current.dependencies) {
+      for (const dep of current.dependencies) {
+        stack.push(dep)
+      }
+    }
+  }
+
+  return []
 }
 
 /**
@@ -302,34 +438,20 @@ export function dispose(): void {
  * @template Value The type of value this executor resolves to.
  */
 export interface Executor<Value> {
-  id: symbol
-
-  /**
-   * Resolves the value within the given scope.
-   * @param scope The scope in which to resolve the value.
-   * @returns A promise that resolves to the value.
-   */
-  resolve(scope: Scope, ref: Executor<Value>): Promise<Value>
-
-  /**
-   * Resets the executor to its initial state.
-   */
-  reset(): void
-
-  /**
-   * Substitutes this executor with another executor of the same type.
-   * If scope that the Executor is being resolved in has already resolved this executor,
-   * it will keep the resolved value and not resolve the new executor until reset.  
-   * 
-   * @param executor The executor to substitute this one with.
-   */
-  subs(executor: Executor<Value>): void
-
+  readonly id: symbol
+  readonly provider: Provider<Value, unknown> | ProviderClass<Value>
+  readonly input: EODE<unknown> | undefined
+  readonly dependencies: Executor<unknown>[] | undefined
+  readonly source: boolean
   /**
    * A symbol property that identifies this object as an Executor.
    */
   readonly [x: symbol]: true
+  readonly toString: () => string
 }
+
+type Cleanup = () => void
+
 
 export interface PresetExecutor<Value> {
   setScope: (scope: Scope) => void
@@ -386,7 +508,7 @@ export const presetFn = <P, I extends Array<unknown>>(
 
 const executorSymbol = Symbol.for('$submodule')
 
-export function isExecutor<P, D>(obj: unknown): obj is Executor<P> {
+export function isExecutor<P>(obj: unknown): obj is Executor<P> {
   return obj?.[executorSymbol]
 }
 
@@ -423,40 +545,12 @@ export function createExecution<Dependency, Input extends Array<unknown>, Output
 
 export type EODE<D> = Executor<D> | { [key in keyof D]: Executor<D[key]> }
 
-/**
- * Creates an Executor for a given provider or provider class.
- * 
- * @template P The type of the provided value
- * 
- * @param {ProviderClass<P>} providerClass - A provider class without dependencies
- * @returns {Executor<P>} An executor for the provided value
- * @deprecated use provide instead
- */
-export function create<P>(providerClass: ProviderClass<P>): Executor<P>
+let index = 0
 
-/**
- * Creates an Executor for a given provider function without dependencies.
- * 
- * @template P The type of the provided value
- * 
- * @param {Provider<P>} provider - A provider function without dependencies
- * @returns {Executor<P>} An executor for the provided value
- * @deprecated use provide instead
- */
-export function create<P>(provider: Provider<P>): Executor<P>
-
-/**
- * Creates an Executor for a given provider function with dependencies.
- * 
- * @template P The type of the provided value
- * @template D The type of the dependencies
- * 
- * @param {Provider<P, NoInfer<D>>} provider - A provider function with dependencies
- * @param {EODE<D>} dependencies - The dependencies required by the provider function
- * @returns {Executor<P>} An executor for the provided value
- * @deprecated use map instead
- */
-export function create<P, D>(provider: Provider<P, NoInfer<D>>, dependencies: EODE<D>): Executor<P>
+export type Option = {
+  source: boolean
+  id?: string
+}
 
 /**
  * Creates an Executor for a given provider or provider class, with optional dependencies.
@@ -465,70 +559,28 @@ export function create<P, D>(provider: Provider<P, NoInfer<D>>, dependencies: EO
  * @template D The type of the dependencies (if unknown)
  * 
  * @param {Provider<P, D> | ProviderClass<P>} provider - A provider function or class
- * @param {EODE<D>} [dependencies] - Optional dependencies required by the provider
+ * @param {EODE<D>} [input] - Optional dependencies required by the provider
  * @returns {Executor<P>} An executor for the provided value
  */
-export function create<P, D>(provider: Provider<P, D> | ProviderClass<P>, dependencies?: EODE<D>): Executor<P> {
-  let substitution: Executor<P> | undefined
+export function create<P, D>(
+  provider: Provider<P, D> | ProviderClass<P>,
+  input: EODE<D> | undefined,
+  dependencies: Executor<unknown>[] | undefined,
+  option: Option
+): Executor<P> {
+  const id = Symbol.for(`submodule-${index++}${option.id ? `-${option.id}` : ''}`)
 
-  const modifiableDependency = dependencies
-    ? isExecutor(dependencies) ? dependencies : combine(dependencies)
-    : undefined
+  const executor = {
+    id,
+    provider,
+    dependencies,
+    input: input,
+    source: option.source,
+    [Symbol.for('$submodule')]: true,
+    toString: () => id.toString()
+  } satisfies Executor<P>
 
-  async function resolve(scope: Scope, ref: Executor<P>): Promise<P> {
-    if (scope.has(executor)) {
-      return await scope.get(executor) as Promise<P>
-    }
-
-    if (substitution) {
-      return await scope.resolve(substitution)
-    }
-
-    const promise = Promise.resolve()
-      .then(() => modifiableDependency?.resolve(scope, modifiableDependency))
-      .then(async (actualized) => {
-        if (provider instanceof ProviderClass) {
-          return provider.provider(scope, ref)
-        }
-
-        if (provider.length > 0 && actualized === undefined) {
-          throw new Error(`invalid state, provider ${provider.toString()} requires dependent but not provided`)
-        }
-
-        return provider(actualized as D)
-      })
-      .then((actualized) => {
-        for (const onResolve of scope.onResolves) {
-          if (onResolve.filter(actualized)) {
-            return onResolve.cb(actualized)
-          }
-        }
-
-        if (actualized === undefined || actualized === null) {
-          scope.remove(ref)
-        }
-
-        return actualized
-      })
-      .catch((e) => {
-        throw e
-      })
-
-    scope.set(executor, promise)
-    return await promise
-  }
-
-
-  function subs(executor: Executor<P>) {
-    substitution = executor
-  }
-
-  function reset() {
-    substitution = undefined
-  }
-
-  const executor: Executor<P> = { id: Symbol(), subs, reset, resolve, [Symbol.for('$submodule')]: true }
-
+  registry.set(id, executor)
   return executor
 }
 
@@ -548,7 +600,7 @@ export function create<P, D>(provider: Provider<P, D> | ProviderClass<P>, depend
  * const configExecutor = value({ apiKey: 'abc123', maxRetries: 3 });
  * // configExecutor will always resolve to the given configuration object
  */
-export const value = <Provide>(value: Provide): Executor<Provide> => create(() => value)
+export const value = <Provide>(value: Provide): Executor<Provide> => provide(() => value)
 
 /**
  * Groups similar Executors together.
@@ -566,13 +618,12 @@ export const value = <Provide>(value: Provide): Executor<Provide> => create(() =
 /* v8 ignore start */
 export const group = <
   E extends Executor<unknown>[]
->(...values: E): Executor<{ [K in keyof E]: inferProvide<E[K]> }> => create(
-  new ProviderClass(
-    async (scope) => {
-      const resolved = await Promise.all(values.map(v => scope.resolve(v)))
-      return resolved as { [K in keyof E]: inferProvide<E[K]> }
-    }
-  )
+>(...values: E): Executor<{ [K in keyof E]: inferProvide<E[K]> }> => map(
+  scoper,
+  async (scope) => {
+    const resolved = await Promise.all(values.map(v => scope.resolve(v)))
+    return resolved as { [K in keyof E]: inferProvide<E[K]> }
+  }
 )
 /* v8 ignore stop */
 
@@ -589,7 +640,7 @@ export const group = <
  * willBeResolved.subs(value('actual value'));
  */
 export const unImplemented = <Provide>(): Executor<Provide> => {
-  return create<Provide>(() => {
+  return provide<Provide>(() => {
     throw new Error('not implemented')
   })
 }
@@ -624,7 +675,14 @@ export const factory = <Provide>() => (impl: Executor<Provide>): Executor<Provid
  *   return process.env.PGLITE ? scope.resovle(pgLiteImpl) : scope.resolve(pgImpl);
  * }, scoper);
  */
-export const scoper = create(new ProviderClass(async (scope) => scope))
+export const scoper = create(
+  new ProviderClass(
+    async (scope) => scope
+  ),
+  undefined,
+  undefined,
+  { source: false, id: 'scoper' }
+)
 
 /**
  * Flattens a nested Executor structure by resolving the outer Executor and then resolving the inner Executor.
@@ -637,10 +695,14 @@ export const scoper = create(new ProviderClass(async (scope) => scope))
  * const flattenedExecutor = flat(nestedExecutor);
  * const result = await resolve(flattenedExecutor); // 'Hello, World!'
  */
-export const flat = <T>(executor: Executor<Executor<T>>) => create(async scoper => {
-  const target = await scoper.resolve(executor)
-  return scoper.resolve(target)
-}, scoper)
+export const flat = <T>(executor: Executor<Executor<T>>) => map(
+  scoper,
+  async scoper => {
+    const target = await scoper.resolve(executor)
+    return scoper.resolve(target)
+  },
+  { source: false, id: 'flat' }
+)
 
 /**
  * @deprecated
@@ -658,7 +720,7 @@ export function prepare<Dependent, Input extends Array<unknown>, Output>(
  * @deprecated
  */
 export async function execute<Dependent, Output>(
-  executable: Provider<Output, Dependent>,
+  executable: Fn<Output, Dependent>,
   dependency: EODE<Dependent>,
   scope: Scope = getScope()
 ): Promise<Awaited<Output>> {
@@ -685,27 +747,35 @@ export type inferProvide<T> = T extends Executor<infer S> ? S : never
  */
 export function combine<
   L extends Record<string, Executor<unknown>>
->(layout: L): Executor<{ [key in keyof L]: inferProvide<L[key]> }> & { separate: () => L } {
+>(
+  layout: L,
+  pOption?: Option
+): Executor<{ [key in keyof L]: inferProvide<L[key]> }> & { separate: () => L } {
   function separate() {
     return layout as L
   }
 
-  const executor = create(new ProviderClass(async (scope) => {
+  const option = pOption ?? { source: false }
 
-    if (Array.isArray(layout)) {
-      const resolved = await Promise.all(layout.map(e => scope.resolve(e)))
+  const executor = create(
+    async (scope) => {
+      if (Array.isArray(layout)) {
+        const resolved = await Promise.all(layout.map(e => scope.resolve(e)))
 
+        return resolved as unknown as ({ [key in keyof L]: inferProvide<L[key]> } & { separate: () => L })
+      }
 
-      return resolved as unknown as ({ [key in keyof L]: inferProvide<L[key]> } & { separate: () => L })
-    }
+      const layoutPromise = Object.entries(layout).map(
+        async ([key, executor]) => [key, await scope.resolve(executor)] as const
+      );
 
-    const layoutPromise = Object.entries(layout).map(
-      async ([key, executor]) => [key, await scope.resolve(executor)] as const
-    );
-
-    const result = Object.fromEntries(await Promise.all(layoutPromise));
-    return result as ({ [key in keyof L]: inferProvide<L[key]> } & { separate: () => L });
-  }));
+      const result = Object.fromEntries(await Promise.all(layoutPromise));
+      return result as ({ [key in keyof L]: inferProvide<L[key]> } & { separate: () => L });
+    },
+    scoper,
+    Object.values(layout),
+    option
+  );
 
   Object.defineProperty(executor, 'separate', { value: separate })
 
@@ -730,11 +800,12 @@ export function normalize<T>(valueOrExecutor: T | Executor<T>): Executor<T> {
  * @returns 
  */
 export function factorize<P, D>(
-  provider: Executor<Provider<P, D>> | Provider<P, D>
+  provider: Executor<Fn<P, D>> | Fn<P, D>
 ): (key: D | Executor<D>) => Executor<P> {
-  return (key: D | Executor<D>) => create(async ({ provider, dependency }) => {
-    return provider(dependency)
-  }, { provider: normalize(provider), dependency: normalize(key) })
+  return (key: D | Executor<D>) => map(
+    { provider: normalize(provider), dependency: normalize(key) },
+    async ({ provider, dependency }) => provider(dependency),
+  )
 }
 
 /**
@@ -746,15 +817,17 @@ export function factorize<P, D>(
  * @returns 
  */
 export function produce<P, D>(
-  provider: Executor<Provider<P, D>>,
+  provider: Executor<Fn<P, D>>,
   fulfillment: EODE<D>
 ) {
-  return create(({ provider, fulfillment }) => {
-    return provider(fulfillment)
-  }, {
-    provider,
-    fulfillment: isExecutor(fulfillment) ? fulfillment : combine(fulfillment)
-  })
+  return map(
+    {
+      provider,
+      fulfillment: isExecutor(fulfillment) ? fulfillment : combine(fulfillment)
+    },
+    ({ provider, fulfillment }) => {
+      return provider(fulfillment)
+    },)
 }
 
 /**
@@ -765,17 +838,24 @@ export function produce<P, D>(
  */
 export function map<P, D>(
   source: EODE<P>,
-  mapper: Provider<D, P> | Executor<Provider<D, P>>
+  mapper: Fn<D, P> | Executor<Fn<D, P>>,
+  pOption?: Option
 ): Executor<D> {
+  const id = `${pOption?.id ? pOption.id : ''}-map`
   const _source = isExecutor(source) ? source : combine(source)
 
   if (isExecutor(mapper)) {
-    return create(({ _source, mapper }) => {
+    return create((
+      { _source, mapper }) => {
       return mapper(_source)
-    }, combine({ _source, mapper }))
+    },
+      combine({ _source, mapper }),
+      [_source],
+      { source: pOption?.source || true, id }
+    )
   }
 
-  return create(mapper, _source)
+  return create(mapper, _source, [_source], { source: pOption?.source || true, id })
 }
 
 /* v8 ignore start */
@@ -784,9 +864,10 @@ export function map<P, D>(
  */
 export function flatMap<P, D>(
   provider: Executor<P>,
-  mapper: Provider<Executor<D>, P>
+  mapper: Fn<Executor<D>, P>,
+  option?: Option
 ): Executor<D> {
-  return flat(map(provider, mapper))
+  return flat(map(provider, mapper, option))
 }
 
 /**
@@ -806,9 +887,10 @@ export function flatProvide<P>(
  * @returns 
  */
 export function provide<P>(
-  provider: Provider<P>
+  provider: Fn<P, never>,
+  option?: Option
 ): Executor<P> {
-  return create(provider)
+  return create(provider, undefined, undefined, { source: option?.source || false, id: option?.id })
 }
 
 
@@ -929,4 +1011,64 @@ export function defaults<
     { original, defaults: isExecutor(defaults) ? defaults : combine(defaults) },
     ({ original, defaults }) => (dependency: C) => original({ ...defaults, ...dependency } as D)
   )
+}
+
+type Publishable<P> = {
+  initialValue: P
+  cleanup?: Cleanup
+}
+
+export type Publisher<P> = (set: (next: P) => void) => Publishable<P> | Promise<Publishable<P>>
+
+type Consumer<P> = {
+  get(): P
+  onValue: (next: (value: NoInfer<P>) => void) => Cleanup
+}
+
+export type Observable<P> = Executor<Consumer<P>>
+
+/**
+ * An experiemental function to create a publisher, the start of the reactivity in submodule
+ * 
+ * A publisher is a function with a paramter `set` that can be used to set the value of the publisher.
+ * The publisher function should return an object with an `initialValue` property that represents the initial value of the publisher and a cleanup function
+ * 
+ * @experimental
+ * @param publisher 
+ * @returns Observable, which is an executor that has 
+ *  - get() method to get the current value
+ *  - onValue() method to subscribe to the value changes
+ */
+export function publisher<P>(publisher: Publisher<P> | Executor<Publisher<P>>): Observable<P> {
+  const normalizedPublisher = isExecutor(publisher) ? publisher : value(publisher)
+  return create(new ProviderClass(async (scope, self) => {
+    let initialValue: P
+
+    const set = (next: P) => {
+      initialValue = next
+      scope.update(self, next)
+    }
+
+    let cleanup: Cleanup | undefined = undefined
+
+    const initial = await scope.resolve(normalizedPublisher)
+    const value = await initial(set)
+
+    initialValue = value.initialValue
+    cleanup = value.cleanup
+
+    scope.addDefer(() => {
+      cleanup?.()
+      cleanup = undefined
+    })
+
+    return {
+      get() {
+        return initialValue
+      },
+      onValue(next: (value: P) => void): Cleanup {
+        return scope.subscribe(self as Observable<P>, next)
+      }
+    }
+  }), undefined, [normalizedPublisher], { source: true, id: 'publisher' })
 }

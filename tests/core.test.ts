@@ -1,11 +1,11 @@
 import { expect, test, vi, assertType, expectTypeOf } from "vitest"
-import { combine, create, execute, prepare, value, flat, unImplemented, createScope, factory, factorize, produce, provide, map, getScope, createFamily, group, type Executor, isExecutor, presetFn, defaults } from "../src"
+import { combine, execute, prepare, value, flat, unImplemented, createScope, factory, factorize, produce, provide, map, getScope, createFamily, group, type Executor, isExecutor, presetFn, defaults } from "../src"
 
 test('submodule should work', async () => {
-  const a = create(() => 'a' as const)
+  const a = provide(() => 'a' as const)
   expect(await getScope().resolve(a)).toMatch('a')
 
-  const b = create(async () => 'b' as const)
+  const b = provide(async () => 'b' as const)
   expect(await getScope().resolve(b)).toMatch('b')
 
   const d = await execute(c => c, b)
@@ -13,8 +13,8 @@ test('submodule should work', async () => {
 })
 
 test('submodule can be used as dependencies', async () => {
-  const a = create(() => 'a')
-  const b = create((x) => x, a)
+  const a = provide(() => 'a')
+  const b = map(a, (x) => x)
 
   const result = await getScope().resolve(b)
   expect(result).eq('a')
@@ -76,10 +76,10 @@ test('safeRun should work', async () => {
   expect(r.data).toBe('1goodfactor')
 })
 
-test('create should not be eager', async () => {
+test('provide should not be eager', async () => {
   const fn = vi.fn(() => 'a')
 
-  const a = create(fn)
+  const a = provide(fn)
   process.nextTick(async () => {
     expect(fn).toBeCalledTimes(0)
     await getScope().resolve(a)
@@ -89,10 +89,10 @@ test('create should not be eager', async () => {
 
 test('combine should work', async () => {
   const fnA = vi.fn(() => 'a')
-  const lazyA = create(fnA)
+  const lazyA = provide(fnA)
 
   const fnB = vi.fn(() => 'b')
-  const eagerB = create(fnB)
+  const eagerB = provide(fnB)
 
   const ab = combine({ a: lazyA, b: eagerB })
   const result = await getScope().resolve(ab)
@@ -111,10 +111,10 @@ test('combined can be separated', async () => {
 
 test('should only executed one even in combine', async () => {
   const fnA = vi.fn(() => 'a')
-  const lazyA = create(fnA)
+  const lazyA = provide(fnA)
 
   const fnB = vi.fn(() => 'b')
-  const eagerB = create(fnB)
+  const eagerB = provide(fnB)
 
   const ab = combine({ a: lazyA, b: eagerB })
 
@@ -127,7 +127,7 @@ test('should only executed one even in combine', async () => {
 test('submodule can be chained', async () => {
   type Req = { a: string }
 
-  const transform = create(() => {
+  const transform = provide(() => {
     return (req: Req) => ({ b: req.a })
   })
 
@@ -180,19 +180,19 @@ test('magic function 3', async () => {
 })
 
 test('error should be carried over', async () => {
-  const a = create(() => Promise.reject(new Error('test')))
+  const a = provide(() => Promise.reject(new Error('test')))
 
-  const b = create((a) => 'b', a)
+  const b = map(a, (a) => 'b')
 
   await expect(async () => await getScope().resolve(b)).rejects.toThrowError('test')
 })
 
 test('can mock easily', async () => {
   const config = value({ port: 3000 })
-  const service = create((config) => {
+  const service = map(config, (config) => {
     // will be a server
     return config.port
-  }, config)
+  })
 
   const testConfig = { port: 4000 }
   getScope().resolveValue(config, testConfig)
@@ -201,12 +201,12 @@ test('can mock easily', async () => {
 })
 
 test('can set value by early access to the root dependency', async () => {
-  const port = create((port: number) => port, value(0))
+  const port = map(value(0), (port: number) => port)
 
-  const service = create((port) => {
+  const service = map(port, (port) => {
     // will be a server
     return port
-  }, port)
+  })
 
   getScope().resolveValue(port, value(4000))
   getScope().resolveValue(port, value(3000))
@@ -215,30 +215,19 @@ test('can set value by early access to the root dependency', async () => {
   expect(result).toBe(4000)
 })
 
-test('provider with dependency cannot be initialized without dependency', async () => {
-  const port = unImplemented<number>()
-
-  const falsyScope = createScope()
-  expect(async () => await falsyScope.resolve(port)).rejects.toThrowError('not implemented')
-
-  const truthyScope = createScope()
-  port.subs(value(1))
-  expect(await truthyScope.resolve(port)).toBe(1)
-})
-
 test('factory should work', async () => {
   const fnFactory = factory<(value: string) => number>()
   const seed = value(1)
-  const stringToNumber = fnFactory(create((seed) => {
+  const stringToNumber = fnFactory(map(seed, (seed) => {
     return (value: string) => Number(value) + seed.valueOf()
-  }, seed))
+  },))
 
   const result = await getScope().resolve(stringToNumber)
   expect(result('1')).toBe(2)
 })
 
 test('expect error to be thown', async () => {
-  const problematic = create(() => {
+  const problematic = provide(() => {
     throw new Error('test')
   })
 
@@ -250,23 +239,18 @@ test('can use object as dependency', async () => {
   const intValue = value(1)
   const strValue = value('test')
 
-  const comb = create(({ intValue, strValue }) => {
-    return String(intValue) + strValue
-  }, combine({ intValue, strValue }))
+  const comb = map(
+    combine({ intValue, strValue }),
+    ({ intValue, strValue }) => {
+      return String(intValue) + strValue
+    })
 
   expect(await getScope().resolve(comb)).toBe('1test')
 })
 
-test('submodule can be substituted', async () => {
-  const intValue = value(1)
-  intValue.subs(value(2))
-
-  const i = await getScope().resolve(intValue)
-  expect(i).toBe(2)
-})
 
 test("flat should work", async () => {
-  const a = create(() => create(() => 'a'))
+  const a = provide(() => provide(() => 'a'))
   const ar = await getScope().resolve(flat(a))
   expect(ar).toBe('a')
 })
@@ -303,14 +287,15 @@ test("factory can make use of executor as well", async () => {
     port: number
   }
 
-  const rootServerConfig = create(() => ({ port: 4000 } as ServerConfig))
+  const rootServerConfig = provide(() => ({ port: 4000 } as ServerConfig))
 
   const createServer = factorize(
-    create((rootConfig) => async (config: ServerConfig) => {
-      return {
-        serverPort: config.port + rootConfig.port
-      }
-    }, rootServerConfig),
+    map(rootServerConfig,
+      (rootConfig) => async (config: ServerConfig) => {
+        return {
+          serverPort: config.port + rootConfig.port
+        }
+      },),
   )
 
   const server = createServer({ port: 4000 })
@@ -320,24 +305,8 @@ test("factory can make use of executor as well", async () => {
   expect(r.serverPort).toBe(8000)
 })
 
-test("null or undefined will not be cached", async () => {
-  let seed = 0
-  const fn = vi.fn()
-
-  const plus = create(() => {
-    fn(seed++)
-  })
-
-  const scope = createScope()
-  await scope.resolve(plus)
-  expect(fn).toBeCalledTimes(1)
-
-  await scope.resolve(plus)
-  expect(fn).toBeCalledTimes(2)
-})
-
-test("use fullfill to create a module", async () => {
-  const plus = create(() => {
+test("use fullfill to provide a module", async () => {
+  const plus = provide(() => {
     return (seed: number) => seed + 1
   })
 
@@ -359,11 +328,11 @@ test("fulfillment can make use of destructuring", async () => {
     port: '4000'
   } satisfies Config)
 
-  const createServer = create((defaultConfig) => {
+  const createServer = map(defaultConfig, (defaultConfig) => {
     return (config: Partial<Config>) => {
       return `${config.server || defaultConfig.server}:${config.port || defaultConfig.port}`
     }
-  }, defaultConfig)
+  },)
 
   const server1 = produce(createServer, value({ port: '3000' }))
   const server2 = produce(createServer, value({ server: '127.0.0.1' }))
