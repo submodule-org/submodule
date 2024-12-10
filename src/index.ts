@@ -25,11 +25,7 @@ function isPromise(value: unknown): value is Promise<Awaited<typeof value>> {
   return value instanceof Promise
 }
 
-const registry = new Map<symbol, Executor<unknown>>()
-
-export function debug() {
-  console.log(registry)
-}
+export const $registry = new Map<symbol, Executor<unknown>>()
 
 /**
  * Represents a scope in the dependency injection system.
@@ -39,7 +35,7 @@ export function debug() {
  */
 export class Scope {
   constructor(
-    private store = new Map<Executor<unknown>, Promise<unknown> | unknown>(),
+    private store = new WeakMap<Executor<unknown>, Promise<unknown> | unknown>(),
     private _resolves: OnResolve[] = [],
     private defers: Defer[] = [],
     private listeners = new Map<Executor<unknown>, Set<(p: unknown) => void>>(),
@@ -299,7 +295,6 @@ export class Scope {
       d();
     }
 
-    this.store.clear()
     this.defers = []
     this._resolves = []
   }
@@ -580,7 +575,7 @@ export function create<P, D>(
     toString: () => id.toString()
   } satisfies Executor<P>
 
-  registry.set(id, executor)
+  $registry.set(id, executor)
   return executor
 }
 
@@ -1018,7 +1013,12 @@ type Publishable<P> = {
   cleanup?: Cleanup
 }
 
-export type Publisher<P> = (set: (next: P) => void) => Publishable<P> | Promise<Publishable<P>>
+type Equality = (a: unknown, b: unknown) => boolean
+
+export type Publisher<P> = (
+  set: (next: P, equality?: Equality) => void,
+  initialValue?: P
+) => Publishable<P> | Promise<Publishable<P>>
 
 type Consumer<P> = {
   get(): P
@@ -1034,41 +1034,70 @@ export type Observable<P> = Executor<Consumer<P>>
  * The publisher function should return an object with an `initialValue` property that represents the initial value of the publisher and a cleanup function
  * 
  * @experimental
- * @param publisher 
+ * @param source 
  * @returns Observable, which is an executor that has 
  *  - get() method to get the current value
  *  - onValue() method to subscribe to the value changes
  */
-export function publisher<P>(publisher: Publisher<P> | Executor<Publisher<P>>): Observable<P> {
-  const normalizedPublisher = isExecutor(publisher) ? publisher : value(publisher)
+export function observe<P>(
+  source: Executor<Publisher<P>>,
+  initialValue?: P
+): Observable<P> {
   return create(new ProviderClass(async (scope, self) => {
-    let initialValue: P
+    const _source = await scope.resolve(source)
 
-    const set = (next: P) => {
-      initialValue = next
-      scope.update(self, next)
+    let value: P | undefined = initialValue
+    const set = (next: P, equality: Equality = Object.is) => {
+      if (equality(value, next)) {
+        return
+      }
+
+      value = next
+      scope.update(self, value)
     }
 
-    let cleanup: Cleanup | undefined = undefined
-
-    const initial = await scope.resolve(normalizedPublisher)
-    const value = await initial(set)
-
-    initialValue = value.initialValue
-    cleanup = value.cleanup
+    const publisher = await _source(set, initialValue)
+    value = publisher.initialValue
 
     scope.addDefer(() => {
-      cleanup?.()
-      cleanup = undefined
+      publisher.cleanup?.()
     })
 
     return {
       get() {
-        return initialValue
+        return value as P
       },
       onValue(next: (value: P) => void): Cleanup {
         return scope.subscribe(self as Observable<P>, next)
       }
     }
-  }), undefined, [normalizedPublisher], { source: true, id: 'publisher' })
+  }), undefined, [source], { source: true, id: 'observer' })
+}
+
+export function publisher<P>(publisher: Publisher<P>): Executor<Publisher<P>> {
+  return create(() => (set: (p: P) => void, initialValue?: P) => publisher(set, initialValue),
+    undefined,
+    undefined,
+    { source: true, id: 'publisher' }
+  )
+}
+
+export function from<D>(derive: EODE<D>) {
+  const normalized = isExecutor(derive) ? derive : combine(derive)
+  return {
+    provide: <P>(provider: Provider<P, D>) => map(derive, provider),
+    toPublisher: <P>(input: (
+      dependent: D,
+      set: (next: P, equality?: Equality) => void,
+      initialValue?: P
+    ) => Publishable<P>): Executor<Publisher<P>> => {
+      return create(
+        (normalized) => (set: (next: P, equality: Equality) => void, initialValue?: P) => input(normalized, set, initialValue),
+        normalized,
+        [normalized],
+        { source: true, id: 'publisher' }
+      )
+    }
+  }
+
 }

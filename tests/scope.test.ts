@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
-import { createScope, value, create, provide, map, scoper, publisher } from "../src";
+import { createScope, value, create, provide, map, scoper, observe } from "../src";
 
 describe('scope', () => {
 	const seed = value(5);
@@ -96,20 +96,6 @@ describe('scope lifecycle', () => {
 
 		await scope2.dispose();
 		expect(fn).toBeCalledTimes(2)
-	})
-
-})
-
-describe("can use scope to subscribe to certain executor", () => {
-	test("executor can be subscribed to", async () => {
-		const executedValues = [] as number[]
-		const scope = createScope()
-
-		const value = publisher((set) => {
-			return {
-				initialValue: 0,
-			}
-		})
 	})
 
 })
