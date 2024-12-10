@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [8.1.0](https://github.com/submodule-org/submodule/compare/v8.0.0...v8.1.0) (2024-12-10)
+
+
+### Features
+
+* added controller API so stream can also be controlled from outside ([eed0547](https://github.com/submodule-org/submodule/commit/eed0547112cd92dc99241ea059700bbe9ba405d1))
+
 ## [8.0.0](https://github.com/submodule-org/submodule/compare/v7.6.0...v8.0.0) (2024-12-10)
 
 
