@@ -314,7 +314,8 @@ export class Scope {
    * @returns a function to unsubscribe
    */
   subscribe<P>(
-    executor: Observable<P>,
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    executor: Observable<P, any>,
     listener: (p: P) => void
   ): () => void {
     const unlisteners = new Set<() => void>()
@@ -1010,24 +1011,26 @@ export function defaults<
   )
 }
 
-type Publishable<P> = {
+type Publishable<P, C> = {
   initialValue: P
+  controller: C
   cleanup?: Cleanup
 }
 
 type Equality = (a: unknown, b: unknown) => boolean
 
-export type Publisher<P> = (
+export type Publisher<P, C> = (
   set: (next: P, equality?: Equality) => void,
   initialValue?: P
-) => Publishable<P> | Promise<Publishable<P>>
+) => Publishable<P, C> | Promise<Publishable<P, C>>
 
-type Consumer<P> = {
+type Consumer<P, C> = {
   get(): P
   onValue: (next: (value: NoInfer<P>) => void) => Cleanup
+  controller: C
 }
 
-export type Observable<P> = Executor<Consumer<P>>
+export type Observable<P, C> = Executor<Consumer<P, C>>
 
 /**
  * An experiemental function to create a publisher, the start of the reactivity in submodule
@@ -1041,10 +1044,10 @@ export type Observable<P> = Executor<Consumer<P>>
  *  - get() method to get the current value
  *  - onValue() method to subscribe to the value changes
  */
-export function observe<P>(
-  source: Executor<Publisher<P>>,
+export function observe<P, C>(
+  source: Executor<Publisher<P, C>>,
   initialValue?: P
-): Observable<P> {
+): Observable<P, C> {
   return create(new ProviderClass(async (scope, self) => {
     const _source = await scope.resolve(source)
 
@@ -1070,13 +1073,14 @@ export function observe<P>(
         return value as P
       },
       onValue(next: (value: P) => void): Cleanup {
-        return scope.subscribe(self as Observable<P>, next)
-      }
+        return scope.subscribe(self as Observable<P, C>, next)
+      },
+      controller: publisher.controller
     }
   }), undefined, [source], { source: true, id: 'observer' })
 }
 
-export function publisher<P>(publisher: Publisher<P>): Executor<Publisher<P>> {
+export function publisher<P, C = undefined>(publisher: Publisher<P, C>): Executor<Publisher<P, C>> {
   return create(() => (set: (p: P) => void, initialValue?: P) => publisher(set, initialValue),
     undefined,
     undefined,
@@ -1088,11 +1092,11 @@ export function from<D>(derive: EODE<D>) {
   const normalized = isExecutor(derive) ? derive : combine(derive)
   return {
     provide: <P>(provider: Provider<P, D>) => map(derive, provider),
-    toPublisher: <P>(input: (
+    toPublisher: <P, C = undefined>(input: (
       dependent: D,
       set: (next: P, equality?: Equality) => void,
       initialValue?: P
-    ) => Publishable<P>): Executor<Publisher<P>> => {
+    ) => Publishable<P, C>): Executor<Publisher<P, C>> => {
       return create(
         (normalized) => (set: (next: P, equality: Equality) => void, initialValue?: P) => input(normalized, set, initialValue),
         normalized,
