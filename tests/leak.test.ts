@@ -17,12 +17,10 @@ test("leak test protection", async () => {
 
   type Math = { plus: () => void }
 
-  const stream = observe<number, Math>((get, set) => ({
+  const stream = observe<number, Math>((set) => ({
     initialValue: 0,
     controller: {
-      plus: () => {
-        set(get() + 1)
-      }
+      plus: () => set((prev) => prev + 1)
     },
     cleanup: () => {
       fn()
@@ -30,9 +28,9 @@ test("leak test protection", async () => {
   }))
 
   const derivedStream = combine({ stream, numberValue })
-    .publisher<number>(({ stream, numberValue }, get, set) => {
+    .publisher<number>(({ stream, numberValue }, set) => {
       const cleanup = stream.onValue((next) => {
-        set(next + stream.get() + numberValue)
+        set(current => next + current + numberValue)
       })
 
       return {

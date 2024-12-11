@@ -960,8 +960,8 @@ type Publishable<P, C> = {
 type Equality = (a: unknown, b: unknown) => boolean
 
 export type Publisher<P, C> = (
-  get: () => P,
-  set: (next: P, equality?: Equality) => void
+  set: (next: (current: P) => P, equality?: Equality) => void,
+  get: () => P
 ) => Publishable<P, C> | Promise<Publishable<P, C>>
 
 type Consumer<P, C> = {
@@ -993,12 +993,12 @@ export function observe<P, C>(
     const listeners = new Set<(value: P) => void>()
 
     let value: P
-    const set = (next: P, equality: Equality = Object.is) => {
+    const set = (next: (current: P) => P, equality: Equality = Object.is) => {
       if (equality(value, next)) {
         return
       }
 
-      value = next
+      value = next(value)
       for (const listener of listeners) {
         listener(value)
       }
@@ -1006,7 +1006,7 @@ export function observe<P, C>(
 
     const get = () => value
 
-    const publisher = await _source(get, set)
+    const publisher = await _source(set, get)
     value = publisher.initialValue
 
     scope.addDefer(() => {
