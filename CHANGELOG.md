@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [8.2.1](https://github.com/submodule-org/submodule/compare/v8.2.0...v8.2.1) (2024-12-11)
+
+
+### Bug Fixes
+
+* minor change to make observe api less verbose ([7adcba7](https://github.com/submodule-org/submodule/commit/7adcba783e5d984f8fced00fc7c6f6b5d00f8170))
+
 ## [8.2.0](https://github.com/submodule-org/submodule/compare/v8.1.0...v8.2.0) (2024-12-11)
 
 
