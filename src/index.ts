@@ -98,33 +98,6 @@ export class Scope {
     this.store.set(executor, Promise.resolve(value))
   }
 
-  update(executor: Executor<unknown>, value: unknown, equality: (a: unknown, b: unknown) => boolean = Object.is) {
-    if (!this.store.has(executor)) {
-      console.warn('executor not found')
-      return
-    }
-
-    const currentValue = this.store.get(executor)
-
-    if (isPromise(currentValue)) {
-      console.warn('executor is still resolving')
-      return
-    }
-
-    if (equality(currentValue, value)) {
-      return
-    }
-
-    this.store.set(executor, value)
-
-    const listeners = this.listeners.get(executor)
-    if (listeners) {
-      for (const listener of listeners) {
-        listener(value)
-      }
-    }
-  }
-
   /**
    * Resolves an executor or a combination of executors.
    * @template T
@@ -173,7 +146,6 @@ export class Scope {
           return actualized
         })
         .then(actualized => {
-          this.store.set(executor, actualized)
           return actualized
         })
         .catch((e) => {
@@ -185,7 +157,7 @@ export class Scope {
     }
 
     const combined = combine(executor)
-    return this.resolve(combined)
+    return await this.resolve(combined)
   }
 
   /**
@@ -309,63 +281,6 @@ export class Scope {
     this.store.delete(executor)
   }
 
-  /** Listen to executor changes (including initialization)
-   * @param executor - executor to listen to
-   * @returns a function to unsubscribe
-   */
-  subscribe<P>(
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    executor: Observable<P, any>,
-    listener: (p: P) => void
-  ): () => void {
-    const unlisteners = new Set<() => void>()
-
-    const sources = findSources(executor)
-    for (const source of sources) {
-      if (!this.listeners.has(source)) {
-        this.listeners.set(source, new Set())
-      }
-
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
-      this.listeners.get(source)!.add(listener)
-      unlisteners.add(() => {
-        // biome-ignore lint/style/noNonNullAssertion: <explanation>
-        this.listeners.get(source)!.delete(listener)
-      })
-    }
-
-    return () => {
-      for (const unlistener of unlisteners) {
-        unlistener()
-      }
-    }
-  }
-}
-
-function findSources(executor: Executor<unknown>): Executor<unknown>[] {
-  const visited = new Set<Executor<unknown>>()
-  const stack = [executor]
-
-  while (stack.length > 0) {
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
-    const current = stack.pop()!
-    if (visited.has(current)) {
-      continue
-    }
-    visited.add(current)
-
-    if (current.source) {
-      return [current]
-    }
-
-    if (current.dependencies) {
-      for (const dep of current.dependencies) {
-        stack.push(dep)
-      }
-    }
-  }
-
-  return []
 }
 
 /**
@@ -728,6 +643,17 @@ export async function execute<Dependent, Output>(
 
 export type inferProvide<T> = T extends Executor<infer S> ? S : never
 
+type CombinedExecutor<
+  L extends Record<string, Executor<unknown>>,
+  O extends { [key in keyof L]: inferProvide<L[key]> }
+> = Executor<O> & {
+  separate: () => L
+  publisher: <P, C = undefined>(input: (
+    dependent: O,
+    ...params: Parameters<Publisher<P, C>>
+  ) => Publishable<P, C>) => Executor<Publisher<P, C>>
+}
+
 /**
  * Combines multiple Executors into a single Executor that resolves to an object.
  * 
@@ -744,11 +670,12 @@ export type inferProvide<T> = T extends Executor<infer S> ? S : never
  * console.log(result); // { name: 'John', age: 30 }
  */
 export function combine<
-  L extends Record<string, Executor<unknown>>
+  L extends Record<string, Executor<unknown>>,
+  O extends { [key in keyof L]: inferProvide<L[key]> }
 >(
   layout: L,
   pOption?: Option
-): Executor<{ [key in keyof L]: inferProvide<L[key]> }> & { separate: () => L } {
+): CombinedExecutor<L, O> {
   function separate() {
     return layout as L
   }
@@ -760,7 +687,7 @@ export function combine<
       if (Array.isArray(layout)) {
         const resolved = await Promise.all(layout.map(e => scope.resolve(e)))
 
-        return resolved as unknown as ({ [key in keyof L]: inferProvide<L[key]> } & { separate: () => L })
+        return resolved as unknown as O & { separate: () => L }
       }
 
       const layoutPromise = Object.entries(layout).map(
@@ -768,7 +695,7 @@ export function combine<
       );
 
       const result = Object.fromEntries(await Promise.all(layoutPromise));
-      return result as ({ [key in keyof L]: inferProvide<L[key]> } & { separate: () => L });
+      return result as (O & { separate: () => L });
     },
     scoper,
     Object.values(layout),
@@ -777,7 +704,20 @@ export function combine<
 
   Object.defineProperty(executor, 'separate', { value: separate })
 
-  return executor as unknown as Executor<{ [key in keyof L]: inferProvide<L[key]> }> & { separate: () => L }
+  const publisher = <P, C = undefined>(input: (
+    dependent: O,
+    ...params: Parameters<Publisher<P, C>>
+  ) => Publishable<P, C>): Executor<Publisher<P, C>> => {
+    return create(
+      (normalized) => (get, set) => input(normalized, get, set),
+      executor,
+      [executor],
+      { source: true, id: 'publisher' }
+    )
+  }
+  Object.defineProperty(executor, 'publisher', { value: publisher })
+
+  return executor as unknown as CombinedExecutor<L, O>
 }
 
 /**
@@ -1020,8 +960,8 @@ type Publishable<P, C> = {
 type Equality = (a: unknown, b: unknown) => boolean
 
 export type Publisher<P, C> = (
-  set: (next: P, equality?: Equality) => void,
-  initialValue?: P
+  get: () => P,
+  set: (next: P, equality?: Equality) => void
 ) => Publishable<P, C> | Promise<Publishable<P, C>>
 
 type Consumer<P, C> = {
@@ -1045,27 +985,33 @@ export type Observable<P, C> = Executor<Consumer<P, C>>
  *  - onValue() method to subscribe to the value changes
  */
 export function observe<P, C>(
-  source: Executor<Publisher<P, C>>,
-  initialValue?: P
+  source: Executor<Publisher<P, C>> | Publisher<P, C>,
 ): Observable<P, C> {
-  return create(new ProviderClass(async (scope, self) => {
-    const _source = await scope.resolve(source)
+  return create(new ProviderClass(async (scope) => {
+    const _source = await scope.resolve(normalize(source))
 
-    let value: P | undefined = initialValue
+    const listeners = new Set<(value: P) => void>()
+
+    let value: P
     const set = (next: P, equality: Equality = Object.is) => {
       if (equality(value, next)) {
         return
       }
 
       value = next
-      scope.update(self, value)
+      for (const listener of listeners) {
+        listener(value)
+      }
     }
 
-    const publisher = await _source(set, initialValue)
+    const get = () => value
+
+    const publisher = await _source(get, set)
     value = publisher.initialValue
 
     scope.addDefer(() => {
       publisher.cleanup?.()
+      listeners.clear()
     })
 
     return {
@@ -1073,37 +1019,13 @@ export function observe<P, C>(
         return value as P
       },
       onValue(next: (value: P) => void): Cleanup {
-        return scope.subscribe(self as Observable<P, C>, next)
+        listeners.add(next)
+
+        return () => {
+          listeners.delete(next)
+        }
       },
       controller: publisher.controller
     }
-  }), undefined, [source], { source: true, id: 'observer' })
-}
-
-export function publisher<P, C = undefined>(publisher: Publisher<P, C>): Executor<Publisher<P, C>> {
-  return create(() => (set: (p: P) => void, initialValue?: P) => publisher(set, initialValue),
-    undefined,
-    undefined,
-    { source: true, id: 'publisher' }
-  )
-}
-
-export function from<D>(derive: EODE<D>) {
-  const normalized = isExecutor(derive) ? derive : combine(derive)
-  return {
-    provide: <P>(provider: Provider<P, D>) => map(derive, provider),
-    toPublisher: <P, C = undefined>(input: (
-      dependent: D,
-      set: (next: P, equality?: Equality) => void,
-      initialValue?: P
-    ) => Publishable<P, C>): Executor<Publisher<P, C>> => {
-      return create(
-        (normalized) => (set: (next: P, equality: Equality) => void, initialValue?: P) => input(normalized, set, initialValue),
-        normalized,
-        [normalized],
-        { source: true, id: 'publisher' }
-      )
-    }
-  }
-
+  }), undefined, isExecutor(source) ? [source] : undefined, { source: true, id: 'observer' })
 }

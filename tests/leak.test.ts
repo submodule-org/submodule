@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vitest"
-import { createScope, from, map, observe, provide, publisher, scoper, type Scope } from "../src";
+import { combine, createScope, map, observe, provide, scoper, type Scope } from "../src";
 import LeakDetector from "jest-leak-detector"
 
 test("leak test protection", async () => {
@@ -17,44 +17,38 @@ test("leak test protection", async () => {
 
   type Math = { plus: () => void }
 
-  const p = publisher<number, Math>((set, initialValue = 0) => {
-    let value = initialValue
+  const stream = observe<number, Math>((get, set) => ({
+    initialValue: 0,
+    controller: {
+      plus: () => {
+        set(get() + 1)
+      }
+    },
+    cleanup: () => {
+      fn()
+    },
+  }))
 
-    return {
-      initialValue,
-      controller: {
-        plus: () => {
-          value++
-          set(value)
-        }
-      },
-      cleanup: () => {
-        fn()
-      },
-    }
-  })
-
-  const stream = observe(p)
-
-  const derivedStream = from({ stream, numberValue })
-    .toPublisher<number>(({ stream, numberValue }, set, initialValue = 10) => {
-      stream.onValue((next) => {
+  const derivedStream = combine({ stream, numberValue })
+    .publisher<number>(({ stream, numberValue }, get, set) => {
+      const cleanup = stream.onValue((next) => {
         set(next + stream.get() + numberValue)
       })
 
       return {
-        initialValue: initialValue + stream.get() + numberValue,
-        controller: undefined
+        initialValue: 0 + stream.get() + numberValue,
+        controller: undefined,
+        cleanup
       }
     })
 
   const observeDerivedStream = observe(derivedStream)
 
   const result = await scope.safeRun(
-    { stringValue, numberValue, middleware, p, stream, observeDerivedStream },
+    { stringValue, numberValue, middleware, stream, observeDerivedStream },
     async ({ stringValue, numberValue, stream, observeDerivedStream }) => {
       expect(stream.get()).toBe(0)
-      expect(observeDerivedStream.get()).toBe(11)
+      expect(observeDerivedStream.get()).toBe(1)
       expect(numberValue).toBe(1)
       expect(stringValue).toBe("1")
 
