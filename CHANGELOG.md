@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [8.2.0](https://github.com/submodule-org/submodule/compare/v8.1.0...v8.2.0) (2024-12-11)
+
+
+### Features
+
+* simplified observable API ([736d216](https://github.com/submodule-org/submodule/commit/736d216e7fe5393ebe0b111c07a9598bf2cce06a))
+
+
+### Bug Fixes
+
+* updated leak test ([736d216](https://github.com/submodule-org/submodule/commit/736d216e7fe5393ebe0b111c07a9598bf2cce06a))
+
 ## [8.1.0](https://github.com/submodule-org/submodule/compare/v8.0.0...v8.1.0) (2024-12-10)
 
 
