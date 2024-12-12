@@ -28,7 +28,7 @@ test("leak test protection", async () => {
   }))
 
   const derivedStream = combine({ stream, numberValue })
-    .publisher<number>(({ stream, numberValue }, set) => {
+    .observe<number>(({ stream, numberValue }, set) => {
       const cleanup = stream.onValue((next) => {
         set(current => next + current + numberValue)
       })
@@ -40,20 +40,18 @@ test("leak test protection", async () => {
       }
     })
 
-  const observeDerivedStream = observe(derivedStream)
-
   const result = await scope.safeRun(
-    { stringValue, numberValue, middleware, stream, observeDerivedStream },
-    async ({ stringValue, numberValue, stream, observeDerivedStream }) => {
+    { stringValue, numberValue, middleware, stream, derivedStream },
+    async ({ stringValue, numberValue, stream, derivedStream }) => {
       expect(stream.get()).toBe(0)
-      expect(observeDerivedStream.get()).toBe(1)
+      expect(derivedStream.get()).toBe(1)
       expect(numberValue).toBe(1)
       expect(stringValue).toBe("1")
 
       stream.controller.plus()
 
       expect(stream.get()).toBe(1)
-      expect(observeDerivedStream.get()).toBe(3)
+      expect(derivedStream.get()).toBe(3)
     })
 
   if (result.error) throw result.error

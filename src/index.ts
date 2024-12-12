@@ -648,10 +648,10 @@ type CombinedExecutor<
   O extends { [key in keyof L]: inferProvide<L[key]> }
 > = Executor<O> & {
   separate: () => L
-  publisher: <P, C = undefined>(input: (
+  observe: <P, C = undefined>(input: (
     dependent: O,
     ...params: Parameters<Publisher<P, C>>
-  ) => Publishable<P, C>) => Executor<Publisher<P, C>>
+  ) => Publishable<P, C>) => Observable<P, C>
 }
 
 /**
@@ -704,18 +704,17 @@ export function combine<
 
   Object.defineProperty(executor, 'separate', { value: separate })
 
-  const publisher = <P, C = undefined>(input: (
+  const _ = <P, C = undefined>(input: (
     dependent: O,
     ...params: Parameters<Publisher<P, C>>
-  ) => Publishable<P, C>): Executor<Publisher<P, C>> => {
-    return create(
-      (normalized) => (get, set) => input(normalized, get, set),
+  ) => Publishable<P, C>): Observable<P, C> => {
+    return flatMap(
       executor,
-      [executor],
-      { source: true, id: 'publisher' }
+      (normalized) => observe<P, C>((get, set) => input(normalized, get, set)),
+      { source: true, id: 'observe' }
     )
   }
-  Object.defineProperty(executor, 'publisher', { value: publisher })
+  Object.defineProperty(executor, 'observe', { value: _ })
 
   return executor as unknown as CombinedExecutor<L, O>
 }
@@ -951,24 +950,30 @@ export function defaults<
   )
 }
 
-type Publishable<P, C> = {
+type PublishableBase<P> = {
   initialValue: P
-  controller: C
   cleanup?: Cleanup
 }
+
+type Publishable<P, C = undefined> = C extends undefined
+  ? PublishableBase<P> & { controller?: undefined }
+  : PublishableBase<P> & { controller: C }
 
 type Equality = (a: unknown, b: unknown) => boolean
 
 export type Publisher<P, C> = (
-  set: (next: (current: P) => P, equality?: Equality) => void,
+  set: (next: (current: P) => P) => void,
   get: () => P
 ) => Publishable<P, C> | Promise<Publishable<P, C>>
 
-type Consumer<P, C> = {
+type ConsumerBase<P> = {
   get(): P
   onValue: (next: (value: NoInfer<P>) => void) => Cleanup
-  controller: C
 }
+
+export type Consumer<P, C = undefined> = C extends undefined
+  ? ConsumerBase<P> & { controller?: undefined }
+  : ConsumerBase<P> & { controller: C }
 
 export type Observable<P, C> = Executor<Consumer<P, C>>
 
@@ -984,8 +989,9 @@ export type Observable<P, C> = Executor<Consumer<P, C>>
  *  - get() method to get the current value
  *  - onValue() method to subscribe to the value changes
  */
-export function observe<P, C>(
+export function observe<P, C = undefined>(
   source: Executor<Publisher<P, C>> | Publisher<P, C>,
+  equality: Equality = Object.is
 ): Observable<P, C> {
   return create(new ProviderClass(async (scope) => {
     const _source = await scope.resolve(normalize(source))
@@ -993,7 +999,7 @@ export function observe<P, C>(
     const listeners = new Set<(value: P) => void>()
 
     let value: P
-    const set = (next: (current: P) => P, equality: Equality = Object.is) => {
+    const set = (next: (current: P) => P) => {
       if (equality(value, next)) {
         return
       }
@@ -1026,6 +1032,6 @@ export function observe<P, C>(
         }
       },
       controller: publisher.controller
-    }
+    } as Consumer<P, C>
   }), undefined, isExecutor(source) ? [source] : undefined, { source: true, id: 'observer' })
 }
