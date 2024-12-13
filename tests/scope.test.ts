@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
-import { createScope, value, create, provide, map, scoper, observe } from "../src";
+import { createScope, value, create, provide, map, scoper, } from "../src";
 
 describe('scope', () => {
 	const seed = value(5);

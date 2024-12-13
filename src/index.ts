@@ -649,10 +649,6 @@ type CombinedExecutor<
   O extends { [key in keyof L]: inferProvide<L[key]> }
 > = Executor<O> & {
   separate: () => L
-  observe: <P, C = undefined>(input: (
-    dependent: O,
-    ...params: Parameters<Publisher<P, C>>
-  ) => Publishable<P, C>) => Observable<P, C>
 }
 
 /**
@@ -704,18 +700,6 @@ export function combine<
   );
 
   Object.defineProperty(executor, 'separate', { value: separate })
-
-  const _ = <P, C = undefined>(input: (
-    dependent: O,
-    ...params: Parameters<Publisher<P, C>>
-  ) => Publishable<P, C>): Observable<P, C> => {
-    return flatMap(
-      executor,
-      (normalized) => observe<P, C>((get, set) => input(normalized, get, set)),
-      { source: true, id: 'observe' }
-    )
-  }
-  Object.defineProperty(executor, 'observe', { value: _ })
 
   return executor as unknown as CombinedExecutor<L, O>
 }
@@ -960,7 +944,7 @@ type Publishable<P, C = undefined> = C extends undefined
   ? PublishableBase<P> & { controller?: undefined }
   : PublishableBase<P> & { controller: C }
 
-type Equality = (a: unknown, b: unknown) => boolean
+type Equality<P> = (a: P, b: P) => boolean
 
 export type Publisher<P, C> = (
   set: (next: (current: P) => P) => void,
@@ -978,61 +962,54 @@ export type Consumer<P, C = undefined> = C extends undefined
 
 export type Observable<P, C> = Executor<Consumer<P, C>>
 
-/**
- * An experiemental function to create a publisher, the start of the reactivity in submodule
- * 
- * A publisher is a function with a paramter `set` that can be used to set the value of the publisher.
- * The publisher function should return an object with an `initialValue` property that represents the initial value of the publisher and a cleanup function
- * 
- * @experimental
- * @param source 
- * @returns Observable, which is an executor that has 
- *  - get() method to get the current value
- *  - onValue() method to subscribe to the value changes
- */
-export function observe<P, C = undefined>(
-  source: Executor<Publisher<P, C>> | Publisher<P, C>,
-  equality: Equality = Object.is
-): Observable<P, C> {
-  return create(new ProviderClass(async (scope) => {
-    const _source = await scope.resolve(normalize(source))
+export async function observable<P, C = undefined>(
+  source: Publisher<P, C>,
+  equality: Equality<P> = Object.is
+): Promise<Consumer<P, C>> {
+  let initialValue: P
+  let controller: C
 
-    const listeners = new Set<(value: P) => void>()
+  const listeners = new Set<(value: P) => void>()
 
-    let value: P
-    const set = (next: (current: P) => P) => {
-      if (equality(value, next)) {
-        return
-      }
+  function set(next: (current: P) => P) {
+    const nextValue = next(initialValue)
 
-      value = next(value)
-      for (const listener of listeners) {
-        listener(value)
-      }
+    if (equality(initialValue, nextValue)) {
+      return
     }
 
-    const get = () => value
+    initialValue = nextValue
+    for (const listener of listeners) {
+      listener(initialValue)
+    }
+  }
 
-    const publisher = await _source(set, get)
-    value = publisher.initialValue
+  function get(): P {
+    return initialValue
+  }
 
-    scope.addDefer(() => {
-      publisher.cleanup?.()
-      listeners.clear()
+  await Promise.resolve(source(set, get))
+    .then((result) => {
+      initialValue = result.initialValue
+      controller = result.controller as C
+    }, e => {
+      throw e
     })
 
-    return {
-      get() {
-        return value as P
-      },
-      onValue(next: (value: P) => void): Cleanup {
-        listeners.add(next)
+  return {
+    get: () => {
+      return initialValue as P
+    },
+    onValue(next: (value: P) => void): Cleanup {
+      listeners.add(next)
 
-        return () => {
-          listeners.delete(next)
-        }
-      },
-      controller: publisher.controller
-    } as Consumer<P, C>
-  }), undefined, isExecutor(source) ? [source] : undefined, { source: true, id: 'observer' })
+      return () => {
+        listeners.delete(next)
+      }
+    },
+    get controller() {
+      return controller as C
+    }
+  } as Consumer<P, C>
 }
+

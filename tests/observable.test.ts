@@ -1,15 +1,15 @@
-import { combine, createScope, map, observe } from "../src";
+import { combine, createScope, map, observable, provide } from "../src";
 import { describe, expect, test, vi } from "vitest"
 
 describe("observable", () => {
 
   test("simple stream", async () => {
-    const seed = observe<number, { inc: () => void }>((set) => ({
+    const seed = provide(() => observable<number, { inc: () => void }>((set) => ({
       initialValue: 0,
       controller: {
         inc: () => set((prev) => prev + 1)
       }
-    }))
+    })))
 
     const nextId = map(seed, seed => {
       let counter = 0
@@ -46,15 +46,15 @@ describe("observable", () => {
   })
 
   test("pipe stream", async () => {
-    const stream = observe<number, { inc: () => void }>((set) => ({
+    const stream = provide(() => observable<number, { inc: () => void }>((set) => ({
       initialValue: 0,
       controller: {
         inc: () => set((prev) => prev + 1)
       }
-    }))
+    })))
 
-    const pipedStream = combine({ stream })
-      .observe<number>(({ stream }, set) => {
+    const pipedStream = map(stream,
+      stream => observable<number>((set) => {
         stream.onValue(next => {
           set(() => next + 1)
         })
@@ -62,7 +62,7 @@ describe("observable", () => {
         return {
           initialValue: 0
         }
-      })
+      }))
 
     const scope = createScope()
     const result = await scope.safeRun({ stream, pipedStream }, async ({ stream, pipedStream }) => {

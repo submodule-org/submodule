@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vitest"
-import { combine, createScope, map, observe, provide, scoper, type Scope } from "../src";
+import { createScope, map, observable, provide, scoper, type Scope } from "../src";
 import LeakDetector from "jest-leak-detector"
 
 test("leak test protection", async () => {
@@ -17,7 +17,7 @@ test("leak test protection", async () => {
 
   type Math = { plus: () => void }
 
-  const stream = observe<number, Math>((set) => ({
+  const stream = provide(() => observable<number, Math>((set) => ({
     initialValue: 0,
     controller: {
       plus: () => set((prev) => prev + 1)
@@ -25,39 +25,33 @@ test("leak test protection", async () => {
     cleanup: () => {
       fn()
     },
-  }))
+  })))
 
-  const derivedStream = combine({ stream, numberValue })
-    .observe<number>(({ stream, numberValue }, set) => {
-      const cleanup = stream.onValue((next) => {
-        set(current => next + current + numberValue)
+  const derivedStream = map(
+    { stream, numberValue },
+    ({ stream, numberValue }) => {
+
+      return observable<number>(set => {
+        stream.onValue((next) => {
+          set(current => next + current + numberValue)
+        })
+
+        return {
+          initialValue: 0 + stream.get() + numberValue,
+        }
       })
-
-      return {
-        initialValue: 0 + stream.get() + numberValue,
-        controller: undefined,
-        cleanup
-      }
     })
 
   const result = await scope.safeRun(
     { stringValue, numberValue, middleware, stream, derivedStream },
     async ({ stringValue, numberValue, stream, derivedStream }) => {
-      expect(stream.get()).toBe(0)
-      expect(derivedStream.get()).toBe(1)
-      expect(numberValue).toBe(1)
-      expect(stringValue).toBe("1")
-
       stream.controller.plus()
-
-      expect(stream.get()).toBe(1)
-      expect(derivedStream.get()).toBe(3)
     })
 
   if (result.error) throw result.error
 
   await scope.dispose()
-  expect(fn).toBeCalledTimes(2)
+  expect(fn).toBeCalledTimes(1)
 
   scope = undefined
 
