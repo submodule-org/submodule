@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [9.0.0](https://github.com/submodule-org/submodule/compare/v8.3.1...v9.0.0) (2024-12-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* drop observable experimental API, replace with observable utility
+
+### Features
+
+* drop observable experimental API, replace with observable utility ([381dc57](https://github.com/submodule-org/submodule/commit/381dc57d949c9e3299cd9a05ea52a633edb7da23))
+
 ## [8.3.1](https://github.com/submodule-org/submodule/compare/v8.3.0...v8.3.1) (2024-12-13)
 
 
