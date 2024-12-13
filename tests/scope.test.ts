@@ -67,6 +67,16 @@ describe('scope', () => {
 		expect(combinedScope.has(plus)).toBe(true);
 	});
 
+	test('scope should return the same promise', async () => {
+		const value = provide(() => 5);
+		const scope = createScope()
+
+		const p1 = scope.resolve(value)
+		const p2 = scope.resolve(value)
+
+		expect(p1 === p2).toBe(true)
+	})
+
 });
 
 describe('scope lifecycle', () => {

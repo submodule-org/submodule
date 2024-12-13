@@ -56,8 +56,8 @@ export class Scope {
    * @param {Executor<T>} executor - The executor to retrieve the value for.
    * @returns {Promise<T>} A promise that resolves to the value.
    */
-  async get<T>(executor: Executor<T>): Promise<T | undefined> {
-    return this.store.get(executor) as (T | undefined)
+  get<T>(executor: Executor<T>): Promise<T | undefined> {
+    return this.store.get(executor) as (Promise<T | undefined>)
   }
 
   /**
@@ -104,10 +104,10 @@ export class Scope {
    * @param {EODE<T>} executor - The executor or combination to resolve.
    * @returns {Promise<T>} A promise that resolves to the final value.
    */
-  async resolve<T>(executor: EODE<T>): Promise<T> {
+  resolve<T>(executor: EODE<T>): Promise<T> {
     if (isExecutor(executor)) {
       if (this.has(executor)) {
-        return await this.get(executor) as Promise<T>
+        return this.get(executor) as Promise<T>
       }
 
       const self = executor
@@ -116,48 +116,49 @@ export class Scope {
         ? isExecutor(executor.input) ? executor.input : combine(executor.input)
         : undefined
 
-      const promise = Promise.resolve()
-        .then(() => {
+      const promise = new Promise<T>((resolve, reject) => {
+        Promise.resolve().then(() => {
           return ref ? this.resolve(ref) : undefined
         })
-        .then(async (actualized) => {
-          if (executor.provider instanceof ProviderClass) {
-            return executor.provider.provider(this, self, ref)
-          }
-
-          if (executor.provider.length > 2 && actualized === undefined) {
-            throw new Error(`invalid state, provider ${executor.provider.toString()} requires dependent but not provided`)
-          }
-
-          return executor.provider(actualized as T)
-        })
-        .then((actualized) => {
-
-          for (const onResolve of this.onResolves) {
-            if (onResolve.filter(actualized, executor, ref)) {
-              return onResolve.cb(actualized)
+          .then(async (actualized) => {
+            if (executor.provider instanceof ProviderClass) {
+              return executor.provider.provider(this, self, ref)
             }
-          }
 
-          if (actualized === undefined || actualized === null) {
-            this.remove(executor)
-          }
+            if (executor.provider.length > 2 && actualized === undefined) {
+              throw new Error(`invalid state, provider ${executor.provider.toString()} requires dependent but not provided`)
+            }
 
-          return actualized
-        })
-        .then(actualized => {
-          return actualized
-        })
-        .catch((e) => {
-          throw e
-        })
+            return executor.provider(actualized as T)
+          })
+          .then((actualized) => {
+
+            for (const onResolve of this.onResolves) {
+              if (onResolve.filter(actualized, executor, ref)) {
+                return onResolve.cb(actualized)
+              }
+            }
+
+            if (actualized === undefined || actualized === null) {
+              this.remove(executor)
+            }
+
+            return actualized
+          })
+          .then(actualized => {
+            resolve(actualized)
+          })
+          .catch((e) => {
+            reject(e)
+          })
+      })
 
       this.set(executor, promise)
-      return await promise
+      return promise
     }
 
     const combined = combine(executor)
-    return await this.resolve(combined)
+    return this.resolve(combined)
   }
 
   /**
@@ -304,7 +305,7 @@ class FallbackScope extends Scope {
     return this.scopes.some(s => s.has(executor)) || super.has(executor)
   }
 
-  async resolve<T>(executor: EODE<T>): Promise<T> {
+  resolve<T>(executor: EODE<T>): Promise<T> {
     const _executor = executor as Executor<unknown>
     if (super.has(_executor)) {
       return super.get(_executor) as Promise<T>
@@ -312,11 +313,11 @@ class FallbackScope extends Scope {
 
     for (const scope of this.scopes) {
       if (scope.has(_executor)) {
-        return scope.resolve(_executor) as Promise<T>
+        return scope.get(_executor) as Promise<T>
       }
     }
 
-    return await super.resolve(executor)
+    return super.resolve(executor)
   }
 }
 
