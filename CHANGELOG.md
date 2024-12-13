@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [8.3.1](https://github.com/submodule-org/submodule/compare/v8.3.0...v8.3.1) (2024-12-13)
+
+
+### Bug Fixes
+
+* corrected Promise return behavior, make sure the promise is the same ([59ab52d](https://github.com/submodule-org/submodule/commit/59ab52d852583664980a2e55f0b23b7008e7237e))
+
 ## [8.3.0](https://github.com/submodule-org/submodule/compare/v8.2.1...v8.3.0) (2024-12-12)
 
 
