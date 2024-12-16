@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [9.1.1](https://github.com/submodule-org/submodule/compare/v9.1.0...v9.1.1) (2024-12-16)
+
+
+### Features
+
+* expose utility types ([a2652c6](https://github.com/submodule-org/submodule/commit/a2652c6ee464524fe60ca0c359ac97b39faa69e2))
+
+
+### Miscellaneous Chores
+
+* updated doc ([a2652c6](https://github.com/submodule-org/submodule/commit/a2652c6ee464524fe60ca0c359ac97b39faa69e2))
+
 ## [9.1.0](https://github.com/submodule-org/submodule/compare/v9.0.0...v9.1.0) (2024-12-16)
 
 
