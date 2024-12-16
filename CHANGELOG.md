@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [9.1.0](https://github.com/submodule-org/submodule/compare/v9.0.0...v9.1.0) (2024-12-16)
+
+
+### Features
+
+* added pipe utility ([0ef68fb](https://github.com/submodule-org/submodule/commit/0ef68fbab6c70cf40732e5adcc1de97ae8d71376))
+* restructure slice option for observable ([0ef68fb](https://github.com/submodule-org/submodule/commit/0ef68fbab6c70cf40732e5adcc1de97ae8d71376))
+
 ## [9.0.0](https://github.com/submodule-org/submodule/compare/v8.3.1...v9.0.0) (2024-12-13)
 
 
