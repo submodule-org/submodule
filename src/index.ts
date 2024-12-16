@@ -940,12 +940,28 @@ type PublishableBase<P> = {
   cleanup?: Cleanup
 }
 
-type Publishable<P, C = undefined> = C extends undefined
-  ? PublishableBase<P> & { controller?: undefined }
+/**
+ * Publishable is a type that represents a value that can be published to consumers.
+ * 
+ * Publishable should yield the initial value and exposing a cleanup function.
+ */
+export type Publishable<P, C = undefined> = C extends undefined
+  ? PublishableBase<P> & { controller?: C }
   : PublishableBase<P> & { controller: C }
 
 type Equality<P> = (a: P, b: P) => boolean
 
+/**
+ * Publisher is a function that creates a Publishable.
+ * 
+ * Publisher should accept a set function and a get function, and return a Publishable or a Promise of a Publishable.
+ * 
+ * @template P The type of the value to be published
+ * @template C The type of the controller (if any)
+ * @param set A function that will trigger reactivity
+ * @param get A function that will retrieve the current value
+ * @returns A Publishable or a Promise of a Publishable
+ */
 export type Publisher<P, C> = (
   set: (next: (current: P) => P) => void,
   get: () => P
@@ -957,13 +973,26 @@ type ConsumerBase<P> = {
   onSlice: <E>(slice: Slice<P, E>, next: (value: E) => void) => Cleanup
 }
 
+/**
+ * Consumer is a type that represents a value that can be consumed.
+ * 
+ * A consumer exposes 
+ * - a get function to retrieve the current value
+ * - an onValue function to subscribe to changes
+ * - an onSlice function to subscribe to a subset of the value
+ */
 export type Consumer<P, C = undefined> = C extends undefined
-  ? ConsumerBase<P>
+  ? ConsumerBase<P> & { controller?: C }
   : ConsumerBase<P> & { controller: C }
 
 export type Observable<P, C> = Executor<Consumer<P, C>>
 
-type Slice<P, E> = {
+/**
+ * Slice is a type that represents a subset of a value.
+ * 
+ * Slice should expose a slice function that takes the original value and returns the subset.
+*/
+export type Slice<P, E> = {
   slice: (p: P) => E
   exclude?: (e: E) => boolean
   createSnapshot?: (value: E) => E
@@ -972,6 +1001,13 @@ type Slice<P, E> = {
 
 const asIsSnapshot = <P>(value: P): P => value
 
+/**
+ * An utility function to transform a publisher to a observable resource
+ * 
+ * @param source of the publisher. See Publisher type for more information
+ * @param options 
+ * @returns Consumer. See Consumer type for more information
+ */
 export async function observable<P, C = undefined>(
   source: Publisher<P, C>,
   options?: {
@@ -1054,6 +1090,12 @@ export async function observable<P, C = undefined>(
   } as Consumer<P, C>
 }
 
+/**
+ * Consume a consumer and pipe it via a slice
+ * @param consumer 
+ * @param slice 
+ * @returns 
+ */
 export function pipe<P, E>(
   consumer: Consumer<P, unknown>,
   slice: Slice<P, E>,
