@@ -954,51 +954,68 @@ export type Publisher<P, C> = (
 type ConsumerBase<P> = {
   get(): P
   onValue: (next: (value: NoInfer<P>) => void) => Cleanup
+  onSlice: <E>(slice: Slice<P, E>, next: (value: E) => void) => Cleanup
 }
 
 export type Consumer<P, C = undefined> = C extends undefined
-  ? ConsumerBase<P> & { controller?: undefined }
+  ? ConsumerBase<P>
   : ConsumerBase<P> & { controller: C }
 
 export type Observable<P, C> = Executor<Consumer<P, C>>
 
+type Slice<P, E> = {
+  slice: (p: P) => E
+  exclude?: (e: E) => boolean
+  createSnapshot?: (value: E) => E
+  equality?: Equality<E>
+}
+
+const asIsSnapshot = <P>(value: P): P => value
+
 export async function observable<P, C = undefined>(
   source: Publisher<P, C>,
-  equality: Equality<P> = Object.is
+  options?: {
+    createSnapshot?: (value: P) => P,
+    equality?: Equality<P>
+  }
 ): Promise<Consumer<P, C>> {
   let initialValue: P
   let controller: C
 
+  const createSnapshot = options?.createSnapshot ?? asIsSnapshot
+  const equality = options?.equality ?? Object.is
+
   const listeners = new Set<(value: P) => void>()
 
   function set(next: (current: P) => P) {
-    const nextValue = next(initialValue)
+    const snapshot = createSnapshot(initialValue)
+    const nextValue = next(snapshot)
 
     if (equality(initialValue, nextValue)) {
       return
     }
 
-    initialValue = nextValue
+    initialValue = createSnapshot(nextValue)
     for (const listener of listeners) {
       listener(initialValue)
     }
   }
 
   function get(): P {
-    return initialValue
+    return createSnapshot(initialValue)
   }
 
   await Promise.resolve(source(set, get))
     .then((result) => {
-      initialValue = result.initialValue
+      initialValue = createSnapshot(result.initialValue)
       controller = result.controller as C
     }, e => {
       throw e
     })
 
   return {
-    get: () => {
-      return initialValue as P
+    get: (): P => {
+      return createSnapshot(initialValue)
     },
     onValue(next: (value: P) => void): Cleanup {
       listeners.add(next)
@@ -1007,9 +1024,83 @@ export async function observable<P, C = undefined>(
         listeners.delete(next)
       }
     },
+    onSlice<E>(slice: Slice<P, E>, next: (value: E) => void): Cleanup {
+      const _createSnapshot = slice.createSnapshot ?? structuredClone
+      const _equality = slice.equality ?? Object.is
+
+      let previousValue = _createSnapshot(slice.slice(initialValue));
+
+      const listener = (value: P) => {
+        const slicedValue = slice.slice(value);
+        if (slice.exclude?.(slicedValue)) {
+          return
+        }
+
+        const snapshot = _createSnapshot(slicedValue);
+        if (!_equality(previousValue, snapshot)) {
+          previousValue = snapshot;
+          next(slicedValue);
+        }
+      };
+
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
     get controller() {
       return controller as C
-    }
+    },
   } as Consumer<P, C>
 }
 
+export function pipe<P, E>(
+  consumer: Consumer<P, unknown>,
+  slice: Slice<P, E>,
+): Promise<Consumer<E>> {
+  return observable((set, get) => {
+    consumer.onSlice(slice, (next) => {
+      set(() => next)
+    })
+
+    const listeners = new Set<(value: E) => void>()
+
+    return {
+      initialValue: slice.slice(consumer.get()),
+      onValue(next: (value: E) => void): Cleanup {
+        const listener = () => {
+          next(get())
+        }
+
+        listeners.add(listener)
+        return () => {
+          listeners.delete(listener)
+        }
+      },
+      onSlice<K>(slice: Slice<E, K>, next: (value: K) => void): Cleanup {
+        const _createSnapshot = slice.createSnapshot ?? asIsSnapshot
+        const _equality = slice.equality ?? Object.is
+
+        let previousValue = _createSnapshot(slice.slice(get()));
+
+        const listener = (value: E) => {
+          const slicedValue = slice.slice(value);
+          if (slice.exclude?.(slicedValue)) {
+            return
+          }
+
+          const snapshot = _createSnapshot(slicedValue);
+          if (!_equality(previousValue, snapshot)) {
+            previousValue = snapshot;
+            next(slicedValue);
+          }
+        };
+
+        listeners.add(listener);
+        return () => {
+          listeners.delete(listener);
+        };
+      },
+    }
+  })
+}
