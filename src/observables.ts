@@ -8,15 +8,31 @@ type Prettify<T> = {
   [K in keyof T]: T[K];
 } & {};
 
-export type Consumer<P, C> = Prettify<WithController<{
-  get(): P
-  onValue(next: (value: P) => void): Cleanup
-}, C>>
+export type Consumer<Value, Controller> = Prettify<WithController<{
+  get(): Value
+  onValue(next: (value: Value) => void): Cleanup
+  pipe<Downstream>(
+    dispatcher: PipeDispatcher<Downstream, Value>,
+    options?: {
+      createSnapshot?: (value: Value) => Value,
+      equality?: Equality
+    }
+  ): Cleanup
+  cleanup: Cleanup
+}, Controller>>
 
-export type ConsumerN<P, C> = Prettify<WithController<{
-  get(): P | undefined
-  onValue(next: (value: P) => void): Cleanup
-}, C>>
+export type ConsumerN<Value, Controller> = Prettify<WithController<{
+  get(): Value | undefined
+  onValue(next: (value: Value) => void): Cleanup
+  pipe<Downstream>(
+    dispatcher: PipeDispatcher<Downstream, Value>,
+    options?: {
+      createSnapshot?: (value: Value) => Value,
+      equality?: Equality
+    }
+  ): Cleanup
+  cleanup: Cleanup
+}, Controller>>
 
 export type Dispatcher<P> = (next: (P | ((current: P) => P))) => void
 export type DispatcherN<P> = (next: (P | ((current?: P) => P))) => void
@@ -90,6 +106,26 @@ export function observableN<
   const get = () => initialValue
 
   const publisher = source(set, get)
+  const pipeCleanups = new Set<Cleanup>()
+  const cleanup = () => {
+    for (const pipeCleanup of pipeCleanups) {
+      pipeCleanup()
+    }
+
+    pipeCleanups.clear()
+    publisher.cleanup?.()
+    listeners.clear()
+  }
+
+  const consumable: Consumable<Value> = {
+    onValue(next) {
+      listeners.add(next)
+
+      return () => {
+        listeners.delete(next)
+      }
+    },
+  }
 
   return {
     get: () => get(),
@@ -103,7 +139,28 @@ export function observableN<
     get controller() {
       return publisher.controller
     },
+    pipe: <Downstream>(
+      dispatcher: PipeDispatcher<Downstream, Value>,
+      options?: SnapshotOpts<Downstream>
+    ): Cleanup => {
+      const pipedObservable = pipe(
+        consumable,
+        dispatcher,
+        options
+      )
+
+      pipeCleanups.add(pipedObservable.cleanup)
+      return () => {
+        pipeCleanups.delete(pipedObservable.cleanup)
+      }
+    },
+    cleanup
   } as ConsumerN<Value, Controller>
+}
+
+type SnapshotOpts<Value> = {
+  createSnapshot?: (value: Value) => Value,
+  equality?: Equality
 }
 
 /**
@@ -122,16 +179,12 @@ export function observable<
     dispatcher: S['dispatcher'],
     get: S['get']
   ) => S['publishable'],
-  options?: {
-    createSnapshot?: (value: Value) => Value,
-    equality?: Equality
-  }
+  options?: SnapshotOpts<Value>
 ): Consumer<Value, Controller> {
   const createSnapshot = options?.createSnapshot ?? asIsSnapshot
   const equality = options?.equality ?? Object.is
 
   const listeners = new Set<(value: Value) => void>()
-
 
   let initialValue: Value
 
@@ -156,8 +209,17 @@ export function observable<
   const publisher = source(set, get)
   initialValue = publisher.initialValue
 
-  return {
-    get: () => get(),
+  const pipeCleanups = new Set<Cleanup>()
+  const cleanup = () => {
+    for (const pipeCleanup of pipeCleanups) {
+      pipeCleanup()
+    }
+
+    pipeCleanups.clear()
+    listeners.clear()
+  }
+
+  const consumable: Consumable<Value> = {
     onValue(next) {
       listeners.add(next)
 
@@ -165,14 +227,39 @@ export function observable<
         listeners.delete(next)
       }
     },
+  }
+
+  return {
+    get: () => get(),
+    onValue: consumable.onValue,
+    pipe: <Downstream>(
+      dispatcher: PipeDispatcher<Downstream, Value>,
+      options?: SnapshotOpts<Downstream>
+    ): Cleanup => {
+      const pipedObservable = pipe<Downstream, Value>(
+        consumable,
+        dispatcher,
+        options
+      )
+
+      pipeCleanups.add(pipedObservable.cleanup)
+      return () => {
+        pipeCleanups.delete(pipedObservable.cleanup)
+      }
+    },
     get controller() {
       return publisher.controller
     },
+    cleanup
   } as Consumer<Value, Controller>
 }
 
 export type PipeDispatcher<P, UpstreamValue> = (value: UpstreamValue, dispatcher: DispatcherN<P>) => void
 
+
+export type Consumable<Value> = {
+  onValue(next: (value: Value) => void): Cleanup
+}
 /**
  * 
  * Derive the incoming stream of value into a new stream of value
@@ -184,8 +271,7 @@ export type PipeDispatcher<P, UpstreamValue> = (value: UpstreamValue, dispatcher
  * @returns 
  */
 export function pipe<Value, UpstreamValue>(
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  upstream: Consumer<UpstreamValue, any>,
+  upstream: Consumable<UpstreamValue>,
   setter: PipeDispatcher<Value, UpstreamValue>,
   options?: {
     createSnapshot?: (value: Value) => Value,

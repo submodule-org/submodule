@@ -961,7 +961,12 @@ export function observable<
     equality?: Equality
   }
 ): Observable<Value, Controller> {
-  return provide(() => _observable(source, options))
+  return map(scoper, (scoper) => {
+    const core = _observable<Value, Controller>(source, options)
+
+    scoper.addDefer(() => core.cleanup())
+    return core
+  })
 }
 
 export function observableN<
@@ -978,7 +983,12 @@ export function observableN<
     equality?: Equality
   }
 ): ObservableN<Value, Controller> {
-  return provide(() => _observableN(source, options))
+  return map(scoper, (scoper) => {
+    const core = _observableN<Value, Controller>(source, options)
+
+    scoper.addDefer(() => core.cleanup())
+    return core
+  })
 }
 
 export function pipe<
@@ -995,7 +1005,13 @@ export function pipe<
 ) {
   const normalizedSetter = normalize(setter)
   return map({
+    scoper,
     source,
     setter: normalizedSetter
-  }, ({ source, setter }) => _pipe(source, setter, options))
+  }, ({ scoper, source, setter }) => {
+    const piped = _pipe(source, setter, options)
+
+    scoper.addDefer(() => piped.cleanup())
+    return piped
+  })
 }
