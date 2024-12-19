@@ -1,7 +1,10 @@
-import { createScope, map, observable, provide, value } from "../src";
+import { createScope, map, observable, pipe, provide, value } from "../src";
 import { describe, expect, test, vi } from "vitest"
 
 describe("observable", () => {
+  type Op = {
+    inc: () => void
+  }
 
   test("simple stream", async () => {
     const seed = observable<number, { inc: () => void }>((set, get) => ({
@@ -45,75 +48,98 @@ describe("observable", () => {
     if (result.error) throw result.error
   })
 
-  // test("observable should only trigger on change", async () => {
-  //   type obj = {
-  //     a: string
-  //     b: number
-  //     c: boolean
-  //   }
+  test("pipe stream", async () => {
 
-  //   type API = {
-  //     changeA: (value: string) => void
-  //     changeB: (value: number) => void
-  //     changeC: (value: boolean) => void
-  //   }
+    const intProvider = observable<number, Op>(set => {
+      const controller = {
+        inc: () => set(prev => prev + 1)
+      }
+      return { initialValue: 0, controller }
+    })
 
-  //   const stream = provide(() => observable<obj, API>((set, get) => ({
-  //     initialValue: { a: "a", b: 1, c: false },
-  //     controller: {
-  //       changeA: (value) => set(prev => ({ ...prev, a: value })),
-  //       changeB: (value) => set((prev) => {
-  //         prev.b = value
-  //         return prev
-  //       }),
-  //       changeC: (value) => set((prev) => {
-  //         prev.c = value
-  //         return prev
-  //       })
-  //     }
-  //   }), {
-  //     createSnapshot: structuredClone,
-  //     equality: (a, b) => JSON.stringify(a) === JSON.stringify(b)
-  //   }))
+    const plus1Stream = pipe<number, number>(intProvider, (next, set) => {
+      set(next + 1)
+    })
 
-  //   const str = map(stream, stream => pipe(
-  //     stream,
-  //     { slice: (value: obj) => ops.include(value.a) },
-  //     'a'
-  //   ))
+    const scope = createScope()
 
-  //   const onlyOddNumber = map(stream, stream => pipe(stream, {
-  //     slice: (value: obj) => value.b % 2 === 0 ? ops.exclude() : ops.include(value.b),
-  //   }, 1))
+    const result = await scope.safeRun({ intProvider, plus1Stream }, async ({ intProvider, plus1Stream }) => {
+      expect(intProvider.get()).toBe(0)
+      expect(plus1Stream.get()).toBe(undefined)
 
-  //   const onlyTruthy = map(stream, stream => pipe(stream, {
-  //     slice: (value: obj) => value.c ? ops.include(value.c) : ops.exclude(),
-  //   }, false))
+      intProvider.controller.inc()
+      expect(intProvider.get()).toBe(1)
+      expect(plus1Stream.get()).toBe(2)
+    })
 
-  //   const scope = createScope()
-  //   const result = await scope.safeRun({ stream, onlyString: str, onlyOddNumber, onlyTruthy }, async ({ stream, onlyString, onlyOddNumber, onlyTruthy }) => {
-  //     expect(stream.get()).toEqual({ a: "a", b: 1, c: false })
-  //     expect(onlyString.get()).toBe("a")
-  //     expect(onlyOddNumber.get()).toBe(1)
-  //     expect(onlyTruthy.get()).toBe(false)
+    if (result.error) throw result.error
+  })
 
-  //     stream.controller.changeA("b")
-  //     expect(onlyString.get()).toBe("b")
-  //     expect(onlyOddNumber.get()).toBe(1)
-  //     expect(onlyTruthy.get()).toBe(false)
+  test("conditional pipe", async () => {
+    const intProvider = observable<number, Op>(set => {
+      const controller = {
+        inc: () => set(prev => prev + 1)
+      }
+      return { initialValue: 0, controller }
+    })
 
-  //     stream.controller.changeB(2)
-  //     expect(onlyString.get()).toBe("b")
-  //     expect(onlyOddNumber.get()).toBe(1)
-  //     expect(onlyTruthy.get()).toBe(false)
+    const onlyOdd = pipe<number, number>(intProvider, (next, set) => {
+      if (next % 2 === 1) {
+        set(next)
+      }
+    })
 
-  //     stream.controller.changeC(true)
-  //     expect(onlyString.get()).toBe("b")
-  //     expect(onlyOddNumber.get()).toBe(1)
-  //     expect(onlyTruthy.get()).toBe(true)
-  //   })
+    const scope = createScope()
 
-  //   if (result.error) throw result.error
-  // })
+    const result = await scope.safeRun({ intProvider, onlyOdd }, async ({ intProvider, onlyOdd }) => {
+      expect(intProvider.get()).toBe(0)
+      expect(onlyOdd.get()).toBe(undefined)
+
+      intProvider.controller.inc()
+      expect(intProvider.get()).toBe(1)
+      expect(onlyOdd.get()).toBe(1)
+
+      intProvider.controller.inc()
+      expect(intProvider.get()).toBe(2)
+      expect(onlyOdd.get()).toBe(1)
+    })
+
+    if (result.error) throw result.error
+  })
+
+  test('cannot subscribe to a stream after it has been cleaned up', async () => {
+    const stream = observable<number, Op>(set => {
+      const controller = {
+        inc: () => set(prev => prev + 1)
+      }
+      return { initialValue: 0, controller }
+    })
+
+    const onlyOdd = pipe<number, number>(stream, (next, set) => {
+      if (next % 2 === 1) {
+        set(next)
+      }
+    })
+
+    const scope = createScope()
+
+    const result = await scope.safeRun({ stream, onlyOdd }, async ({ stream, onlyOdd }) => {
+      const fn = vi.fn()
+
+      stream.onValue(fn)
+      onlyOdd.onValue(fn)
+
+      stream.controller.inc()
+
+      expect(fn).toBeCalledTimes(2)
+      stream.cleanup()
+
+      stream.controller.inc()
+      expect(fn).toBeCalledTimes(2)
+
+    })
+
+    if (result.error) throw result.error
+  })
 
 })

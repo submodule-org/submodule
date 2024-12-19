@@ -994,9 +994,9 @@ export function observableN<
 export function pipe<
   UpstreamValue,
   Value,
-  Controller = undefined,
 >(
-  source: Observable<UpstreamValue, Controller>,
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  source: Observable<UpstreamValue, any>,
   setter: PipeDispatcher<Value, UpstreamValue> | Executor<PipeDispatcher<Value, UpstreamValue>>,
   options?: {
     createSnapshot?: (value: Value) => Value,

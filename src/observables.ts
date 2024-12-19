@@ -287,13 +287,13 @@ export function pipe<Value, UpstreamValue>(
   }
 ): ConsumerN<Value, undefined> {
   return observableN<Value, undefined>(dispatcher => {
-    let unmounted = false
+    let mounted = false
     const _setter = (value: UpstreamValue) => {
-      !unmounted && setter(value, dispatcher)
+      mounted && setter(value, dispatcher)
     }
 
     const cleanup = upstream.onValue(value => {
-      unmounted = true
+      mounted = true
       _setter(value)
     })
 
