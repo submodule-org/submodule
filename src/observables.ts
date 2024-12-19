@@ -141,6 +141,7 @@ export function observableN<
     },
     pipe: <Downstream>(
       dispatcher: PipeDispatcher<Downstream, Value>,
+      onNext: (value: Downstream) => void,
       options?: SnapshotOpts<Downstream>
     ): Cleanup => {
       const pipedObservable = pipe(
@@ -148,6 +149,8 @@ export function observableN<
         dispatcher,
         options
       )
+
+      pipedObservable.onValue(onNext)
 
       pipeCleanups.add(pipedObservable.cleanup)
       return () => {
@@ -234,6 +237,7 @@ export function observable<
     onValue: consumable.onValue,
     pipe: <Downstream>(
       dispatcher: PipeDispatcher<Downstream, Value>,
+      onNext: (value: Downstream) => void,
       options?: SnapshotOpts<Downstream>
     ): Cleanup => {
       const pipedObservable = pipe<Downstream, Value>(
@@ -241,6 +245,8 @@ export function observable<
         dispatcher,
         options
       )
+
+      pipedObservable.onValue(onNext)
 
       pipeCleanups.add(pipedObservable.cleanup)
       return () => {
