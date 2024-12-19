@@ -1,5 +1,6 @@
 import { expect, test, vi } from "vitest"
-import { createScope, map, observable, provide, scoper, type Scope } from "../src";
+import { createScope, map, provide, scoper, type Scope } from "../src";
+import { observable } from "../src/observables";
 import LeakDetector from "jest-leak-detector"
 
 test("leak test protection", async () => {

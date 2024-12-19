@@ -364,9 +364,6 @@ export interface Executor<Value> {
   readonly toString: () => string
 }
 
-type Cleanup = () => void
-
-
 export interface PresetExecutor<Value> {
   setScope: (scope: Scope) => void
   (): Promise<Value>
@@ -935,214 +932,71 @@ export function defaults<
   )
 }
 
-type PublishableBase<P> = {
-  initialValue: P
-  cleanup?: Cleanup
-}
+import {
+  observable as _observable,
+  observableN as _observableN,
+  pipe as _pipe,
+  type Consumer,
+  type ConsumerN,
+  type DispatcherN,
+  type Equality,
+  type Stream,
+  type StreamN,
+  type PipeDispatcher,
+} from "./observables"
 
-/**
- * Publishable is a type that represents a value that can be published to consumers.
- * 
- * Publishable should yield the initial value and exposing a cleanup function.
- */
-export type Publishable<P, C = undefined> = C extends undefined
-  ? PublishableBase<P> & { controller?: C }
-  : PublishableBase<P> & { controller: C }
+type Observable<P, C> = Executor<Consumer<P, C>>
+type ObservableN<P, C> = Executor<ConsumerN<P, C>>
 
-type Equality<P> = (a: P, b: P) => boolean
-
-/**
- * Publisher is a function that creates a Publishable.
- * 
- * Publisher should accept a set function and a get function, and return a Publishable or a Promise of a Publishable.
- * 
- * @template P The type of the value to be published
- * @template C The type of the controller (if any)
- * @param set A function that will trigger reactivity
- * @param get A function that will retrieve the current value
- * @returns A Publishable or a Promise of a Publishable
- */
-export type Publisher<P, C> = (
-  set: (next: (current: P) => P) => void,
-  get: () => P
-) => Publishable<P, C> | Promise<Publishable<P, C>>
-
-type ConsumerBase<P> = {
-  get(): P
-  onValue: (next: (value: NoInfer<P>) => void) => Cleanup
-  onSlice: <E>(slice: Slice<P, E>, next: (value: E) => void) => Cleanup
-}
-
-/**
- * Consumer is a type that represents a value that can be consumed.
- * 
- * A consumer exposes 
- * - a get function to retrieve the current value
- * - an onValue function to subscribe to changes
- * - an onSlice function to subscribe to a subset of the value
- */
-export type Consumer<P, C = undefined> = C extends undefined
-  ? ConsumerBase<P> & { controller?: C }
-  : ConsumerBase<P> & { controller: C }
-
-export type Observable<P, C> = Executor<Consumer<P, C>>
-
-/**
- * Slice is a type that represents a subset of a value.
- * 
- * Slice should expose a slice function that takes the original value and returns the subset.
-*/
-export type Slice<P, E> = {
-  slice: (p: P) => E
-  exclude?: (e: E) => boolean
-  createSnapshot?: (value: E) => E
-  equality?: Equality<E>
-}
-
-const asIsSnapshot = <P>(value: P): P => value
-
-/**
- * An utility function to transform a publisher to a observable resource
- * 
- * @param source of the publisher. See Publisher type for more information
- * @param options 
- * @returns Consumer. See Consumer type for more information
- */
-export async function observable<P, C = undefined>(
-  source: Publisher<P, C>,
+export function observable<
+  Value,
+  Controller = undefined,
+  S extends Stream<Value, Controller> = Stream<Value, Controller>
+>(
+  source: (
+    dispatcher: S['dispatcher'],
+    get: S['get']
+  ) => S['publishable'],
   options?: {
-    createSnapshot?: (value: P) => P,
-    equality?: Equality<P>
+    createSnapshot?: (value: Value) => Value,
+    equality?: Equality
   }
-): Promise<Consumer<P, C>> {
-  let initialValue: P
-  let controller: C
-
-  const createSnapshot = options?.createSnapshot ?? asIsSnapshot
-  const equality = options?.equality ?? Object.is
-
-  const listeners = new Set<(value: P) => void>()
-
-  function set(next: (current: P) => P) {
-    const snapshot = createSnapshot(initialValue)
-    const nextValue = next(snapshot)
-
-    if (equality(initialValue, nextValue)) {
-      return
-    }
-
-    initialValue = createSnapshot(nextValue)
-    for (const listener of listeners) {
-      listener(initialValue)
-    }
-  }
-
-  function get(): P {
-    return createSnapshot(initialValue)
-  }
-
-  await Promise.resolve(source(set, get))
-    .then((result) => {
-      initialValue = createSnapshot(result.initialValue)
-      controller = result.controller as C
-    }, e => {
-      throw e
-    })
-
-  return {
-    get: (): P => {
-      return createSnapshot(initialValue)
-    },
-    onValue(next: (value: P) => void): Cleanup {
-      listeners.add(next)
-
-      return () => {
-        listeners.delete(next)
-      }
-    },
-    onSlice<E>(slice: Slice<P, E>, next: (value: E) => void): Cleanup {
-      const _createSnapshot = slice.createSnapshot ?? structuredClone
-      const _equality = slice.equality ?? Object.is
-
-      let previousValue = _createSnapshot(slice.slice(initialValue));
-
-      const listener = (value: P) => {
-        const slicedValue = slice.slice(value);
-        if (slice.exclude?.(slicedValue)) {
-          return
-        }
-
-        const snapshot = _createSnapshot(slicedValue);
-        if (!_equality(previousValue, snapshot)) {
-          previousValue = snapshot;
-          next(slicedValue);
-        }
-      };
-
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    },
-    get controller() {
-      return controller as C
-    },
-  } as Consumer<P, C>
+): Observable<Value, Controller> {
+  return provide(() => _observable(source, options))
 }
 
-/**
- * Consume a consumer and pipe it via a slice
- * @param consumer 
- * @param slice 
- * @returns 
- */
-export function pipe<P, E>(
-  consumer: Consumer<P, unknown>,
-  slice: Slice<P, E>,
-): Promise<Consumer<E>> {
-  return observable((set, get) => {
-    consumer.onSlice(slice, (next) => {
-      set(() => next)
-    })
+export function observableN<
+  Value,
+  Controller = undefined,
+  S extends StreamN<Value, Controller> = StreamN<Value, Controller>
+>(
+  source: (
+    dispatcher: S['dispatcher'],
+    get: S['get']
+  ) => S['publishable'],
+  options?: {
+    createSnapshot?: (value: Value) => Value,
+    equality?: Equality
+  }
+): ObservableN<Value, Controller> {
+  return provide(() => _observableN(source, options))
+}
 
-    const listeners = new Set<(value: E) => void>()
-
-    return {
-      initialValue: slice.slice(consumer.get()),
-      onValue(next: (value: E) => void): Cleanup {
-        const listener = () => {
-          next(get())
-        }
-
-        listeners.add(listener)
-        return () => {
-          listeners.delete(listener)
-        }
-      },
-      onSlice<K>(slice: Slice<E, K>, next: (value: K) => void): Cleanup {
-        const _createSnapshot = slice.createSnapshot ?? asIsSnapshot
-        const _equality = slice.equality ?? Object.is
-
-        let previousValue = _createSnapshot(slice.slice(get()));
-
-        const listener = (value: E) => {
-          const slicedValue = slice.slice(value);
-          if (slice.exclude?.(slicedValue)) {
-            return
-          }
-
-          const snapshot = _createSnapshot(slicedValue);
-          if (!_equality(previousValue, snapshot)) {
-            previousValue = snapshot;
-            next(slicedValue);
-          }
-        };
-
-        listeners.add(listener);
-        return () => {
-          listeners.delete(listener);
-        };
-      },
-    }
-  })
+export function pipe<
+  UpstreamValue,
+  Value,
+  Controller = undefined,
+>(
+  source: Observable<UpstreamValue, Controller>,
+  setter: PipeDispatcher<Value, UpstreamValue> | Executor<PipeDispatcher<Value, UpstreamValue>>,
+  options?: {
+    createSnapshot?: (value: Value) => Value,
+    equality?: Equality
+  }
+) {
+  const normalizedSetter = normalize(setter)
+  return map({
+    source,
+    setter: normalizedSetter
+  }, ({ source, setter }) => _pipe(source, setter, options))
 }

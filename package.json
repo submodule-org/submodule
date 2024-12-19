@@ -43,15 +43,22 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./observables": {
+      "source": "./src/observables.ts",
+      "require": "./dist/observables.js",
+      "types": "./dist/observables.d.ts",
+      "import": "./dist/observables.js"
+    },
     "./package.json": "./package.json"
   },
   "tsup": {
     "entry": [
-      "src/index.ts"
+      "src/index.ts",
+      "src/observables.ts"
     ],
     "minify": false,
     "treeshake": false,
-    "splitting": false,
+    "splitting": true,
     "sourcemap": true,
     "clean": true,
     "dts": true
