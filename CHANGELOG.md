@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [9.2.1](https://github.com/submodule-org/submodule/compare/v9.2.0...v9.2.1) (2024-12-19)
+
+
+### Bug Fixes
+
+* exposed more types for observables ([5f0c935](https://github.com/submodule-org/submodule/commit/5f0c935058efe9d4d5c2f58eda53b4d6797ab5b2))
+
 ## [9.2.0](https://github.com/submodule-org/submodule/compare/v9.1.1...v9.2.0) (2024-12-19)
 
 

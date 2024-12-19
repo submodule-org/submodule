@@ -1,6 +1,6 @@
 {
   "name": "@submodule/core",
-  "version": "9.2.0",
+  "version": "9.2.1",
   "description": "Structural way to build node and deno application",
   "author": "Lagz0ne <duke@silentium.io>",
   "repository": {
