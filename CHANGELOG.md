@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [9.3.0](https://github.com/submodule-org/submodule/compare/v9.2.2...v9.3.0) (2024-12-19)
+
+
+### Features
+
+* made pipe on observable to be more meaningful ([8b2bf67](https://github.com/submodule-org/submodule/commit/8b2bf67f383f1d32ac4be92cad3672a4c2535cbe))
+
 ## [9.2.2](https://github.com/submodule-org/submodule/compare/v9.2.1...v9.2.2) (2024-12-19)
 
 
