@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [9.3.3](https://github.com/submodule-org/submodule/compare/v9.3.2...v9.3.3) (2024-12-19)
+
+
+### Bug Fixes
+
+* Prettify type was too aggressive ([24de777](https://github.com/submodule-org/submodule/commit/24de777521437a186f1e5de9518050151b0a7fc1))
+
 ## [9.3.2](https://github.com/submodule-org/submodule/compare/v9.3.1...v9.3.2) (2024-12-19)
 
 
