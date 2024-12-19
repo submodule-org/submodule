@@ -13,6 +13,7 @@ export type Consumer<Value, Controller> = Prettify<WithController<{
   onValue(next: (value: Value) => void): Cleanup
   pipe<Downstream>(
     dispatcher: PipeDispatcher<Downstream, Value>,
+    onNext: (value: Downstream) => void,
     options?: {
       createSnapshot?: (value: Value) => Value,
       equality?: Equality
@@ -26,6 +27,7 @@ export type ConsumerN<Value, Controller> = Prettify<WithController<{
   onValue(next: (value: Value) => void): Cleanup
   pipe<Downstream>(
     dispatcher: PipeDispatcher<Downstream, Value>,
+    onNext: (value: Downstream) => void,
     options?: {
       createSnapshot?: (value: Value) => Value,
       equality?: Equality
