@@ -1,3 +1,15 @@
+import {
+  observable as _observable,
+  observableN as _observableN,
+  pipe as _pipe,
+  type Consumer,
+  type ConsumerN,
+  type Equality,
+  type Stream,
+  type StreamN,
+  type PipeDispatcher,
+} from "./observables"
+
 export class ProviderClass<Provide> {
   constructor(
     public provider: (
@@ -20,10 +32,6 @@ type OnResolve = {
 }
 
 type Defer = (e?: unknown) => void | Promise<void>
-
-function isPromise(value: unknown): value is Promise<Awaited<typeof value>> {
-  return value instanceof Promise
-}
 
 export const $registry = new Map<symbol, Executor<unknown>>()
 
@@ -932,21 +940,12 @@ export function defaults<
   )
 }
 
-import {
-  observable as _observable,
-  observableN as _observableN,
-  pipe as _pipe,
-  type Consumer,
-  type ConsumerN,
-  type DispatcherN,
-  type Equality,
-  type Stream,
-  type StreamN,
-  type PipeDispatcher,
-} from "./observables"
 
-type Observable<P, C> = Executor<Consumer<P, C>>
-type ObservableN<P, C> = Executor<ConsumerN<P, C>>
+export type Observable<P, C> = Executor<Consumer<P, C>>
+export type ObservableN<P, C> = Executor<ConsumerN<P, C>>
+export type {
+  Equality, ConsumerN, Stream, StreamN, PipeDispatcher
+}
 
 export function observable<
   Value,
