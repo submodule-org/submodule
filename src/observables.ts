@@ -4,11 +4,7 @@ type WithController<V, C> = C extends undefined
   ? V & { controller?: C }
   : V & { controller: C }
 
-type Prettify<T> = {
-  [K in keyof T]: T[K];
-} & {};
-
-export type Consumer<Value, Controller> = Prettify<WithController<{
+export type Consumer<Value, Controller> = WithController<{
   get(): Value
   onValue(next: (value: Value) => void): Cleanup
   pipe<Downstream>(
@@ -20,9 +16,9 @@ export type Consumer<Value, Controller> = Prettify<WithController<{
     }
   ): Cleanup
   cleanup: Cleanup
-}, Controller>>
+}, Controller>
 
-export type ConsumerN<Value, Controller> = Prettify<WithController<{
+export type ConsumerN<Value, Controller> = WithController<{
   get(): Value | undefined
   onValue(next: (value: Value) => void): Cleanup
   pipe<Downstream>(
@@ -34,7 +30,7 @@ export type ConsumerN<Value, Controller> = Prettify<WithController<{
     }
   ): Cleanup
   cleanup: Cleanup
-}, Controller>>
+}, Controller>
 
 export type Dispatcher<P> = (next: (P | ((current: P) => P))) => void
 export type DispatcherN<P> = (next: (P | ((current?: P) => P))) => void
