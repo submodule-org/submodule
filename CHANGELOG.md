@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [9.2.2](https://github.com/submodule-org/submodule/compare/v9.2.1...v9.2.2) (2024-12-19)
+
+
+### Bug Fixes
+
+* corrected cleanup behavior ([7e54d21](https://github.com/submodule-org/submodule/commit/7e54d211be86de73553a5f7c79718371b16df6ea))
+
 ## [9.2.1](https://github.com/submodule-org/submodule/compare/v9.2.0...v9.2.1) (2024-12-19)
 
 
