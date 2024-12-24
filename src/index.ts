@@ -1,13 +1,9 @@
 import {
-  observable as _observable,
-  observableN as _observableN,
-  pipe as _pipe,
-  type Consumer,
-  type ConsumerN,
-  type Equality,
-  type Stream,
-  type StreamN,
+  pipe,
+  createObservable,
   type PipeDispatcher,
+  type Observable,
+  type ValueProvider,
 } from "./observables"
 
 export class ProviderClass<Provide> {
@@ -941,67 +937,31 @@ export function defaults<
 }
 
 
-export type Observable<P, C> = Executor<Consumer<P, C>>
-export type ObservableN<P, C> = Executor<ConsumerN<P, C>>
 export type {
-  Equality, ConsumerN, Stream, StreamN, PipeDispatcher
+  PipeDispatcher, Observable
 }
 
-export function observable<
+export function provideObservable<
   Value,
-  Controller = undefined,
-  S extends Stream<Value, Controller> = Stream<Value, Controller>
+  Controller = undefined
 >(
-  source: (
-    dispatcher: S['dispatcher'],
-    get: S['get']
-  ) => S['publishable'],
-  options?: {
-    createSnapshot?: (value: Value) => Value,
-    equality?: Equality
-  }
-): Observable<Value, Controller> {
+  source: ValueProvider<Value, Controller>,
+): Executor<Observable<Value, Controller>> {
   return map(scoper, (scoper) => {
-    const core = _observable<Value, Controller>(source, options)
+    const core = createObservable(source)
 
     scoper.addDefer(() => core.cleanup())
     return core
   })
 }
 
-export function observableN<
-  Value,
-  Controller = undefined,
-  S extends StreamN<Value, Controller> = StreamN<Value, Controller>
->(
-  source: (
-    dispatcher: S['dispatcher'],
-    get: S['get']
-  ) => S['publishable'],
-  options?: {
-    createSnapshot?: (value: Value) => Value,
-    equality?: Equality
-  }
-): ObservableN<Value, Controller> {
-  return map(scoper, (scoper) => {
-    const core = _observableN<Value, Controller>(source, options)
-
-    scoper.addDefer(() => core.cleanup())
-    return core
-  })
-}
-
-export function pipe<
+export function createPipe<
   UpstreamValue,
   Value,
 >(
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  source: Observable<UpstreamValue, any>,
+  source: Executor<Observable<UpstreamValue, any>>,
   setter: PipeDispatcher<Value, UpstreamValue> | Executor<PipeDispatcher<Value, UpstreamValue>>,
-  options?: {
-    createSnapshot?: (value: Value) => Value,
-    equality?: Equality
-  }
 ) {
   const normalizedSetter = normalize(setter)
   return map({
@@ -1009,7 +969,7 @@ export function pipe<
     source,
     setter: normalizedSetter
   }, ({ scoper, source, setter }) => {
-    const piped = _pipe(source, setter, options)
+    const piped = pipe(source, setter)
 
     scoper.addDefer(() => piped.cleanup())
     return piped

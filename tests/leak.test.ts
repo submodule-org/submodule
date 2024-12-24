@@ -1,6 +1,6 @@
 import { expect, test, vi } from "vitest"
-import { createScope, map, provide, scoper, type Scope } from "../src";
-import { observable } from "../src/observables";
+import { createScope, provideObservable, map, provide, scoper, type Scope } from "../src";
+import { createObservable } from "../src/observables";
 import LeakDetector from "jest-leak-detector"
 
 test("leak test protection", async () => {
@@ -18,28 +18,32 @@ test("leak test protection", async () => {
 
   type Math = { plus: () => void }
 
-  const stream = provide(() => observable<number, Math>((set) => ({
-    initialValue: 0,
-    controller: {
-      plus: () => set((prev) => prev + 1)
-    },
-    cleanup: () => {
-      fn()
-    },
-  })))
+  const stream = provideObservable<number, Math>((set) => {
+    let initialValue = 0
+
+    return ({
+      controller: {
+        plus: () => set(initialValue++)
+      },
+      cleanup: () => {
+        fn();
+      },
+    });
+  })
 
   const derivedStream = map(
     { stream, numberValue },
     ({ stream, numberValue }) => {
 
-      return observable<number>(set => {
+      return createObservable<number>(set => {
+        let defaultValue = 0
+
         stream.onValue((next) => {
-          set(current => next + current + numberValue)
+          defaultValue = next + numberValue + defaultValue
+          set(defaultValue)
         })
 
-        return {
-          initialValue: 0 + stream.get() + numberValue,
-        }
+        return {}
       })
     })
 
@@ -52,7 +56,7 @@ test("leak test protection", async () => {
   if (result.error) throw result.error
 
   await scope.dispose()
-  expect(fn).toBeCalledTimes(1)
+  expect(fn).toBeCalledTimes(2)
 
   scope = undefined
 
