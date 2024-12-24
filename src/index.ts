@@ -3,7 +3,6 @@ import {
   createObservable,
   type PipeDispatcher,
   type Observable,
-  type ValueProvider,
 } from "./observables"
 
 export class ProviderClass<Provide> {
@@ -943,12 +942,12 @@ export type {
 
 export function provideObservable<
   Value,
-  Controller = undefined
 >(
-  source: ValueProvider<Value, Controller>,
-): Executor<Observable<Value, Controller>> {
-  return map(scoper, (scoper) => {
-    const core = createObservable(source)
+  initialValue: Value | Executor<Value>
+): Executor<Observable<Value>> {
+  const normalizedValue = isExecutor(initialValue) ? initialValue : value(initialValue)
+  return map({ scoper, normalizedValue }, ({ scoper, normalizedValue }) => {
+    const core = createObservable(normalizedValue)
 
     scoper.addDefer(() => core.cleanup())
     return core
@@ -959,17 +958,20 @@ export function createPipe<
   UpstreamValue,
   Value,
 >(
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  source: Executor<Observable<UpstreamValue, any>>,
+  source: Executor<Observable<UpstreamValue>>,
   setter: PipeDispatcher<Value, UpstreamValue> | Executor<PipeDispatcher<Value, UpstreamValue>>,
+  initialValue: Value | Executor<Value>
 ) {
   const normalizedSetter = normalize(setter)
+  const normalizedInitialValue = isExecutor(initialValue) ? initialValue : value(initialValue)
+
   return map({
     scoper,
     source,
-    setter: normalizedSetter
-  }, ({ scoper, source, setter }) => {
-    const piped = pipe(source, setter)
+    setter: normalizedSetter,
+    initialValue: normalizedInitialValue
+  }, ({ scoper, source, setter, initialValue }) => {
+    const piped = pipe(source, setter, initialValue)
 
     scoper.addDefer(() => piped.cleanup())
     return piped

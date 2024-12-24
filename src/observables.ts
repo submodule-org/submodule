@@ -1,117 +1,102 @@
 type Cleanup = () => void
 
-export type ValueProvider<Value, Controller = undefined> = (
-  setter: (next: Value | ((prev?: Value) => Value), done?: boolean) => void
-) => {
-  cleanup?: Cleanup
-} & (
-    Controller extends undefined ? { controller?: undefined } : { controller: Controller }
-  )
-
-export type Observable<Value, Controller> = {
-  readonly nextValue: Promise<Value>
-  readonly hasNext: boolean
-  controller: Controller;
-  cleanup: Cleanup
-  onValue: (callback: (value: Value) => void) => Cleanup
-  onDone: (callback: Cleanup) => Cleanup
+type Snapshot = {
+  createSnapshot: (value: unknown) => void
+  equality: (prev: unknown, next: unknown) => boolean
 }
 
-export function createObservable<Value, Controller = undefined>(
-  provider: ValueProvider<Value, Controller>
-): Observable<Value, Controller> {
-  function prepareNextValue() {
-    let resolve: (value: Value) => void
-    const nextValue = new Promise<Value>((_resolve, _reject) => {
-      resolve = _resolve
-    })
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
-    return { nextValue, resolve: resolve! }
+export type Observable<Value> = {
+  readonly value: Value
+  readonly cleanup: Cleanup
+  onValue: (callback: (value: Value) => void, opts?: Partial<Snapshot>) => Cleanup
+  setValue: (next: Value | ((prev: Value) => Value)) => void
+}
+
+export function createObservable<Value>(
+  initialValue: Value,
+  opts: Snapshot = {
+    createSnapshot: structuredClone,
+    equality: Object.is
   }
+): Observable<Value> {
+  const listeners = new Map<
+    (value: Value) => void,
+    {
+      snapshot: unknown,
+      createSnapshot?: (value: unknown) => void,
+      equality?: (prev: unknown, next: unknown) => boolean
+    }
+  >()
 
-  const nextCallbacks = new Set<(value: Value) => void>()
-  const doneCallbacks = new Set<(value: Value) => void>()
+  let currentValue = initialValue
 
-  let hasNext = true
-  let nextValue: Promise<Value>
-  let resolve: (value: Value) => void
+  const setter = (
+    next: Value | ((prev: Value) => Value),
+  ) => {
+    const defaultCreateSnapshot = opts.createSnapshot
+    const defaultEquality = opts.equality
 
-  const nextValueContainer = prepareNextValue()
-  nextValue = nextValueContainer.nextValue
-  resolve = nextValueContainer.resolve
+    const nextValue = typeof next === 'function' ? (next as (prev: Value) => Value)(currentValue) : next
 
-  const setter = (next: Value, done: boolean) => {
-    resolve(next)
-
-    if (!hasNext) {
+    if (Object.is(currentValue, nextValue)) {
       return
     }
 
-    if (done) {
-      hasNext = false
-    } else {
-      const nextValueContainer = prepareNextValue()
-      nextValue = nextValueContainer.nextValue
-      resolve = nextValueContainer.resolve
-    }
+    currentValue = nextValue
+    for (const [listener, snapshotkit] of listeners) {
+      const { snapshot,
+        createSnapshot = defaultCreateSnapshot,
+        equality = defaultEquality
+      } = snapshotkit
 
-    for (const listener of nextCallbacks) {
-      listener(next)
+      const nextSnapshot = createSnapshot(nextValue)
+      if (!equality(snapshot, nextSnapshot)) {
+        listener(nextValue)
+      }
     }
   }
 
-  const { controller, cleanup } = provider(setter)
   const _cleanup = () => {
-    cleanup?.()
-    nextCallbacks.clear()
+    listeners.clear()
   }
 
   return {
-    get nextValue() {
-      return nextValue
+    get value() {
+      return currentValue
     },
-    get hasNext() {
-      return hasNext
+    setValue(next) {
+      setter(next)
     },
-    controller: controller as Controller,
-    cleanup: _cleanup,
-    onValue(callback) {
-      nextCallbacks.add(callback)
-      return () => {
-        nextCallbacks.delete(callback)
-      }
+    get cleanup() {
+      return _cleanup
     },
-    onDone(callback) {
-      doneCallbacks.add(callback)
-      return () => {
-        doneCallbacks.delete(callback)
-      }
+    onValue: (callback, opts) => {
+      const snapshot = opts?.createSnapshot?.(currentValue) || currentValue
+      listeners.set(callback, {
+        snapshot,
+        ...opts
+      })
+
+      return () => listeners.delete(callback)
     }
   }
 }
 
 export type PipeDispatcher<Value, UpstreamValue> = (
   value: UpstreamValue,
-  dispatcher: (next: Value | ((prev?: Value) => Value), done?: boolean) => void
+  dispatcher: (next: Value | ((prev: Value) => Value), done?: boolean) => void
 ) => void
 
 export function pipe<UpstreamValue, Value>(
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  source: Observable<UpstreamValue, any>,
+  upstream: Observable<UpstreamValue>,
   dispatcher: PipeDispatcher<Value, UpstreamValue>,
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-): Observable<Value, any> {
-  // biome-ignore lint/suspicious/noExplicitAny: we don't care about the controller type
-  return createObservable<Value, any>(setter => {
+  initialValue: Value
+): Observable<Value> {
+  const downstream = createObservable(initialValue)
 
-    const cleanup = source.onValue(next => {
-      dispatcher(next, setter)
-    })
-
-    return {
-      cleanup: () => {
-        cleanup
-      }
-    }
+  upstream.onValue(value => {
+    dispatcher(value, downstream.setValue)
   })
+
+  return downstream
 }

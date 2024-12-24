@@ -1,6 +1,6 @@
 import { expect, test, vi } from "vitest"
-import { createScope, provideObservable, map, provide, scoper, type Scope } from "../src";
-import { createObservable } from "../src/observables";
+import { createScope, provideObservable, map, provide, scoper, type Scope, flatMap, combine } from "../src";
+import { createObservable, pipe } from "../src/observables";
 import LeakDetector from "jest-leak-detector"
 
 test("leak test protection", async () => {
@@ -18,39 +18,30 @@ test("leak test protection", async () => {
 
   type Math = { plus: () => void }
 
-  const stream = provideObservable<number, Math>((set) => {
-    let initialValue = 0
-
-    return ({
-      controller: {
-        plus: () => set(initialValue++)
-      },
-      cleanup: () => {
-        fn();
-      },
-    });
-  })
+  const stream = provideObservable(0)
+  const controller = map(stream, (stream) => ({
+    plus: () => stream.setValue(prev => prev + 1)
+  }))
 
   const derivedStream = map(
-    { stream, numberValue },
+    combine({ stream, numberValue }),
     ({ stream, numberValue }) => {
 
-      return createObservable<number>(set => {
-        let defaultValue = 0
-
-        stream.onValue((next) => {
-          defaultValue = next + numberValue + defaultValue
-          set(defaultValue)
-        })
-
-        return {}
-      })
+      return pipe(
+        stream,
+        (next, set) => {
+          set(next + numberValue)
+        },
+        0
+      )
     })
 
   const result = await scope.safeRun(
-    { stringValue, numberValue, middleware, stream, derivedStream },
-    async ({ stringValue, numberValue, stream, derivedStream }) => {
-      stream.controller.plus()
+    { stringValue, controller, numberValue, middleware, stream, derivedStream },
+    async ({ stringValue, controller, numberValue, stream, derivedStream }) => {
+      stream.onValue(fn)
+
+      controller.plus()
     })
 
   if (result.error) throw result.error
