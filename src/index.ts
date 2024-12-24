@@ -124,15 +124,15 @@ export class Scope {
           return ref ? this.resolve(ref) : undefined
         })
           .then(async (actualized) => {
-            if (executor.provider instanceof ProviderClass) {
-              return executor.provider.provider(this, self, ref)
+            if (typeof executor.provider === 'function') {
+              if (executor.provider.length > 2 && actualized === undefined) {
+                throw new Error(`invalid state, provider ${executor.provider.toString()} requires dependent but not provided`)
+              }
+
+              return executor.provider(actualized as T)
             }
 
-            if (executor.provider.length > 2 && actualized === undefined) {
-              throw new Error(`invalid state, provider ${executor.provider.toString()} requires dependent but not provided`)
-            }
-
-            return executor.provider(actualized as T)
+            return executor.provider.provider(this, self, ref)
           })
           .then((actualized) => {
 

@@ -1,5 +1,5 @@
 import { expect, test, vi, assertType, expectTypeOf } from "vitest"
-import { combine, execute, prepare, value, flat, unImplemented, createScope, factory, factorize, produce, provide, map, getScope, createFamily, group, type Executor, isExecutor, presetFn, defaults } from "../src"
+import { combine, execute, prepare, value, flat, unImplemented, createScope, factory, factorize, produce, provide, map, getScope, createFamily, group, type Executor, isExecutor, presetFn, defaults, ProviderClass, create, scoper, flatMap } from "../src"
 
 test('submodule should work', async () => {
   const a = provide(() => 'a' as const)
@@ -487,4 +487,16 @@ test("defaults should work", async () => {
   const result = await scope.resolve(fulfilled)
   // biome-ignore lint/style/useTemplate: <explanation>
   expect(result).toBe(2 + 'abc')
+})
+
+test("check flatMap", async () => {
+  const a = value(1)
+  const b = value('b')
+  const c = combine({ a, b })
+
+  const d = combine({ c, scoper })
+
+  const scope = createScope()
+  await scope.resolve(d)
+
 })
