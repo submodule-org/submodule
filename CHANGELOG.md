@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [10.1.1](https://github.com/submodule-org/submodule/compare/v10.1.0...v10.1.1) (2024-12-24)
+
+
+### Bug Fixes
+
+* reorder checking order to make the lib more reliable ([8146580](https://github.com/submodule-org/submodule/commit/8146580484a5d59a0057e29f3be959c6e6930936))
+
 ## [10.1.0](https://github.com/submodule-org/submodule/compare/v10.0.0...v10.1.0) (2024-12-24)
 
 
