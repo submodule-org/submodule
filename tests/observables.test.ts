@@ -10,13 +10,13 @@ describe("createObservable", () => {
   })
 
   test("should notify subscribers when value changes", () => {
-    const [observable, setValue] = createObservable(1)
+    const [observable, setValue] = createObservable('1')
     const callback = vi.fn()
 
     observable.onValue(callback)
-    setValue(2)
+    setValue('2')
 
-    expect(callback).toHaveBeenCalledWith(2)
+    expect(callback).toHaveBeenCalledWith('2')
     expect(callback).toHaveBeenCalledTimes(1)
   })
 

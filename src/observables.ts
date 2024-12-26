@@ -22,11 +22,7 @@ export function createObservable<Value>(
 ): [ObservableGet<Value>, ObservableSet<Value>] {
   const listeners = new Map<
     (value: Value) => void,
-    {
-      snapshot: unknown,
-      createSnapshot?: (value: unknown) => void,
-      equality?: (prev: unknown, next: unknown) => boolean
-    }
+    { snapshot: unknown } & Snapshot<unknown>
   >()
 
   let currentValue = initialValue
@@ -36,21 +32,23 @@ export function createObservable<Value>(
     const defaultEquality = opts.equality
 
     const nextValue = typeof next === 'function' ? (next as (prev: Value) => Value)(currentValue) : next
+    const nextSnapshot = defaultCreateSnapshot(nextValue)
 
-    if (Object.is(currentValue, nextValue)) {
+    if (defaultEquality(currentValue, nextSnapshot)) {
       return
     }
 
-    currentValue = nextValue
+    currentValue = nextSnapshot
     for (const [listener, snapshotkit] of listeners) {
       const {
         snapshot,
-        createSnapshot = defaultCreateSnapshot,
-        equality = defaultEquality
+        createSnapshot,
+        equality
       } = snapshotkit
 
       const nextSnapshot = createSnapshot(nextValue)
       if (!equality(snapshot as Value, nextSnapshot as Value)) {
+        snapshotkit.snapshot = nextSnapshot
         listener(nextValue)
       }
     }
@@ -71,7 +69,8 @@ export function createObservable<Value>(
       const snapshot = opts?.createSnapshot?.(currentValue) || currentValue
       listeners.set(callback, {
         snapshot,
-        ...opts
+        createSnapshot: opts?.createSnapshot ?? structuredClone,
+        equality: opts?.equality ?? Object.is
       })
 
       return () => listeners.delete(callback)

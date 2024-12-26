@@ -935,16 +935,22 @@ export function defaults<
   )
 }
 
-
 export type {
   PipeDispatcher, ObservableSet, ObservableGet
 }
 
-export function provideObservable<
-  Value,
->(
-  initialValue: Value | Executor<Value>
-): [Executor<ObservableGet<Value>>, Executor<ObservableSet<Value>>] {
+/**
+ * @example
+ * const [getter, setter] = provideObservable(0);
+ * // Use getter to subscribe to value changes
+ * // Use setter to update the value
+ */
+type ProvideObservableFn = <Value>(initialValue: Value | Executor<Value>) => [
+  Executor<ObservableGet<Value>>,
+  Executor<ObservableSet<Value>>
+]
+
+export const provideObservable: ProvideObservableFn = (initialValue) => {
   const normalizedValue = isExecutor(initialValue) ? initialValue : value(initialValue)
 
   const observable = map({ scoper, normalizedValue }, ({ scoper, normalizedValue }) => {
@@ -960,14 +966,21 @@ export function provideObservable<
   return [observableGet, observableSet]
 }
 
-export function createPipe<
-  UpstreamValue,
-  Value,
->(
+/**
+ * @example
+ * const [sourceGetter, sourceSetter] = provideObservable(0);
+ * const doubledValue = createPipe(
+ *   sourceGetter,
+ *   (value) => value * 2,
+ *   0
+ * );
+ */
+type CreatePipeFn = <UpstreamValue, Value>(
   source: Executor<ObservableGet<UpstreamValue>>,
   setter: PipeDispatcher<Value, UpstreamValue> | Executor<PipeDispatcher<Value, UpstreamValue>>,
-  initialValue: Value | Executor<Value>
-) {
+  initialValue: Value | Executor<Value>) => Executor<ObservableGet<Value>>
+
+export const createPipe: CreatePipeFn = (source, setter, initialValue) => {
   const normalizedSetter = normalize(setter)
   const normalizedInitialValue = isExecutor(initialValue) ? initialValue : value(initialValue)
 
