@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [10.2.1](https://github.com/submodule-org/submodule/compare/v10.2.0...v10.2.1) (2024-12-26)
+
+
+### Bug Fixes
+
+* fixed snapshot issues on sub-path ([e83186e](https://github.com/submodule-org/submodule/commit/e83186e183a7cc4228943f869e0046a174e4a836))
+
 ## [10.2.0](https://github.com/submodule-org/submodule/compare/v10.1.1...v10.2.0) (2024-12-26)
 
 
