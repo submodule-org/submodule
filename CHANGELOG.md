@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [10.2.0](https://github.com/submodule-org/submodule/compare/v10.1.1...v10.2.0) (2024-12-26)
+
+
+### Features
+
+* simplified the observables API again ([d66bef7](https://github.com/submodule-org/submodule/commit/d66bef716e7ebecbada2300750f707988f57eaf3))
+
 ## [10.1.1](https://github.com/submodule-org/submodule/compare/v10.1.0...v10.1.1) (2024-12-24)
 
 
