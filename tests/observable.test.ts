@@ -7,13 +7,13 @@ describe("observable", () => {
   }
 
   test("simple stream", async () => {
-    const seed = provideObservable(0)
-    const controller = map(seed, seed => ({
-      inc: () => seed.setValue(prev => prev + 1)
+    const [readSeed, writeSeed] = provideObservable(0)
+    const controller = map(writeSeed, writeSeed => ({
+      inc: () => writeSeed(prev => prev + 1)
     }))
 
     const scope = createScope()
-    const result = await scope.safeRun({ seed, controller }, async ({ seed, controller }) => {
+    const result = await scope.safeRun({ seed: readSeed, controller }, async ({ seed, controller }) => {
       const fn = vi.fn()
 
       seed.onValue(fn)
@@ -29,10 +29,10 @@ describe("observable", () => {
   })
 
   test("simple pipe", async () => {
-    const seed = provideObservable(0)
+    const [readSeed, writeSeed] = provideObservable(0)
 
     const onlyOdd = createPipe(
-      seed,
+      readSeed,
       (next, set) => {
         if (next % 2 === 1) {
           set(next)
@@ -40,13 +40,13 @@ describe("observable", () => {
       },
       Number.NaN)
 
-    const controller = map(seed, seed => ({
-      inc: () => seed.setValue(prev => prev + 1)
+    const controller = map(writeSeed, writeSeed => ({
+      inc: () => writeSeed(prev => prev + 1)
     }))
 
     const scope = createScope()
 
-    const result = await scope.safeRun({ seed, controller, onlyOdd }, async ({ seed, controller, onlyOdd }) => {
+    const result = await scope.safeRun({ controller, onlyOdd }, async ({ controller, onlyOdd }) => {
       const fn = vi.fn()
 
       onlyOdd.onValue(fn)

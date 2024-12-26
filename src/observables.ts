@@ -1,24 +1,25 @@
 type Cleanup = () => void
 
-type Snapshot = {
-  createSnapshot: (value: unknown) => void
-  equality: (prev: unknown, next: unknown) => boolean
+type Snapshot<Value> = {
+  createSnapshot: (value: Value) => Value
+  equality: (prev: Value, next: Value) => boolean
 }
 
-export type Observable<Value> = {
-  readonly value: Value
+export type ObservableGet<Value> = {
   readonly cleanup: Cleanup
-  onValue: (callback: (value: Value) => void, opts?: Partial<Snapshot>) => Cleanup
-  setValue: (next: Value | ((prev: Value) => Value)) => void
+  readonly value: Value
+  onValue: (callback: (value: Value) => void, opts?: Partial<Snapshot<Value>>) => Cleanup
 }
+
+export type ObservableSet<Value> = (next: Value | ((prev: Value) => Value)) => void
 
 export function createObservable<Value>(
   initialValue: Value,
-  opts: Snapshot = {
+  opts: Snapshot<Value> = {
     createSnapshot: structuredClone,
     equality: Object.is
   }
-): Observable<Value> {
+): [ObservableGet<Value>, ObservableSet<Value>] {
   const listeners = new Map<
     (value: Value) => void,
     {
@@ -30,9 +31,7 @@ export function createObservable<Value>(
 
   let currentValue = initialValue
 
-  const setter = (
-    next: Value | ((prev: Value) => Value),
-  ) => {
+  const setter: ObservableSet<Value> = (next) => {
     const defaultCreateSnapshot = opts.createSnapshot
     const defaultEquality = opts.equality
 
@@ -44,13 +43,14 @@ export function createObservable<Value>(
 
     currentValue = nextValue
     for (const [listener, snapshotkit] of listeners) {
-      const { snapshot,
+      const {
+        snapshot,
         createSnapshot = defaultCreateSnapshot,
         equality = defaultEquality
       } = snapshotkit
 
       const nextSnapshot = createSnapshot(nextValue)
-      if (!equality(snapshot, nextSnapshot)) {
+      if (!equality(snapshot as Value, nextSnapshot as Value)) {
         listener(nextValue)
       }
     }
@@ -60,12 +60,9 @@ export function createObservable<Value>(
     listeners.clear()
   }
 
-  return {
+  return [{
     get value() {
       return currentValue
-    },
-    setValue(next) {
-      setter(next)
     },
     get cleanup() {
       return _cleanup
@@ -79,23 +76,23 @@ export function createObservable<Value>(
 
       return () => listeners.delete(callback)
     }
-  }
+  }, setter]
 }
 
 export type PipeDispatcher<Value, UpstreamValue> = (
   value: UpstreamValue,
-  dispatcher: (next: Value | ((prev: Value) => Value), done?: boolean) => void
+  dispatcher: (next: Value | ((prev: Value) => Value)) => void
 ) => void
 
 export function pipe<UpstreamValue, Value>(
-  upstream: Observable<UpstreamValue>,
+  upstream: ObservableGet<UpstreamValue>,
   dispatcher: PipeDispatcher<Value, UpstreamValue>,
   initialValue: Value
-): Observable<Value> {
-  const downstream = createObservable(initialValue)
+): ObservableGet<Value> {
+  const [downstream, setDownstream] = createObservable(initialValue)
 
   upstream.onValue(value => {
-    dispatcher(value, downstream.setValue)
+    dispatcher(value, setDownstream)
   })
 
   return downstream

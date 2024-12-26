@@ -2,8 +2,12 @@ import {
   pipe,
   createObservable,
   type PipeDispatcher,
-  type Observable,
+  type ObservableGet,
+  type ObservableSet
 } from "./observables"
+
+declare const ExecutorIdBrand: unique symbol
+export type ExecutorId = string & { readonly [ExecutorIdBrand]: never }
 
 export class ProviderClass<Provide> {
   constructor(
@@ -27,8 +31,6 @@ type OnResolve = {
 }
 
 type Defer = (e?: unknown) => void | Promise<void>
-
-export const $registry = new Map<symbol, Executor<unknown>>()
 
 /**
  * Represents a scope in the dependency injection system.
@@ -355,7 +357,7 @@ export function dispose(): void {
  * @template Value The type of value this executor resolves to.
  */
 export interface Executor<Value> {
-  readonly id: symbol
+  readonly id: ExecutorId
   readonly provider: Provider<Value, unknown> | ProviderClass<Value>
   readonly input: EODE<unknown> | undefined
   readonly dependencies: Executor<unknown>[] | undefined
@@ -364,7 +366,6 @@ export interface Executor<Value> {
    * A symbol property that identifies this object as an Executor.
    */
   readonly [x: symbol]: true
-  readonly toString: () => string
 }
 
 export interface PresetExecutor<Value> {
@@ -482,7 +483,8 @@ export function create<P, D>(
   dependencies: Executor<unknown>[] | undefined,
   option: Option
 ): Executor<P> {
-  const id = Symbol.for(`submodule-${index++}${option.id ? `-${option.id}` : ''}`)
+  const idString = `submodule-${index++}${option.id ? `-${option.id}` : ''}`
+  const id = idString as ExecutorId
 
   const executor = {
     id,
@@ -491,10 +493,8 @@ export function create<P, D>(
     input: input,
     source: option.source,
     [Symbol.for('$submodule')]: true,
-    toString: () => id.toString()
   } satisfies Executor<P>
 
-  $registry.set(id, executor)
   return executor
 }
 
@@ -937,28 +937,34 @@ export function defaults<
 
 
 export type {
-  PipeDispatcher, Observable
+  PipeDispatcher, ObservableSet, ObservableGet
 }
 
 export function provideObservable<
   Value,
 >(
   initialValue: Value | Executor<Value>
-): Executor<Observable<Value>> {
+): [Executor<ObservableGet<Value>>, Executor<ObservableSet<Value>>] {
   const normalizedValue = isExecutor(initialValue) ? initialValue : value(initialValue)
-  return map({ scoper, normalizedValue }, ({ scoper, normalizedValue }) => {
-    const core = createObservable(normalizedValue)
 
-    scoper.addDefer(() => core.cleanup())
-    return core
+  const observable = map({ scoper, normalizedValue }, ({ scoper, normalizedValue }) => {
+    const [read, write] = createObservable(normalizedValue)
+
+    scoper.addDefer(() => read.cleanup())
+    return [read, write] as const
   })
+
+  const observableGet = map(observable, ([read]) => read)
+  const observableSet = map(observable, ([, write]) => write)
+
+  return [observableGet, observableSet]
 }
 
 export function createPipe<
   UpstreamValue,
   Value,
 >(
-  source: Executor<Observable<UpstreamValue>>,
+  source: Executor<ObservableGet<UpstreamValue>>,
   setter: PipeDispatcher<Value, UpstreamValue> | Executor<PipeDispatcher<Value, UpstreamValue>>,
   initialValue: Value | Executor<Value>
 ) {

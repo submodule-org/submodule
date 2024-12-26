@@ -1,6 +1,6 @@
 import { expect, test, vi } from "vitest"
 import { createScope, provideObservable, map, provide, scoper, type Scope, flatMap, combine } from "../src";
-import { createObservable, pipe } from "../src/observables";
+import { pipe } from "../src/observables";
 import LeakDetector from "jest-leak-detector"
 
 test("leak test protection", async () => {
@@ -18,17 +18,17 @@ test("leak test protection", async () => {
 
   type Math = { plus: () => void }
 
-  const stream = provideObservable(0)
-  const controller = map(stream, (stream) => ({
-    plus: () => stream.setValue(prev => prev + 1)
+  const [readStream, writeStream] = provideObservable(0)
+  const controller = map(writeStream, (stream) => ({
+    plus: () => stream(prev => prev + 1)
   }))
 
   const derivedStream = map(
-    combine({ stream, numberValue }),
-    ({ stream, numberValue }) => {
+    combine({ readStream, numberValue }),
+    ({ readStream, numberValue }) => {
 
       return pipe(
-        stream,
+        readStream,
         (next, set) => {
           set(next + numberValue)
         },
@@ -37,9 +37,9 @@ test("leak test protection", async () => {
     })
 
   const result = await scope.safeRun(
-    { stringValue, controller, numberValue, middleware, stream, derivedStream },
-    async ({ stringValue, controller, numberValue, stream, derivedStream }) => {
-      stream.onValue(fn)
+    { stringValue, controller, numberValue, middleware, readStream, derivedStream },
+    async ({ stringValue, controller, numberValue, readStream, derivedStream }) => {
+      readStream.onValue(fn)
 
       controller.plus()
     })
