@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [11.0.0](https://github.com/submodule-org/submodule/compare/v10.2.1...v11.0.0) (2024-12-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove depreacted utilities, removed defaults, presets and executes which are never used
+
+### Features
+
+* added preferredScope to organize where an executor can be resolved ([7140902](https://github.com/submodule-org/submodule/commit/7140902a3d00885a5b8c8df1fb00f05ab5348a05))
+
+
+### Miscellaneous Chores
+
+* remove depreacted utilities, removed defaults, presets and executes which are never used ([7140902](https://github.com/submodule-org/submodule/commit/7140902a3d00885a5b8c8df1fb00f05ab5348a05))
+
 ## [10.2.1](https://github.com/submodule-org/submodule/compare/v10.2.0...v10.2.1) (2024-12-26)
 
 
