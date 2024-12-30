@@ -51,7 +51,7 @@ export class Scope {
    * @param {Executor<unknown>} executor - The executor to check.
    * @returns {boolean} True if the executor has been resolved, false otherwise.
    */
-  has<P>(executor: Executor<P>): boolean {
+  has<P>(executor: Executor<P>, self = true): boolean {
     return this.store.has(executor)
   }
 
@@ -181,23 +181,6 @@ export class Scope {
   }
 
   /**
-   * Executes a provider with its dependencies.
-   * @deprecated use run instead
-   * @template Dependent
-   * @template Output
-   * @param {Provider<Output, Dependent>} executable - The provider to execute.
-   * @param {EODE<Dependent>} dependency - The dependencies for the provider.
-   * @returns {Promise<Awaited<Output>>} A promise that resolves to the output of the provider.
-   */
-  async execute<Dependent, Output>(
-    executable: Fn<Output, Dependent>,
-    dependency: EODE<Dependent>
-  ): Promise<Awaited<Output>> {
-    const value = await this.resolve(dependency)
-    return await executable(value)
-  }
-
-  /**
    * Executes a function using the resolved value of an executor.
    * @param dependency 
    * @param runner 
@@ -220,25 +203,6 @@ export class Scope {
       .catch((error) => {
         return { type: 'error', error, data: undefined } as const
       })
-  }
-
-  /**
-   * Prepares a provider for execution with its dependencies. 
-   * @template Dependent
-   * @template Input
-   * @template Output
-   * @param {(provide: Dependent, ...input: Input) => Output} provider - The provider function.
-   * @param {EODE<Dependent>} dependency - The dependencies for the provider.
-   * @returns {(...input: Input) => Promise<Awaited<ReturnType<typeof provider>>>} A function that executes the provider with its dependencies.
-   */
-  prepare<Dependent, Input extends Array<unknown>, Output>(
-    provider: (provide: Dependent, ...input: Input) => Output,
-    dependency: EODE<Dependent>,
-  ): (...input: Input) => Promise<Awaited<ReturnType<typeof provider>>> {
-    const scope = this
-    return async function (...args: unknown[]) {
-      return execute(async (d) => provider.call(this, d, ...args), dependency, scope)
-    }
   }
 
   /**
@@ -306,7 +270,11 @@ class FallbackScope extends Scope {
     super()
   }
 
-  has(executor: Executor<unknown>): boolean {
+  has(executor: Executor<unknown>, self = false): boolean {
+    if (self) {
+      return super.has(executor)
+    }
+
     return this.scopes.some(s => s.has(executor)) || super.has(executor)
   }
 
@@ -317,6 +285,10 @@ class FallbackScope extends Scope {
     }
 
     for (const scope of this.scopes) {
+      if (_executor.perferredScope === scope) {
+        return scope.resolve(executor)
+      }
+
       if (scope.has(_executor)) {
         return scope.get(_executor) as Promise<T>
       }
@@ -361,64 +333,13 @@ export interface Executor<Value> {
   readonly provider: Provider<Value, unknown> | ProviderClass<Value>
   readonly input: EODE<unknown> | undefined
   readonly dependencies: Executor<unknown>[] | undefined
+  perferredScope: Scope | undefined
   readonly source: boolean
+
   /**
    * A symbol property that identifies this object as an Executor.
    */
   readonly [x: symbol]: true
-}
-
-export interface PresetExecutor<Value> {
-  setScope: (scope: Scope) => void
-  (): Promise<Value>
-}
-
-/**
- * Preset may give a better way to integrate with frameworks without sacrificing testing abilities
- * By using preset, you can set and manage scope in a more controlled way
- * @experimental
- * @param scope 
- * @param executor 
- * @returns 
- */
-export const preset = <P>(scope: Scope, executor: Executor<P>): PresetExecutor<P> => {
-  let innerScope: Scope = scope
-
-  const fn = async () => {
-    return await innerScope.resolve(executor)
-  }
-
-  const setScope = (scope: Scope) => { innerScope = scope }
-
-  return Object.assign(fn, { setScope }) as PresetExecutor<P>
-}
-
-export interface PresetExecution<Value, Input extends Array<unknown>> {
-  setScope: (scope: Scope) => void
-  (...input: Input): Promise<Value>
-}
-
-/**
- * Similar to preset but to resolve to function instead of value
- * @experimental
- * @param scope 
- * @param executor 
- * @returns 
- */
-export const presetFn = <P, I extends Array<unknown>>(
-  scope: Scope,
-  executor: Executor<(...input: I) => P | Promise<P>>
-): PresetExecution<P, I> => {
-  let innerScope: Scope = scope
-
-  const fn = async (...input: I) => {
-    const execution = await innerScope.resolve(executor)
-    return await execution(...input)
-  }
-
-  const setScope = (scope: Scope) => { innerScope = scope }
-
-  return Object.assign(fn, { setScope }) as PresetExecution<P, I>
 }
 
 const executorSymbol = Symbol.for('$submodule')
@@ -428,42 +349,24 @@ export function isExecutor<P>(obj: unknown): obj is Executor<P> {
 }
 
 /**
- * @deprecated
+ * Executor or destructed executor
+ * 
+ * This utility let you a way to combine executors into a completed executor
+ * 
+ * @example
+ * 
+ * input requires { a: string, b: number }
+ * 
+ * type EODE<{ a: string, b: number }> = Executor<{ a: string, b: number }> | { a: Executor<string>, b: Executor<number> }
  */
-export class Execution<Input extends Array<unknown>, Output, Dependency> {
-  constructor(
-    private executor: (dependency: Dependency, ...input: Input) => Output | Promise<Output>,
-    private dependency: EODE<Dependency>
-  ) { }
-
-  async executeIn(scope: Scope, ...input: Input): Promise<Awaited<Output>> {
-    const dependency = await scope.resolve(this.dependency)
-    return await this.executor(dependency, ...input)
-  }
-
-  async execute(...input: Input): Promise<Awaited<Output>> {
-    return await this.executeIn(getScope(), ...input)
-  }
-
-  resolve(scope: Scope = getScope()): (...input: Input) => Promise<Awaited<Output>> {
-    return this.executeIn.bind(this, scope)
-  }
-
-}
-
-export function createExecution<Dependency, Input extends Array<unknown>, Output>(
-  executor: (dependency: Dependency, ...input: Input) => Output | Promise<Output>,
-  dependency: Executor<Dependency>
-): Execution<Input, Output, Dependency> {
-  return new Execution(executor, dependency)
-}
-
 export type EODE<D> = Executor<D> | { [key in keyof D]: Executor<D[key]> }
 
 let index = 0
 
 export type Option = {
-  source: boolean
+  /** indicate whether the Executor is the original source or not (provide vs combine) */
+  source?: boolean
+  /** name to be added to the id may help with debugging */
   id?: string
 }
 
@@ -485,13 +388,18 @@ export function create<P, D>(
 ): Executor<P> {
   const idString = `submodule-${index++}${option.id ? `-${option.id}` : ''}`
   const id = idString as ExecutorId
+  let preferredScope: Scope | undefined = undefined
 
   const executor = {
-    id,
-    provider,
-    dependencies,
-    input: input,
-    source: option.source,
+    get id() { return id },
+    get provider() { return provider },
+    get dependencies() { return dependencies },
+    get input() { return input },
+    get source() { return option.source || false },
+    get perferredScope() { return preferredScope },
+    set perferredScope(scope) {
+      preferredScope = scope
+    },
     [Symbol.for('$submodule')]: true,
   } satisfies Executor<P>
 
@@ -542,41 +450,6 @@ export const group = <
 /* v8 ignore stop */
 
 /**
- * Creates a unimplemented executor that throws an error when resolved.
- * This can be used as a placeholder for dependencies that will be implemented later.
- * 
- * @template Provide The type of value that this executor will eventually provide
- * @returns {Executor<Provide>} An executor that throws an error when resolved
- * 
- * @example
- * const willBeResolved = unImplemented<string>();
- * // Later, implement the dependency:
- * willBeResolved.subs(value('actual value'));
- */
-export const unImplemented = <Provide>(): Executor<Provide> => {
-  return provide<Provide>(() => {
-    throw new Error('not implemented')
-  })
-}
-
-/**
- * Create a function to shape an expected output type.
- * Useful for creating a desired series of output types, for example, a route, a cmd.
- * 
- * @template Provide The type of value that the Executor will provide
- * @returns A function that takes an Executor and returns it unchanged
- * 
- * @example
- * const routeFactory = factory<Hono>();
- * const loginroute = routeFactory(create() {
- *   return Hono...
- * })
- */
-export const factory = <Provide>() => (impl: Executor<Provide>): Executor<Provide> => {
-  return impl
-}
-
-/**
  * Creates an executor that provides the current scope.
  * This can be useful when you need access to the scope within other executors or providers.
  * 
@@ -617,30 +490,6 @@ export const flat = <T>(executor: Executor<Executor<T>>) => map(
   },
   { source: false, id: 'flat' }
 )
-
-/**
- * @deprecated
- */
-export function prepare<Dependent, Input extends Array<unknown>, Output>(
-  provider: ((provide: Dependent, ...input: Input) => Output),
-  dependency: EODE<Dependent>,
-  scope: Scope = getScope()
-): (...input: Input) => Promise<Awaited<Output>> {
-  const execution = new Execution(provider, dependency)
-  return execution.resolve(scope)
-}
-
-/**
- * @deprecated
- */
-export async function execute<Dependent, Output>(
-  executable: Fn<Output, Dependent>,
-  dependency: EODE<Dependent>,
-  scope: Scope = getScope()
-): Promise<Awaited<Output>> {
-  const execution = new Execution(executable, dependency)
-  return execution.executeIn(scope)
-}
 
 export type inferProvide<T> = T extends Executor<infer S> ? S : never
 
@@ -715,22 +564,6 @@ export function normalize<T>(valueOrExecutor: T | Executor<T>): Executor<T> {
 }
 
 /**
- * Utility function to turn a Provider into a template. Helpful on creating a library, reusable code block
- * Pair with produce to create a complete module
- * 
- * @param provider 
- * @returns 
- */
-export function factorize<P, D>(
-  provider: Executor<Fn<P, D>> | Fn<P, D>
-): (key: D | Executor<D>) => Executor<P> {
-  return (key: D | Executor<D>) => map(
-    { provider: normalize(provider), dependency: normalize(key) },
-    async ({ provider, dependency }) => provider(dependency),
-  )
-}
-
-/**
  * Function to complete a template. Helpful on creating a library, reusable code block
  * Pair with factoryize to create a complete module
  * 
@@ -773,7 +606,7 @@ export function map<P, D>(
     },
       combine({ _source, mapper }),
       [_source],
-      { source: pOption?.source || true, id }
+      { ...pOption, source: pOption?.source || true, id }
     )
   }
 
@@ -917,24 +750,6 @@ export function createFamily<K, P>(
   return fn as Family<K, P>
 }
 
-/**
- * Utility function to preset defaults value for a provider
- */
-export function defaults<
-  D,
-  I extends Partial<D>,
-  C extends Omit<Omit<D, keyof I> & Partial<D>, never>,
-  P
->(
-  original: Executor<(dependency: D) => P>,
-  defaults: EODE<I>
-): Executor<(dependency: C) => P> {
-  return map(
-    { original, defaults: isExecutor(defaults) ? defaults : combine(defaults) },
-    ({ original, defaults }) => (dependency: C) => original({ ...defaults, ...dependency } as D)
-  )
-}
-
 export type {
   PipeDispatcher, ObservableSet, ObservableGet
 }
@@ -950,6 +765,11 @@ type ProvideObservableFn = <Value>(initialValue: Value | Executor<Value>) => [
   Executor<ObservableSet<Value>>
 ]
 
+/**
+ * Provide an observable
+ * @param initialValue 
+ * @returns 
+ */
 export const provideObservable: ProvideObservableFn = (initialValue) => {
   const normalizedValue = isExecutor(initialValue) ? initialValue : value(initialValue)
 

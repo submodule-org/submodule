@@ -1,5 +1,5 @@
-import { expect, test, vi, assertType, expectTypeOf } from "vitest"
-import { combine, execute, prepare, value, flat, unImplemented, createScope, factory, factorize, produce, provide, map, getScope, createFamily, group, type Executor, isExecutor, presetFn, defaults, ProviderClass, create, scoper, flatMap } from "../src"
+import { expect, test, vi } from "vitest"
+import { combine, value, flat, createScope, produce, provide, map, getScope, createFamily, group, type Executor, isExecutor, scoper } from "../src"
 
 test('submodule should work', async () => {
   const a = provide(() => 'a' as const)
@@ -7,9 +7,6 @@ test('submodule should work', async () => {
 
   const b = provide(async () => 'b' as const)
   expect(await getScope().resolve(b)).toMatch('b')
-
-  const d = await execute(c => c, b)
-  expect(d).toBe('b')
 })
 
 test('submodule can be used as dependencies', async () => {
@@ -139,46 +136,6 @@ test('submodule can be chained', async () => {
 
 })
 
-test('magic function', async () => {
-  const demand = async (fn: (x: string) => string | Promise<string>): Promise<string> => {
-    return await fn('a')
-  }
-
-  const scope = createScope()
-  const b = value('b')
-
-  const fulfilledFn = map(b, (b) => (v: string) => b + v)
-  const fn = presetFn(scope, fulfilledFn)
-  const c = await demand(fn)
-
-  expect(c).toEqual('ba')
-})
-
-test('magic function 2', async () => {
-  const demand = async (fn: (x: string) => string | Promise<string>): Promise<string> => {
-    return await fn('a')
-  }
-
-  const b = value('b')
-  const c = prepare((v, i) => v + i, b)
-
-  const d = await demand(c)
-  expect(d).toEqual('ba')
-})
-
-test('magic function 3', async () => {
-  const demand = async (fn: (x: string, y: number) => string | Promise<string>): Promise<string> => {
-    return await fn('a', 2)
-  }
-
-  const b = value('b')
-  const c = await demand(prepare(async (v, i1, i2) => {
-    return v + i1 + i2
-  }, b))
-
-  expect(c).toEqual('ba2')
-})
-
 test('error should be carried over', async () => {
   const a = provide(() => Promise.reject(new Error('test')))
 
@@ -215,17 +172,6 @@ test('can set value by early access to the root dependency', async () => {
   expect(result).toBe(4000)
 })
 
-test('factory should work', async () => {
-  const fnFactory = factory<(value: string) => number>()
-  const seed = value(1)
-  const stringToNumber = fnFactory(map(seed, (seed) => {
-    return (value: string) => Number(value) + seed.valueOf()
-  },))
-
-  const result = await getScope().resolve(stringToNumber)
-  expect(result('1')).toBe(2)
-})
-
 test('expect error to be thown', async () => {
   const problematic = provide(() => {
     throw new Error('test')
@@ -253,56 +199,6 @@ test("flat should work", async () => {
   const a = provide(() => provide(() => 'a'))
   const ar = await getScope().resolve(flat(a))
   expect(ar).toBe('a')
-})
-
-test("submodule can do cachedFactory", async () => {
-  type LogConfig = {
-    name: string
-    level: 'debug' | 'info' | 'warn' | 'error'
-  }
-
-  const createLogger = factorize(
-    async (config: LogConfig) => {
-      return {
-        log: (msg: string) => {
-          return `${config.level} - ${config.name} - ${msg}`
-        }
-      }
-    }
-  )
-
-  const systemLogger = createLogger({ name: 'system', level: 'debug' })
-  const anotherSystemLogger = createLogger({ name: 'system', level: 'info' })
-  const userLogger = createLogger({ name: 'user', level: 'info' })
-
-  const scope = createScope()
-  const r = await scope.resolve({ systemLogger, userLogger, anotherSystemLogger })
-
-  expect(r.systemLogger.log('hello')).toBe('debug - system - hello')
-  expect(r.userLogger.log('hello')).toBe('info - user - hello')
-})
-
-test("factory can make use of executor as well", async () => {
-  type ServerConfig = {
-    port: number
-  }
-
-  const rootServerConfig = provide(() => ({ port: 4000 } as ServerConfig))
-
-  const createServer = factorize(
-    map(rootServerConfig,
-      (rootConfig) => async (config: ServerConfig) => {
-        return {
-          serverPort: config.port + rootConfig.port
-        }
-      },),
-  )
-
-  const server = createServer({ port: 4000 })
-
-  const scope = createScope()
-  const r = await scope.resolve(server)
-  expect(r.serverPort).toBe(8000)
 })
 
 test("use fullfill to provide a module", async () => {
@@ -473,20 +369,6 @@ test("group type should work", async () => {
   const b = value('a')
 
   group(a, b) satisfies Executor<[number, string]>
-})
-
-test("defaults should work", async () => {
-  const a = value(1)
-  const b = value('a')
-
-  const c = value(({ a, b }: { a: number, b: string }) => a + b)
-  const dc = defaults(c, value({ a: 2 }))
-  const scope = createScope()
-  const fulfilled = produce(dc, value({ b: 'abc' }))
-
-  const result = await scope.resolve(fulfilled)
-  // biome-ignore lint/style/useTemplate: <explanation>
-  expect(result).toBe(2 + 'abc')
 })
 
 test("check flatMap", async () => {

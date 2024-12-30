@@ -109,3 +109,42 @@ describe('scope lifecycle', () => {
 	})
 
 })
+
+describe('usage of preferred scope', () => {
+	test('preferred scope will change the way its used', async () => {
+		const intValue = provide(() => 5)
+		const scope1 = createScope()
+
+		const combinedValue = map({ intValue }, ({ intValue }) => String(intValue))
+		combinedValue.perferredScope = scope1
+
+		intValue.perferredScope = scope1
+
+		const scope2 = createScope(scope1)
+
+		await scope2.resolve(intValue)
+		await scope2.resolve(combinedValue)
+
+		expect(scope1.has(intValue, true)).toBe(true)
+		expect(scope1.has(combinedValue, true)).toBe(true)
+
+		expect(scope2.has(intValue, true)).toBe(false)
+		expect(scope2.has(combinedValue, true)).toBe(false)
+
+		await scope2.dispose()
+		expect(scope1.has(intValue)).toBe(true)
+	})
+
+	test('can resolve even when the preferered scope is not in the list', async () => {
+		const scope1 = createScope()
+		const scope2 = createScope()
+
+		const intValue = provide(() => 5)
+		intValue.perferredScope = scope1
+
+		await scope2.resolve(intValue)
+
+		expect(scope1.has(intValue)).toBe(false)
+		expect(scope2.has(intValue)).toBe(true)
+	})
+})
