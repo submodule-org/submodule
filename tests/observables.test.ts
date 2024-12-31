@@ -2,6 +2,7 @@ import { test } from "vitest"
 import { describe, expect, vi } from "vitest"
 
 import { createObservable, pipe } from "../src/observables"
+import { createScope } from "../src"
 
 describe("createObservable", () => {
   test("should initialize with correct value", () => {
@@ -71,7 +72,7 @@ describe("createObservable", () => {
 describe("pipe", () => {
   test("should transform upstream values", () => {
     const [upstream, setUpstream] = createObservable(1)
-    const downstream = pipe(
+    const [downstream] = pipe(
       upstream,
       (value, dispatch) => dispatch(value.toString()),
       "initial"
@@ -86,7 +87,7 @@ describe("pipe", () => {
 
   test("should handle async transformations", async () => {
     const [upstream, setUpstream] = createObservable(1)
-    const downstream = pipe(
+    const [downstream] = pipe(
       upstream,
       async (value, dispatch) => {
         await Promise.resolve()
@@ -140,7 +141,7 @@ describe("createObservable cleanup", () => {
 describe("pipe cleanup", () => {
   test("upstream cleanup should stop downstream notifications", () => {
     const [upstream, setUpstream] = createObservable(1)
-    const downstream = pipe(
+    const [downstream] = pipe(
       upstream,
       (value, dispatch) => dispatch(value.toString()),
       "initial"
@@ -157,7 +158,7 @@ describe("pipe cleanup", () => {
 
   test("downstream cleanup should stop notifications", () => {
     const [upstream, setUpstream] = createObservable(1)
-    const downstream = pipe(
+    const [downstream] = pipe(
       upstream,
       (value, dispatch) => dispatch(value.toString()),
       "initial"
@@ -174,12 +175,12 @@ describe("pipe cleanup", () => {
 
   test("should cleanup chained pipes correctly", () => {
     const [upstream, setUpstream] = createObservable(1)
-    const intermediate = pipe(
+    const [intermediate] = pipe(
       upstream,
       (value, dispatch) => dispatch(value.toString()),
       "initial"
     )
-    const final = pipe(
+    const [final] = pipe(
       intermediate,
       (value, dispatch) => dispatch(Number.parseInt(value)),
       0
@@ -198,7 +199,7 @@ describe("pipe cleanup", () => {
 describe("pipe conditional dispatching", () => {
   test("should handle conditional dispatch", () => {
     const [upstream, setUpstream] = createObservable(1)
-    const downstream = pipe(
+    const [downstream] = pipe(
       upstream,
       (value, dispatch) => {
         if (value > 5) {
@@ -222,7 +223,7 @@ describe("pipe conditional dispatching", () => {
 
   test("should handle no dispatch case", () => {
     const [upstream, setUpstream] = createObservable(1)
-    const downstream = pipe(
+    const [downstream] = pipe(
       upstream,
       (value, dispatch) => {
         if (value % 2 === 0) {
@@ -245,7 +246,7 @@ describe("pipe conditional dispatching", () => {
 
   test("should handle multiple dispatches from single upstream value", () => {
     const [upstream, setUpstream] = createObservable(1)
-    const downstream = pipe(
+    const [downstream] = pipe(
       upstream,
       (value, dispatch) => {
         dispatch(`${value}-first`)
@@ -262,6 +263,30 @@ describe("pipe conditional dispatching", () => {
     expect(callback).toHaveBeenCalledTimes(2)
     expect(callback).toHaveBeenNthCalledWith(1, "42-first")
     expect(callback).toHaveBeenNthCalledWith(2, "42-second")
+  })
+
+  test("pipe acts as a type of merging streams", () => {
+    const [upstream, setUpstream] = createObservable(1)
+    const [oddOrEvenStream, setOddOrEven] = pipe(upstream, (upstream, set) => {
+      if (upstream % 2 === 0) {
+        set("even")
+      } else {
+        set("odd")
+      }
+    }, "even" as "odd" | "even")
+
+    setUpstream(10)
+    expect(oddOrEvenStream.value).toBe("even")
+
+    setOddOrEven((_, upstream) => {
+      if (upstream % 2 === 0) {
+        return "odd"
+      }
+
+      return "even"
+    })
+
+    expect(oddOrEvenStream.value).toBe("odd")
   })
 
 })

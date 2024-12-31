@@ -83,16 +83,28 @@ export type PipeDispatcher<Value, UpstreamValue> = (
   dispatcher: (next: Value | ((prev: Value) => Value)) => void
 ) => void
 
-export function pipe<UpstreamValue, Value>(
+export type PipeSet<Value, UpstreamValue> = (next: Value | ((prev: Value, upstreamValue: UpstreamValue) => Value)) => void
+
+export function pipe<UpstreamValue, Value = unknown>(
   upstream: ObservableGet<UpstreamValue>,
   dispatcher: PipeDispatcher<Value, UpstreamValue>,
   initialValue: Value
-): ObservableGet<Value> {
+): [ObservableGet<Value>, PipeSet<Value, UpstreamValue>, Cleanup] {
   const [downstream, setDownstream] = createObservable(initialValue)
 
-  upstream.onValue(value => {
+  const cleanup = upstream.onValue(value => {
     dispatcher(value, setDownstream)
   })
 
-  return downstream
+  const pipeSet: PipeSet<Value, UpstreamValue> = (next) => {
+    if (typeof next !== 'function') {
+      setDownstream(next)
+      return
+    }
+
+    const fn = next as (prev: Value, upstreamValue: UpstreamValue) => Value
+    setDownstream((prev) => fn(prev, upstream.value))
+  }
+
+  return [downstream, pipeSet, cleanup] as const
 }

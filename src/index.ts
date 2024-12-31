@@ -3,7 +3,8 @@ import {
   createObservable,
   type PipeDispatcher,
   type ObservableGet,
-  type ObservableSet
+  type ObservableSet,
+  type PipeSet
 } from "./observables"
 
 declare const ExecutorIdBrand: unique symbol
@@ -798,21 +799,27 @@ export const provideObservable: ProvideObservableFn = (initialValue) => {
 type CreatePipeFn = <UpstreamValue, Value>(
   source: Executor<ObservableGet<UpstreamValue>>,
   setter: PipeDispatcher<Value, UpstreamValue> | Executor<PipeDispatcher<Value, UpstreamValue>>,
-  initialValue: Value | Executor<Value>) => Executor<ObservableGet<Value>>
+  initialValue: Value | Executor<Value>
+) => [Executor<ObservableGet<Value>>, Executor<PipeSet<Value, UpstreamValue>>]
 
 export const createPipe: CreatePipeFn = (source, setter, initialValue) => {
   const normalizedSetter = normalize(setter)
   const normalizedInitialValue = isExecutor(initialValue) ? initialValue : value(initialValue)
 
-  return map({
+  const piped = map({
     scoper,
     source,
     setter: normalizedSetter,
     initialValue: normalizedInitialValue
   }, ({ scoper, source, setter, initialValue }) => {
-    const piped = pipe(source, setter, initialValue)
+    const [piped, setPipe] = pipe(source, setter, initialValue)
 
     scoper.addDefer(() => piped.cleanup())
-    return piped
+    return [piped, setPipe] as const
   })
+
+  const pipedGetter = map(piped, ([piped]) => piped)
+  const pipedSetter = map(piped, ([, setPipe]) => setPipe)
+
+  return [pipedGetter, pipedSetter] as const
 }

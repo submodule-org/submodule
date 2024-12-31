@@ -31,7 +31,7 @@ describe("observable", () => {
   test("simple pipe", async () => {
     const [readSeed, writeSeed] = provideObservable(0)
 
-    const onlyOdd = createPipe(
+    const [onlyOdd] = createPipe(
       readSeed,
       (next, set) => {
         if (next % 2 === 1) {
