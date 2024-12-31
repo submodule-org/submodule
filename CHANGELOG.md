@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [11.1.0](https://github.com/submodule-org/submodule/compare/v11.0.0...v11.1.0) (2024-12-31)
+
+
+### Features
+
+* changed the pipe API, let the piped stream to be editable ([e166738](https://github.com/submodule-org/submodule/commit/e166738bb89837138a00ea1a8b13bb28e7cfdfa5))
+
 ## [11.0.0](https://github.com/submodule-org/submodule/compare/v10.2.1...v11.0.0) (2024-12-30)
 
 
