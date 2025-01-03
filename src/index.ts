@@ -1,10 +1,8 @@
 import {
-  pipe,
+  createCombineObservables,
   createObservable,
-  type PipeDispatcher,
   type ObservableGet,
   type ObservableSet,
-  type PipeSet
 } from "./observables"
 
 declare const ExecutorIdBrand: unique symbol
@@ -751,9 +749,7 @@ export function createFamily<K, P>(
   return fn as Family<K, P>
 }
 
-export type {
-  PipeDispatcher, ObservableSet, ObservableGet
-}
+export type { ObservableSet, ObservableGet }
 
 /**
  * @example
@@ -787,39 +783,34 @@ export const provideObservable: ProvideObservableFn = (initialValue) => {
   return [observableGet, observableSet]
 }
 
+export function combineObservables<Upstreams extends Record<string, unknown>, Value>(
+  upstreams: { [K in keyof Upstreams]: Executor<ObservableGet<Upstreams[K]>> },
+  transform: (upstreams: Upstreams, prev: Value) => Value,
+  initialValue: Value
+): Executor<ObservableGet<Value>>
+
+export function combineObservables<Upstreams extends Record<string, unknown>>(
+  upstreams: { [K in keyof Upstreams]: Executor<ObservableGet<Upstreams[K]>> },
+): Executor<ObservableGet<Upstreams>>
+
 /**
- * @example
- * const [sourceGetter, sourceSetter] = provideObservable(0);
- * const doubledValue = createPipe(
- *   sourceGetter,
- *   (value) => value * 2,
- *   0
- * );
+ * Combine multiple observables into a single observable
+ * @param upstreams 
+ * @returns 
  */
-type CreatePipeFn = <UpstreamValue, Value>(
-  source: Executor<ObservableGet<UpstreamValue>>,
-  setter: PipeDispatcher<Value, UpstreamValue> | Executor<PipeDispatcher<Value, UpstreamValue>>,
-  initialValue: Value | Executor<Value>
-) => [Executor<ObservableGet<Value>>, Executor<PipeSet<Value, UpstreamValue>>]
+export function combineObservables<Upstreams extends Record<string, unknown>, Value>(
+  upstreams: { [K in keyof Upstreams]: Executor<ObservableGet<Upstreams[K]>> },
+  transform?: (upstreams: Upstreams, prev?: Value) => Value,
+  initialValue?: Value
+): Executor<ObservableGet<Value>> | Executor<ObservableGet<Upstreams>> {
+  return map(
+    { upstreams: combine(upstreams), scoper },
+    ({ upstreams, scoper }) => {
+      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      const observable = createCombineObservables<Upstreams, Value>(upstreams, transform as any, initialValue as any)
 
-export const createPipe: CreatePipeFn = (source, setter, initialValue) => {
-  const normalizedSetter = normalize(setter)
-  const normalizedInitialValue = isExecutor(initialValue) ? initialValue : value(initialValue)
-
-  const piped = map({
-    scoper,
-    source,
-    setter: normalizedSetter,
-    initialValue: normalizedInitialValue
-  }, ({ scoper, source, setter, initialValue }) => {
-    const [piped, setPipe] = pipe(source, setter, initialValue)
-
-    scoper.addDefer(() => piped.cleanup())
-    return [piped, setPipe] as const
-  })
-
-  const pipedGetter = map(piped, ([piped]) => piped)
-  const pipedSetter = map(piped, ([, setPipe]) => setPipe)
-
-  return [pipedGetter, pipedSetter] as const
+      scoper.addDefer(observable.cleanup)
+      return observable
+    }
+  )
 }

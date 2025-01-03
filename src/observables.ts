@@ -11,7 +11,8 @@ export type ObservableGet<Value> = {
   onValue: (callback: (value: Value) => void, opts?: Partial<Snapshot<Value>>) => Cleanup
 }
 
-export type ObservableSet<Value> = (next: Value | ((prev: Value) => Value)) => void
+export type ObservableSet<Value> =
+  (next: Value | ((prev: Value) => Value)) => void
 
 export function createObservable<Value>(
   initialValue: Value,
@@ -20,17 +21,14 @@ export function createObservable<Value>(
     equality: Object.is
   }
 ): [ObservableGet<Value>, ObservableSet<Value>] {
-  const listeners = new Map<
-    (value: Value) => void,
-    { snapshot: unknown } & Snapshot<unknown>
-  >()
+  const listeners = new Set<(value: Value) => void>()
 
-  let currentValue = initialValue
+  const defaultCreateSnapshot = opts.createSnapshot
+  const defaultEquality = opts.equality
+
+  let currentValue = defaultCreateSnapshot(initialValue)
 
   const setter: ObservableSet<Value> = (next) => {
-    const defaultCreateSnapshot = opts.createSnapshot
-    const defaultEquality = opts.equality
-
     const nextValue = typeof next === 'function' ? (next as (prev: Value) => Value)(currentValue) : next
     const nextSnapshot = defaultCreateSnapshot(nextValue)
 
@@ -39,18 +37,9 @@ export function createObservable<Value>(
     }
 
     currentValue = nextSnapshot
-    for (const [listener, snapshotkit] of listeners) {
-      const {
-        snapshot,
-        createSnapshot,
-        equality
-      } = snapshotkit
 
-      const nextSnapshot = createSnapshot(nextValue)
-      if (!equality(snapshot as Value, nextSnapshot as Value)) {
-        snapshotkit.snapshot = nextSnapshot
-        listener(nextValue)
-      }
+    for (const listener of listeners) {
+      queueMicrotask(() => listener(currentValue))
     }
   }
 
@@ -65,46 +54,64 @@ export function createObservable<Value>(
     get cleanup() {
       return _cleanup
     },
-    onValue: (callback, opts) => {
-      const snapshot = opts?.createSnapshot?.(currentValue) || currentValue
-      listeners.set(callback, {
-        snapshot,
-        createSnapshot: opts?.createSnapshot ?? structuredClone,
-        equality: opts?.equality ?? Object.is
-      })
-
+    onValue: (callback) => {
+      listeners.add(callback)
       return () => listeners.delete(callback)
     }
   }, setter]
 }
 
-export type PipeDispatcher<Value, UpstreamValue> = (
-  value: UpstreamValue,
-  dispatcher: (next: Value | ((prev: Value) => Value)) => void
-) => void
-
-export type PipeSet<Value, UpstreamValue> = (next: Value | ((prev: Value, upstreamValue: UpstreamValue) => Value)) => void
-
-export function pipe<UpstreamValue, Value = unknown>(
-  upstream: ObservableGet<UpstreamValue>,
-  dispatcher: PipeDispatcher<Value, UpstreamValue>,
+export function createCombineObservables<Upstreams extends Record<string, unknown>, Value>(
+  upstreams: { [K in keyof Upstreams]: ObservableGet<Upstreams[K]> },
+  transform: (upstreams: Upstreams, prev?: Value) => Value,
   initialValue: Value
-): [ObservableGet<Value>, PipeSet<Value, UpstreamValue>, Cleanup] {
-  const [downstream, setDownstream] = createObservable(initialValue)
+): ObservableGet<Value>
 
-  const cleanup = upstream.onValue(value => {
-    dispatcher(value, setDownstream)
-  })
+export function createCombineObservables<Upstreams extends Record<string, unknown>>(
+  upstreams: { [K in keyof Upstreams]: ObservableGet<Upstreams[K]> },
+): ObservableGet<Upstreams>
 
-  const pipeSet: PipeSet<Value, UpstreamValue> = (next) => {
-    if (typeof next !== 'function') {
-      setDownstream(next)
-      return
-    }
+export function createCombineObservables<
+  Upstreams extends Record<string, unknown>,
+  Value
+>(
+  upstreams: { [K in keyof Upstreams]: ObservableGet<Upstreams[K]> },
+  transform?: (upstreams: Upstreams, prev: Value) => Value,
+  initialValue?: Value
+): ObservableGet<Value> | ObservableGet<Upstreams> {
+  const upstreamKeys = Object.keys(upstreams) as Array<keyof Upstreams>
+  const getValues = () => Object.fromEntries(
+    upstreamKeys.map(key => [key, upstreams[key].value])
+  ) as Upstreams
 
-    const fn = next as (prev: Value, upstreamValue: UpstreamValue) => Value
-    setDownstream((prev) => fn(prev, upstream.value))
+  const transformedInitialValue = transform
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    ? transform(getValues(), initialValue as any) : getValues()
+
+  const [observable, setObservable] = createObservable(transformedInitialValue)
+
+  const setter = (prev: Value | Upstreams, key: keyof Upstreams, next: Upstreams[typeof key]) => {
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    const nextValue = transform ? transform(getValues(), prev as any) : getValues()
+    setObservable(nextValue)
   }
 
-  return [downstream, pipeSet, cleanup] as const
+  const cleanups = upstreamKeys.map(key => {
+    return upstreams[key].onValue((next) => {
+      setter(observable.value, key, next)
+    })
+  })
+
+  return {
+    cleanup: () => {
+      for (const cleanup of cleanups) {
+        cleanup()
+      }
+
+      observable.cleanup()
+    },
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    onValue: observable.onValue as any,
+    get value() { return observable.value },
+  } as ObservableGet<Value> | ObservableGet<Upstreams>
 }

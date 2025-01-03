@@ -1,4 +1,4 @@
-import { createScope, map, provideObservable, createPipe, provide, value } from "../src";
+import { createScope, map, provideObservable, combineObservables } from "../src";
 import { describe, expect, test, vi } from "vitest"
 
 describe("observable", () => {
@@ -22,40 +22,36 @@ describe("observable", () => {
       controller.inc()
       controller.inc()
 
-      expect(fn).toBeCalledTimes(3)
+      process.nextTick(
+        () => expect(fn).toBeCalledTimes(3)
+      )
     })
 
     if (result.error) throw result.error
   })
 
-  test("simple pipe", async () => {
-    const [readSeed, writeSeed] = provideObservable(0)
+  test("simple combine", async () => {
+    const [list, setList] = provideObservable([{ id: 1 }, { id: 2 }, { id: 3 }])
+    const [id, setId] = provideObservable(undefined as number | undefined)
 
-    const [onlyOdd] = createPipe(
-      readSeed,
-      (next, set) => {
-        if (next % 2 === 1) {
-          set(next)
-        }
-      },
-      Number.NaN)
-
-    const controller = map(writeSeed, writeSeed => ({
-      inc: () => writeSeed(prev => prev + 1)
-    }))
+    const selectedItem = combineObservables(
+      { list, id },
+      ({ list, id }) => list.find(item => item.id === id), undefined as { id: number } | undefined
+    )
 
     const scope = createScope()
 
-    const result = await scope.safeRun({ controller, onlyOdd }, async ({ controller, onlyOdd }) => {
+    const result = await scope.safeRun({ selectedItem, setList, setId }, async ({ selectedItem, setList, setId }) => {
       const fn = vi.fn()
 
-      onlyOdd.onValue(fn)
+      selectedItem.onValue(fn)
 
-      controller.inc()
-      controller.inc()
-      controller.inc()
-
-      expect(fn).toBeCalledTimes(2)
+      setId(2)
+      setId(3)
+      process.nextTick(() => {
+        expect(selectedItem.value).toEqual({ id: 3 })
+        expect(fn).toBeCalledTimes(2)
+      })
     })
 
     if (result.error) throw result.error
