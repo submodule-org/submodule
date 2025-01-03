@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [11.3.1](https://github.com/submodule-org/submodule/compare/v11.3.0...v11.3.1) (2025-01-03)
+
+
+### Bug Fixes
+
+* also apply options to Executor ([6e4a0bf](https://github.com/submodule-org/submodule/commit/6e4a0bf2caf478602e01224444cac9a32058fb47))
+
 ## [11.3.0](https://github.com/submodule-org/submodule/compare/v11.2.0...v11.3.0) (2025-01-03)
 
 
