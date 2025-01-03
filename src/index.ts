@@ -758,7 +758,7 @@ export type { ObservableSet, ObservableGet }
  * // Use getter to subscribe to value changes
  * // Use setter to update the value
  */
-type ProvideObservableFn = <Value>(initialValue: Value | Executor<Value>) => [
+type ProvideObservableFn = <Value>(initialValue: Value | Executor<Value>, opts?: ObservableOpts<Value>) => [
   Executor<ObservableGet<Value>>,
   Executor<ObservableSet<Value>>
 ]
@@ -768,11 +768,11 @@ type ProvideObservableFn = <Value>(initialValue: Value | Executor<Value>) => [
  * @param initialValue 
  * @returns 
  */
-export const provideObservable: ProvideObservableFn = (initialValue) => {
+export const provideObservable: ProvideObservableFn = (initialValue, opts) => {
   const normalizedValue = isExecutor(initialValue) ? initialValue : value(initialValue)
 
   const observable = map({ scoper, normalizedValue }, ({ scoper, normalizedValue }) => {
-    const [read, write] = createObservable(normalizedValue)
+    const [read, write] = createObservable(normalizedValue, opts)
 
     scoper.addDefer(() => read.cleanup())
     return [read, write] as const
