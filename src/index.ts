@@ -3,6 +3,7 @@ import {
   createObservable,
   type ObservableGet,
   type ObservableSet,
+  type ObservableOpts
 } from "./observables"
 
 declare const ExecutorIdBrand: unique symbol
@@ -786,11 +787,13 @@ export const provideObservable: ProvideObservableFn = (initialValue) => {
 export function combineObservables<Upstreams extends Record<string, unknown>, Value>(
   upstreams: { [K in keyof Upstreams]: Executor<ObservableGet<Upstreams[K]>> },
   transform: (upstreams: Upstreams, prev: Value) => Value,
-  initialValue: Value
+  initialValue: Value,
+  options?: ObservableOpts<Value>
 ): Executor<ObservableGet<Value>>
 
 export function combineObservables<Upstreams extends Record<string, unknown>>(
   upstreams: { [K in keyof Upstreams]: Executor<ObservableGet<Upstreams[K]>> },
+  options?: ObservableOpts<Upstreams>
 ): Executor<ObservableGet<Upstreams>>
 
 /**
@@ -800,14 +803,22 @@ export function combineObservables<Upstreams extends Record<string, unknown>>(
  */
 export function combineObservables<Upstreams extends Record<string, unknown>, Value>(
   upstreams: { [K in keyof Upstreams]: Executor<ObservableGet<Upstreams[K]>> },
-  transform?: (upstreams: Upstreams, prev?: Value) => Value,
-  initialValue?: Value
+  ptransform?: ObservableOpts<Value> | ((upstreams: Upstreams, prev?: Value) => Value),
+  initialValue?: Value,
+  poptions?: ObservableOpts<Value>
 ): Executor<ObservableGet<Value>> | Executor<ObservableGet<Upstreams>> {
   return map(
     { upstreams: combine(upstreams), scoper },
     ({ upstreams, scoper }) => {
+      const transform = typeof ptransform === 'function'
+        ? ptransform
+        : undefined
+      const options = typeof ptransform === 'function'
+        ? poptions
+        : ptransform
+
       // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-      const observable = createCombineObservables<Upstreams, Value>(upstreams, transform as any, initialValue as any)
+      const observable = createCombineObservables<Upstreams, Value>(upstreams, transform as any, initialValue as any, options)
 
       scoper.addDefer(observable.cleanup)
       return observable

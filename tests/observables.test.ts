@@ -73,7 +73,28 @@ describe("createObservable", () => {
       expect(callback).toHaveBeenCalledWith({ count: 2 })
     })
   })
+
+  test("onMount options of observable", async () => {
+    const fn = vi.fn()
+    const [value] = createObservable(1, {
+      onMount: (setter) => {
+        setter(2)
+        fn()
+        return () => fn()
+      }
+    })
+
+    await nextTickPromise()
+    expect(fn).toHaveBeenCalledTimes(1)
+    expect(value.value).toBe(2)
+
+    value.cleanup()
+    await nextTickPromise()
+    expect(fn).toHaveBeenCalledTimes(2)
+  })
 })
+
+const nextTickPromise = () => new Promise(resolve => process.nextTick(resolve))
 
 describe("pipe", () => {
   test("should transform upstream values", () => {
@@ -91,6 +112,34 @@ describe("pipe", () => {
     process.nextTick(() => {
       expect(callback).toHaveBeenCalledWith("42")
     })
+  })
+
+  test("combine multiple stream would stop when downstream is stopped", async () => {
+    const [upstream, setUpstream] = createObservable(1)
+    const [upstream2, setUpstream2] = createObservable(2)
+
+    const downstream = createCombineObservables(
+      { upstream, upstream2 },
+      (upstreams) => upstreams.upstream + upstreams.upstream2,
+      0
+    )
+
+    const callback = vi.fn()
+    downstream.onValue(callback)
+
+    setUpstream(2)
+    setUpstream2(3)
+
+    await nextTickPromise()
+    expect(callback).toHaveBeenCalledWith(5)
+
+    setUpstream2(5)
+    setUpstream(4)
+    expect(callback).toHaveBeenCalledWith(5)
+
+    downstream.cleanup()
+    await nextTickPromise()
+    expect(callback).toHaveBeenCalledTimes(1)
   })
 
 })

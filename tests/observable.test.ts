@@ -36,7 +36,8 @@ describe("observable", () => {
 
     const selectedItem = combineObservables(
       { list, id },
-      ({ list, id }) => list.find(item => item.id === id), undefined as { id: number } | undefined
+      ({ list, id }) => list.find(item => item.id === id),
+      undefined as { id: number } | undefined
     )
 
     const scope = createScope()

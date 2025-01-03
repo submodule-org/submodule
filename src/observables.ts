@@ -1,30 +1,42 @@
-type Cleanup = () => void
+export type Cleanup = () => void
 
-type Snapshot<Value> = {
-  createSnapshot: (value: Value) => Value
-  equality: (prev: Value, next: Value) => boolean
+export type ObservableOpts<Value> = {
+  createSnapshot?: (value: Value) => Value
+  equality?: (prev: Value, next: Value) => boolean
+  onMount?: (setValue: ObservableSet<Value>) => Cleanup | undefined
 }
 
 export type ObservableGet<Value> = {
   readonly cleanup: Cleanup
   readonly value: Value
-  onValue: (callback: (value: Value) => void, opts?: Partial<Snapshot<Value>>) => Cleanup
+  onValue: (callback: (value: Value) => void, opts?: Partial<ObservableOpts<Value>>) => Cleanup
+}
+
+export function observableGet<Value>(
+  observable: ObservableGet<Value>
+): ObservableGet<Value> {
+  return observable
 }
 
 export type ObservableSet<Value> =
   (next: Value | ((prev: Value) => Value)) => void
 
+const defaultObservableOpts: ObservableOpts<unknown> = {
+  createSnapshot: (value) => structuredClone(value),
+  equality: Object.is
+}
+
 export function createObservable<Value>(
   initialValue: Value,
-  opts: Snapshot<Value> = {
-    createSnapshot: structuredClone,
-    equality: Object.is
-  }
+  popts?: ObservableOpts<Value>
 ): [ObservableGet<Value>, ObservableSet<Value>] {
   const listeners = new Set<(value: Value) => void>()
 
-  const defaultCreateSnapshot = opts.createSnapshot
-  const defaultEquality = opts.equality
+  const opts = { ...popts } as ObservableOpts<Value>
+  type RO = Required<ObservableOpts<Value>>
+
+  const defaultCreateSnapshot = opts.createSnapshot || defaultObservableOpts.createSnapshot as RO['createSnapshot']
+  const defaultEquality = opts.equality || defaultObservableOpts.equality as RO['equality']
 
   let currentValue = defaultCreateSnapshot(initialValue)
 
@@ -43,8 +55,11 @@ export function createObservable<Value>(
     }
   }
 
+  const mountedCleanup = opts.onMount?.(setter)
+
   const _cleanup = () => {
     listeners.clear()
+    mountedCleanup?.()
   }
 
   return [{
@@ -56,19 +71,23 @@ export function createObservable<Value>(
     },
     onValue: (callback) => {
       listeners.add(callback)
-      return () => listeners.delete(callback)
+      return () => {
+        listeners.delete(callback)
+      }
     }
   }, setter]
 }
 
 export function createCombineObservables<Upstreams extends Record<string, unknown>, Value>(
   upstreams: { [K in keyof Upstreams]: ObservableGet<Upstreams[K]> },
-  transform: (upstreams: Upstreams, prev?: Value) => Value,
-  initialValue: Value
+  transform: (upstreams: Upstreams, prev: Value) => Value,
+  initialValue: Value,
+  options?: ObservableOpts<Value>
 ): ObservableGet<Value>
 
 export function createCombineObservables<Upstreams extends Record<string, unknown>>(
   upstreams: { [K in keyof Upstreams]: ObservableGet<Upstreams[K]> },
+  options?: ObservableOpts<Upstreams>
 ): ObservableGet<Upstreams>
 
 export function createCombineObservables<
@@ -76,19 +95,28 @@ export function createCombineObservables<
   Value
 >(
   upstreams: { [K in keyof Upstreams]: ObservableGet<Upstreams[K]> },
-  transform?: (upstreams: Upstreams, prev: Value) => Value,
-  initialValue?: Value
+  ptransform?: ((upstreams: Upstreams, prev: Value) => Value) | ObservableOpts<Value>,
+  initialValue?: Value,
+  poptions?: ObservableOpts<Value>
 ): ObservableGet<Value> | ObservableGet<Upstreams> {
   const upstreamKeys = Object.keys(upstreams) as Array<keyof Upstreams>
   const getValues = () => Object.fromEntries(
     upstreamKeys.map(key => [key, upstreams[key].value])
   ) as Upstreams
 
+  const transform = typeof ptransform === 'function'
+    ? ptransform
+    : undefined
+
+  const options = typeof ptransform === 'function'
+    ? poptions
+    : ptransform
+
   const transformedInitialValue = transform
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     ? transform(getValues(), initialValue as any) : getValues()
 
-  const [observable, setObservable] = createObservable(transformedInitialValue)
+  const [observable, setObservable] = createObservable(transformedInitialValue, options)
 
   const setter = (prev: Value | Upstreams, key: keyof Upstreams, next: Upstreams[typeof key]) => {
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -107,8 +135,8 @@ export function createCombineObservables<
       for (const cleanup of cleanups) {
         cleanup()
       }
-
       observable.cleanup()
+
     },
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     onValue: observable.onValue as any,
