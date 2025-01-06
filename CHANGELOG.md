@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [11.4.0](https://github.com/submodule-org/submodule/compare/v11.3.1...v11.4.0) (2025-01-06)
+
+
+### Features
+
+* merged submodule-react back to the core, under /react ([a60f5f1](https://github.com/submodule-org/submodule/commit/a60f5f1a1d3abac33b97961634ee5f0fb6544a90))
+
+
+### Bug Fixes
+
+* refined certain observables API ([a60f5f1](https://github.com/submodule-org/submodule/commit/a60f5f1a1d3abac33b97961634ee5f0fb6544a90))
+
 ## [11.3.1](https://github.com/submodule-org/submodule/compare/v11.3.0...v11.3.1) (2025-01-03)
 
 
