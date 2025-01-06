@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [11.5.0](https://github.com/submodule-org/submodule/compare/v11.4.0...v11.5.0) (2025-01-06)
+
+
+### Features
+
+* minor - exposed transformObservable ([8c3f544](https://github.com/submodule-org/submodule/commit/8c3f544be647d29bf6d7852f23b34125f2138a70))
+
 ## [11.4.0](https://github.com/submodule-org/submodule/compare/v11.3.1...v11.4.0) (2025-01-06)
 
 
