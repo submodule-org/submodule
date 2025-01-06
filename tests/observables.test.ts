@@ -1,7 +1,8 @@
 import { test } from "vitest"
 import { describe, expect, vi } from "vitest"
 
-import { createObservable, createCombineObservables } from "../src/observables"
+import { createObservable, createCombineObservables, createTransformedObservable } from "../src/observables"
+import { value } from "../src"
 
 describe("createObservable", () => {
   test("should initialize with correct value", () => {
@@ -96,7 +97,7 @@ describe("createObservable", () => {
 
 const nextTickPromise = () => new Promise(resolve => process.nextTick(resolve))
 
-describe("pipe", () => {
+describe("transform and combine", () => {
   test("should transform upstream values", () => {
     const [upstream, setUpstream] = createObservable(1)
     const downstream = createCombineObservables(
@@ -142,4 +143,23 @@ describe("pipe", () => {
     expect(callback).toHaveBeenCalledTimes(1)
   })
 
+  test("can derive a stream", async () => {
+    const [upstream, setUpstream] = createObservable(1)
+    const onlyTakeOdd = createTransformedObservable(
+      upstream,
+      (next, prev) => next % 2 === 1 ? next : prev,
+      1
+    )
+
+    const callback = vi.fn()
+    onlyTakeOdd.onValue(callback)
+
+    setUpstream(2)
+    await nextTickPromise()
+    expect(callback).not.toHaveBeenCalled()
+
+    setUpstream(3)
+    await nextTickPromise()
+    expect(callback).toHaveBeenCalledWith(3)
+  })
 })

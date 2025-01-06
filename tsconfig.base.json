@@ -1,15 +1,14 @@
 {
-  "compilerOptions": {
-    "moduleResolution": "Bundler",
-    "declaration": true,
-    "emitDeclarationOnly": true,
-    "esModuleInterop": true,
-    "strictNullChecks": true,
-    "allowSyntheticDefaultImports": true,
-    "customConditions": [
-      "source"
-    ],
-    "target": "ES2022",
-    "module": "Preserve"
-  }
+	"compilerOptions": {
+		"moduleResolution": "Bundler",
+		"declaration": true,
+		"emitDeclarationOnly": true,
+		"esModuleInterop": true,
+		"strictNullChecks": true,
+		"allowSyntheticDefaultImports": true,
+		"customConditions": ["source"],
+		"jsx": "react",
+		"target": "ES2022",
+		"module": "Preserve"
+	}
 }

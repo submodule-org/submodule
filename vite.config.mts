@@ -5,5 +5,6 @@ export default defineConfig({
     coverage: {
       reporter: ['text', 'json', 'html'],
     },
+    exclude: ['node_modules', 'dist', 'coverage', '**/*.test.tsx'],
   },
 })

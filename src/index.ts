@@ -3,7 +3,8 @@ import {
   createObservable,
   type ObservableGet,
   type ObservableSet,
-  type ObservableOpts
+  type ObservableOpts,
+  createGroupObservables
 } from "./observables"
 
 declare const ExecutorIdBrand: unique symbol
