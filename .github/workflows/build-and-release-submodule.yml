@@ -27,14 +27,13 @@ jobs:
 
       - run: bun install
       - run: bun run test
-      - run: bun run test:types
-
+      - run: bun run test:react
+      
       - uses: GoogleCloudPlatform/release-please-action@v4
         id: release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           release-type: node
-          package-name: "@submodule/core"
 
       - run: bun run build
         if: ${{ steps.release.outputs.release_created }}
