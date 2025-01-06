@@ -4,7 +4,8 @@ import {
   type ObservableGet,
   type ObservableSet,
   type ObservableOpts,
-  createGroupObservables
+  createGroupObservables,
+  createTransformedObservable
 } from "./observables"
 
 declare const ExecutorIdBrand: unique symbol
@@ -783,6 +784,22 @@ export const provideObservable: ProvideObservableFn = (initialValue, opts) => {
   const observableSet = map(observable, ([, write]) => write)
 
   return [observableGet, observableSet]
+}
+
+export function transformObservable<Upstream, Value>(
+  upstream: Executor<ObservableGet<Upstream>>,
+  transform: (upstream: Upstream) => Value,
+  initialValue: Value,
+  options?: ObservableOpts<Value>
+): Executor<ObservableGet<Value>> {
+  return map(
+    { upstream, scoper },
+    ({ upstream, scoper }) => {
+      const observable = createTransformedObservable(upstream, transform, initialValue, options)
+      scoper.addDefer(observable.cleanup)
+      return observable
+    }
+  )
 }
 
 export function combineObservables<Upstreams extends Record<string, unknown>, Value>(
