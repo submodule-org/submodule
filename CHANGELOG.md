@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [11.5.1](https://github.com/submodule-org/submodule/compare/v11.5.0...v11.5.1) (2025-01-07)
+
+
+### Bug Fixes
+
+* corrected transformObservable signature ([3f46571](https://github.com/submodule-org/submodule/commit/3f46571336e4feb42aa0dc31d64acbd493059763))
+
 ## [11.5.0](https://github.com/submodule-org/submodule/compare/v11.4.0...v11.5.0) (2025-01-06)
 
 
