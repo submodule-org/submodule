@@ -788,7 +788,7 @@ export const provideObservable: ProvideObservableFn = (initialValue, opts) => {
 
 export function transformObservable<Upstream, Value>(
   upstream: Executor<ObservableGet<Upstream>>,
-  transform: (upstream: Upstream) => Value,
+  transform: (upstream: Upstream, prev: Value) => Value,
   initialValue: Value,
   options?: ObservableOpts<Value>
 ): Executor<ObservableGet<Value>> {
