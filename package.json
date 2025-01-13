@@ -23,6 +23,7 @@
     "test": "vitest run",
     "test:react": "vitest run --config vitest.react.config.mts",
     "test:types": "tsc -p tsconfig.test.json",
+    "test:all": "bun run test && bun run test:react && bun run test:types",
     "coverage": "vitest run --coverage",
     "build": "tsup-node",
     "preview": "commit-and-tag-version --dry-run --path . -t @submodule/core",
@@ -44,12 +45,6 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs"
     },
-    "./observables": {
-      "source": "./src/observables.ts",
-      "require": "./dist/observables.js",
-      "types": "./dist/observables.d.ts",
-      "import": "./dist/observables.mjs"
-    },
     "./react": {
       "source": "./src/react/index.tsx",
       "require": "./dist/react/index.js",
@@ -61,7 +56,6 @@
   "tsup": {
     "entry": [
       "src/index.ts",
-      "src/observables.ts",
       "src/react/index.tsx"
     ],
     "minify": true,

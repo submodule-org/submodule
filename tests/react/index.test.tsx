@@ -1,34 +1,42 @@
 import { renderHook, configure, waitFor, act } from "@testing-library/react";
-import { combineObservables, provideObservable } from "../../src";
+import {
+	applyPipes,
+	combineObservables,
+	operators,
+	providePushObservable,
+	value,
+} from "../../src";
 import {
 	ScopeProvider,
 	useObservable,
+	usePushObservable,
 	useResolve,
-	useTransformedObservable,
-	useTransformFn,
 } from "../../src/react";
 import type { PropsWithChildren } from "react";
-import React, { Suspense } from "react";
+import React, { Suspense, useState } from "react";
 import "@testing-library/jest-dom";
 
 configure({ reactStrictMode: true });
 
-const [count, setCount] = provideObservable(0);
-const [list, setList] = provideObservable([
+const stringvalue = value("hello");
+
+const observableCount = providePushObservable<number>(0);
+
+const listStream = providePushObservable([
 	{ id: 1, value: "1" },
 	{ id: 2, value: "2" },
 	{ id: 3, value: "3" },
 ]);
-const [selectedId, setSelectedId] = provideObservable(
-	undefined as number | undefined,
-);
 
-const combinedSelectedIdAndList = combineObservables({ list, selectedId });
+const selectedIdStream = providePushObservable(null as null | number);
 
-const selectedItemStream = combineObservables(
-	{ list, selectedId },
-	({ list, selectedId }) => list.find((item) => item.id === selectedId),
-	undefined,
+const selectedItem = applyPipes(
+	combineObservables({ listStream, selectedIdStream }),
+	operators.map(({ listStream, selectedIdStream }) => {
+		return selectedIdStream === null
+			? null
+			: listStream.find((item) => item.id === selectedIdStream);
+	}),
 );
 
 const wrapper = ({ children }: PropsWithChildren) => (
@@ -37,108 +45,130 @@ const wrapper = ({ children }: PropsWithChildren) => (
 	</ScopeProvider>
 );
 
-test("render observable", async () => {
-	const { result } = renderHook(
-		() => {
-			const counter = useObservable(count);
-			const controller = useResolve(setCount);
+function useConstFn<I extends Array<unknown>, O>(
+	value: (...params: I) => O,
+): (...params: I) => O {
+	const [v] = useState(() => value);
+	return v;
+}
 
-			return { counter, controller } as const;
-		},
-		{ wrapper },
-	);
-
-	await waitFor(() => {
-		expect(result.current.counter).toBe(0);
-	});
-
-	await waitFor(() => {
-		act(() => {
-			result.current.controller(1);
+describe("test useResolve", () => {
+	test("useResolve should be able to resolve value", async () => {
+		const { result } = renderHook(() => useResolve(stringvalue), {
+			wrapper,
 		});
 
-		expect(result.current.counter).toBe(1);
+		await waitFor(() => expect(result.current).toEqual("hello"));
 	});
 });
 
-test("render transformed observable", async () => {
-	const { result, rerender } = renderHook(
-		() => {
-			const selectedItem = useTransformedObservable(
-				combinedSelectedIdAndList,
-				({ list, selectedId }) => list.find((item) => item.id === selectedId),
+describe("test observable", () => {
+	test("manual observable should just work", async () => {
+		const { result } = renderHook(
+			() => {
+				const [counter, setCounter] = usePushObservable(observableCount);
 
-				undefined,
-			);
-			const controller = useResolve(setSelectedId);
+				return { counter, setCounter };
+			},
+			{
+				wrapper,
+			},
+		);
 
-			return { selectedItem, controller } as const;
-		},
-		{ wrapper },
-	);
-
-	await waitFor(() => {
-		expect(result.current.selectedItem).toBe(undefined);
-	});
-
-	await waitFor(() => {
-		act(() => {
-			result.current.controller(1);
+		await waitFor(() => {
+			expect(result.current.counter).toMatchObject({ kind: "not-emitted" });
+			expect(result.current.counter).toMatchObject({
+				hasError: false,
+				hasValue: false,
+			});
 		});
 
-		expect(result.current.selectedItem).toStrictEqual({ id: 1, value: "1" });
+		act(() => {
+			result.current.setCounter.next(5);
+		});
+
+		await waitFor(() =>
+			expect(result.current.counter).toMatchObject({ value: 5, kind: "value" }),
+		);
 	});
 
-	act(() => {
-		rerender();
-	});
+	test("useObservable with a little bit more complicated usecase", async () => {
+		const { result } = renderHook(
+			() => {
+				const [selectedId, setSelectedId] = usePushObservable(selectedIdStream);
+				const [list, setList] = usePushObservable(listStream);
+				const selected = useObservable(selectedItem);
 
-	await waitFor(() => {
-		expect(result.current.selectedItem).toStrictEqual({ id: 1, value: "1" });
-	});
-});
+				return {
+					selected,
+					setSelectedId,
+					setList,
+					list,
+					selectedId,
+				};
+			},
+			{
+				wrapper,
+			},
+		);
 
-test("render combines", async () => {
-	const { result } = renderHook(
-		() => {
-			const selectedItem = useObservable(selectedItemStream);
-			const changeSelectedId = useResolve(setSelectedId);
-			const changeList = useResolve(setList);
+		await waitFor(() => {
+			expect(result.current.selected).toMatchObject({ kind: "not-emitted" });
+		});
 
-			return { selectedItem, changeSelectedId, changeList } as const;
-		},
-		{ wrapper },
-	);
+		act(() => {
+			result.current.setSelectedId.next(1);
+		});
 
-	await waitFor(() => {
-		expect(result.current).toBeDefined();
-		expect(result.current.selectedItem).toEqual(undefined);
-	});
+		await waitFor(() => {
+			expect(result.current.selected).toMatchObject({
+				kind: "value",
+				value: { id: 1, value: "1" },
+			});
+		});
 
-	act(() => {
-		result.current.changeSelectedId(2);
-	});
+		act(() => {
+			const currentList = result.current.list;
 
-	await waitFor(() => {
-		expect(result.current.selectedItem).toEqual({ id: 2, value: "2" });
-	});
+			if (currentList.kind === "value") {
+				result.current.setList.next(
+					currentList.value.map((item) => {
+						if (item.id === 1) {
+							return { id: 1, value: "new value" };
+						}
+						return item;
+					}),
+				);
+			}
+		});
 
-	act(() => {
-		result.current.changeList([
-			{ id: 1, value: "1" },
-			{ id: 2, value: "3" },
-		]);
-	});
+		await waitFor(() => {
+			expect(result.current.selected).toMatchObject({
+				kind: "value",
+				value: { id: 1, value: "new value" },
+			});
+		});
 
-	await waitFor(() => {
-		expect(result.current.selectedItem).toEqual({ id: 2, value: "3" });
-	});
+		act(() => {
+			result.current.setSelectedId.next(2);
+		});
 
-	act(() => {
-		result.current.changeList([{ id: 1, value: "1" }]);
-	});
+		await waitFor(() => {
+			expect(result.current.selected).toMatchObject({
+				kind: "value",
+				value: { id: 2, value: "2" },
+			});
+		});
 
-	await waitFor(() => {
-		expect(result.current.selectedItem).toEqual(undefined);
+		act(() => {
+			result.current.setSelectedId.next(null);
+		});
+
+		await waitFor(() => {
+			expect(result.current.selected).toMatchObject({
+				kind: "value",
+				value: null,
+			});
+		});
 	});
 });

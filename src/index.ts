@@ -1,12 +1,4 @@
-import {
-  createCombineObservables,
-  createObservable,
-  type ObservableGet,
-  type ObservableSet,
-  type ObservableOpts,
-  createGroupObservables,
-  createTransformedObservable
-} from "./observables"
+import { observables, pipe, pushObservable, type Operator, type PushObservable, type Subscribable } from "./rx"
 
 declare const ExecutorIdBrand: unique symbol
 export type ExecutorId = string & { readonly [ExecutorIdBrand]: never }
@@ -16,7 +8,6 @@ export class ProviderClass<Provide> {
     public provider: (
       scope: Scope,
       self: Executor<unknown>,
-      ref?: Executor<unknown>
     ) => Provide | Promise<Provide>,
   ) { }
 }
@@ -25,6 +16,8 @@ type Fn<Provide, Input> = (input: Input) => (Provide | Promise<Provide>)
 
 type Provider<Provide, Input = unknown> = (
   input: Input,
+  scope: Scope,
+  self: Executor<unknown>,
 ) => Provide | Promise<Provide>
 
 type OnResolve = {
@@ -33,6 +26,8 @@ type OnResolve = {
 }
 
 type Defer = (e?: unknown) => void | Promise<void>
+
+
 
 /**
  * Represents a scope in the dependency injection system.
@@ -44,7 +39,7 @@ export class Scope {
   constructor(
     private store = new Map<Executor<unknown>, Promise<unknown> | unknown>(),
     private _resolves: OnResolve[] = [],
-    private defers: Defer[] = [],
+    private defers = new Map<Executor<unknown> | Scope, Set<Defer>>(),
     private listeners = new Map<Executor<unknown>, Set<(p: unknown) => void>>(),
   ) { }
 
@@ -123,6 +118,8 @@ export class Scope {
         ? isExecutor(executor.input) ? executor.input : combine(executor.input)
         : undefined
 
+      const pseudoScope = new PseudoScope(this, self)
+
       const promise = new Promise<T>((resolve, reject) => {
         Promise.resolve().then(() => {
           return ref ? this.resolve(ref) : undefined
@@ -133,10 +130,10 @@ export class Scope {
                 throw new Error(`invalid state, provider ${executor.provider.toString()} requires dependent but not provided`)
               }
 
-              return executor.provider(actualized as T)
+              return executor.provider(actualized as T, pseudoScope, self)
             }
 
-            return executor.provider.provider(this, self, ref)
+            return executor.provider.provider(pseudoScope, self)
           })
           .then((actualized) => {
 
@@ -211,8 +208,13 @@ export class Scope {
    * Adds a defer callback to the scope. Defer function is executed when scope is disposed.
    * @param {Defer} deferer - The defer callback to add.
    */
-  addDefer(deferer: Defer) {
-    this.defers.push(deferer)
+  addDefer(deferer: Defer, ref?: Executor<unknown>) {
+    const executor = ref || this
+    if (!this.defers.has(executor)) {
+      this.defers.set(executor, new Set())
+    }
+
+    this.defers.get(executor)?.add(deferer)
   }
 
   /**
@@ -235,12 +237,14 @@ export class Scope {
    * Disposes of the scope, clearing all stored values and callbacks.
    */
   async dispose() {
-    for (const d of this.defers) {
-      d();
+    for (const d of this.defers.values()) {
+      for (const deferer of d) {
+        deferer()
+      }
     }
 
     this.store.clear()
-    this.defers = []
+    this.defers.clear()
     this._resolves = []
     this.listeners.clear()
   }
@@ -250,7 +254,18 @@ export class Scope {
    * @param {Executor<unknown>} executor - The executor to remove.
    */
   async remove(executor: Executor<unknown>) {
-    this.store.delete(executor)
+    if (this.store.has(executor)) {
+      // trigger cleanup 
+      const deferrers = this.defers.get(executor)
+      if (deferrers) {
+        for (const deferer of deferrers) {
+          deferer()
+        }
+      }
+
+      this.defers.delete(executor)
+      this.store.delete(executor)
+    }
   }
 
 }
@@ -300,6 +315,43 @@ class FallbackScope extends Scope {
   }
 }
 
+class PseudoScope extends Scope {
+  constructor(
+    private scope: Scope,
+    private self: Executor<unknown>
+  ) {
+    super(undefined, undefined, undefined, undefined)
+  }
+
+  has(executor: Executor<unknown>, self = false): boolean {
+    return this.scope.has(executor, self)
+  }
+
+  resolve<T>(executor: EODE<T>): Promise<T> {
+    return this.scope.resolve(executor)
+  }
+
+  addDefer(deferer: Defer) {
+    this.scope.addDefer(deferer, this.self)
+  }
+
+  addOnResolves(onResolve: OnResolve) {
+    this.scope.addOnResolves(onResolve)
+  }
+
+  get onResolves(): OnResolve[] {
+    return this.scope.onResolves
+  }
+
+  async dispose() {
+    this.scope.remove(this.self)
+  }
+
+  async remove(executor: Executor<unknown>) {
+    this.scope.remove(executor)
+  }
+}
+
 /**
  * Returns the global scope instance.
  * This function provides access to the singleton global scope,
@@ -337,11 +389,14 @@ export interface Executor<Value> {
   readonly dependencies: Executor<unknown>[] | undefined
   perferredScope: Scope | undefined
   readonly source: boolean
+  readonly [Symbol.toStringTag]: string
 
   /**
    * A symbol property that identifies this object as an Executor.
    */
-  readonly [x: symbol]: true
+
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  readonly [x: symbol]: any
 }
 
 const executorSymbol = Symbol.for('$submodule')
@@ -393,7 +448,7 @@ export function create<P, D>(
   let preferredScope: Scope | undefined = undefined
 
   const executor = {
-    get id() { return id },
+    id,
     get provider() { return provider },
     get dependencies() { return dependencies },
     get input() { return input },
@@ -403,7 +458,15 @@ export function create<P, D>(
       preferredScope = scope
     },
     [Symbol.for('$submodule')]: true,
+    get [Symbol.toStringTag]() {
+      return JSON.stringify({
+        id: executor.id,
+        provider: executor.provider.toString(),
+        dependencies: dependencies
+      })
+    }
   } satisfies Executor<P>
+
 
   return executor
 }
@@ -458,6 +521,8 @@ export const group = <
  * There are some usecases where you want to have access to the current scope.
  * For example, conditional resolves, lazy resolves, etc.
  * 
+ * The use of scoper is nolonger needed, from version 11.6.0, the current scope is available in the provider function parameter.
+ * 
  * @example
  * const myExecutor = create(async (scope) => {
  *   // Now you can use currentScope...
@@ -466,7 +531,7 @@ export const group = <
  */
 export const scoper = create(
   new ProviderClass(
-    async (scope) => scope
+    (scope, self): Scope => new PseudoScope(scope, self)
   ),
   undefined,
   undefined,
@@ -602,8 +667,7 @@ export function map<P, D>(
   const _source = isExecutor(source) ? source : combine(source)
 
   if (isExecutor(mapper)) {
-    return create((
-      { _source, mapper }) => {
+    return create(({ _source, mapper }) => {
       return mapper(_source)
     },
       combine({ _source, mapper }),
@@ -644,10 +708,15 @@ export function flatProvide<P>(
  * @returns 
  */
 export function provide<P>(
-  provider: Fn<P, never>,
+  provider: Fn<P, Scope>,
   option?: Option
 ): Executor<P> {
-  return create(provider, undefined, undefined, { source: option?.source || false, id: option?.id })
+  return create(
+    (_, scope) => provider(scope),
+    undefined,
+    undefined,
+    { source: option?.source || false, id: option?.id }
+  )
 }
 
 
@@ -752,94 +821,89 @@ export function createFamily<K, P>(
   return fn as Family<K, P>
 }
 
-export type { ObservableSet, ObservableGet }
+export { createOperator, operators, pipe, type Subscribable, observables } from './rx'
+
+export type PushObservableExecutor<Value> = Executor<PushObservable<Value>>
 
 /**
- * @example
- * const [getter, setter] = provideObservable(0);
- * // Use getter to subscribe to value changes
- * // Use setter to update the value
- */
-type ProvideObservableFn = <Value>(initialValue: Value | Executor<Value>, opts?: ObservableOpts<Value>) => [
-  Executor<ObservableGet<Value>>,
-  Executor<ObservableSet<Value>>
-]
-
-/**
- * Provide an observable
- * @param initialValue 
+ * Utility type to quickly wrap a value into a push observable. (equavilant to provide (() => pushObservable(value)))
+ * @param pValue 
  * @returns 
  */
-export const provideObservable: ProvideObservableFn = (initialValue, opts) => {
-  const normalizedValue = isExecutor(initialValue) ? initialValue : value(initialValue)
-
-  const observable = map({ scoper, normalizedValue }, ({ scoper, normalizedValue }) => {
-    const [read, write] = createObservable(normalizedValue, opts)
-
-    scoper.addDefer(() => read.cleanup())
-    return [read, write] as const
-  })
-
-  const observableGet = map(observable, ([read]) => read)
-  const observableSet = map(observable, ([, write]) => write)
-
-  return [observableGet, observableSet]
+export function providePushObservable<Value>(
+  pValue?: Value | Executor<Value>
+): PushObservableExecutor<Value> {
+  return pValue
+    ? map(normalize(pValue), (value) => {
+      return pushObservable(value)
+    })
+    : provide(() => {
+      return pushObservable()
+    })
 }
 
-export function transformObservable<Upstream, Value>(
-  upstream: Executor<ObservableGet<Upstream>>,
-  transform: (upstream: Upstream, prev: Value) => Value,
-  initialValue: Value,
-  options?: ObservableOpts<Value>
-): Executor<ObservableGet<Value>> {
+type OperatorLike<S, A> = Operator<S, A> | Executor<Operator<S, A>>
+
+/**
+ * Apply pipe to existing stream with support from all others submodule operators
+ * @param source 
+ */
+export function applyPipes<S, A>(source: Executor<Subscribable<S>>, op1: OperatorLike<S, A>): Executor<Subscribable<A>>;
+export function applyPipes<S, A, B>(source: Executor<Subscribable<S>>,
+  op1: OperatorLike<S, A>,
+  op2: OperatorLike<A, B>
+): Executor<Subscribable<B>>;
+export function applyPipes<S, A, B, C>(source: Executor<Subscribable<S>>,
+  op1: OperatorLike<S, A>,
+  op2: OperatorLike<A, B>,
+  op3: OperatorLike<B, C>
+): Executor<Subscribable<C>>;
+export function applyPipes<S, A, B, C, D>(source: Executor<Subscribable<S>>,
+  op1: OperatorLike<S, A>,
+  op2: OperatorLike<A, B>,
+  op3: OperatorLike<B, C>,
+  op4: OperatorLike<C, D>
+): Executor<Subscribable<D>>;
+export function applyPipes<S, A, B, C, D, E>(source: Executor<Subscribable<S>>,
+  op1: OperatorLike<S, A>,
+  op2: OperatorLike<A, B>,
+  op3: OperatorLike<B, C>,
+  op4: OperatorLike<C, D>,
+  op5: OperatorLike<D, E>
+): Executor<Subscribable<E>>;
+export function applyPipes<S, K>(
+  upstream: Executor<Subscribable<S>>,
+  ...ops: (Operator<unknown, unknown> | Executor<Operator<unknown, unknown>>)[]
+): Executor<Subscribable<K>>;
+
+export function applyPipes<Upstream>(
+  upstream: Executor<Subscribable<Upstream>>,
+  ...ops: (Operator<unknown, unknown> | Executor<Operator<unknown, unknown>>)[]
+): Executor<Subscribable<unknown>> {
+  if (ops.length === 0) {
+    return upstream
+  }
+
   return map(
-    { upstream, scoper },
-    ({ upstream, scoper }) => {
-      const observable = createTransformedObservable(upstream, transform, initialValue, options)
-      scoper.addDefer(observable.cleanup)
-      return observable
+    { upstream, ops: group(...ops.map(op => normalize(op))) },
+    ({ upstream, ops }) => {
+      return pipe(upstream, ...ops)
     }
   )
 }
 
-export function combineObservables<Upstreams extends Record<string, unknown>, Value>(
-  upstreams: { [K in keyof Upstreams]: Executor<ObservableGet<Upstreams[K]>> },
-  transform: (upstreams: Upstreams, prev: Value) => Value,
-  initialValue: Value,
-  options?: ObservableOpts<Value>
-): Executor<ObservableGet<Value>>
-
-export function combineObservables<Upstreams extends Record<string, unknown>>(
-  upstreams: { [K in keyof Upstreams]: Executor<ObservableGet<Upstreams[K]>> },
-  options?: ObservableOpts<Upstreams>
-): Executor<ObservableGet<Upstreams>>
-
 /**
- * Combine multiple observables into a single observable
+ * Utility to combine multiple streams altogther without breaking Submodule
  * @param upstreams 
  * @returns 
  */
-export function combineObservables<Upstreams extends Record<string, unknown>, Value>(
-  upstreams: { [K in keyof Upstreams]: Executor<ObservableGet<Upstreams[K]>> },
-  ptransform?: ObservableOpts<Value> | ((upstreams: Upstreams, prev?: Value) => Value),
-  initialValue?: Value,
-  poptions?: ObservableOpts<Value>
-): Executor<ObservableGet<Value>> | Executor<ObservableGet<Upstreams>> {
+export function combineObservables<Upstreams extends Record<string, unknown>>(
+  upstreams: { [K in keyof Upstreams]: Executor<Subscribable<Upstreams[K]>> | Executor<PushObservable<Upstreams[K]>> }
+): Executor<Subscribable<Upstreams>> {
   return map(
-    { upstreams: combine(upstreams), scoper },
-    ({ upstreams, scoper }) => {
-      const transform = typeof ptransform === 'function'
-        ? ptransform
-        : undefined
-      const options = typeof ptransform === 'function'
-        ? poptions
-        : ptransform
-
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-      const observable = createCombineObservables<Upstreams, Value>(upstreams, transform as any, initialValue as any, options)
-
-      scoper.addDefer(observable.cleanup)
-      return observable
+    combine(upstreams),
+    (upstreams) => {
+      return observables.combineLatest(upstreams)
     }
   )
 }

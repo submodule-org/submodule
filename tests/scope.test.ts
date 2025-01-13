@@ -92,9 +92,9 @@ describe('scope lifecycle', () => {
 		expect(scope.has(v)).toBe(false);
 
 		// defer happened on dispose
-		const def = map(scoper, scoper => {
-			scoper.addDefer(fn)
-			scoper.addOnResolves({
+		const def = provide(scope => {
+			scope.addDefer(fn)
+			scope.addOnResolves({
 				filter: () => true,
 				cb: fn
 			})
@@ -106,6 +106,23 @@ describe('scope lifecycle', () => {
 
 		await scope2.dispose();
 		expect(fn).toBeCalledTimes(2)
+	})
+
+	test('remove executor from scope will also trigger cleanup', async () => {
+		const fn = vi.fn()
+
+		const executor = provide(scope => {
+			scope.addDefer(fn)
+
+			return 1
+		})
+
+
+		const scope = createScope()
+		await scope.resolve(executor)
+
+		await scope.remove(executor)
+		expect(fn).toBeCalledTimes(1)
 	})
 
 })
@@ -120,16 +137,19 @@ describe('usage of preferred scope', () => {
 
 		intValue.perferredScope = scope1
 
+		const nonPreferedValue = map({ combinedValue }, ({ combinedValue }) => combinedValue)
+
 		const scope2 = createScope(scope1)
 
-		await scope2.resolve(intValue)
-		await scope2.resolve(combinedValue)
+		await scope2.resolve(nonPreferedValue)
 
 		expect(scope1.has(intValue, true)).toBe(true)
 		expect(scope1.has(combinedValue, true)).toBe(true)
 
 		expect(scope2.has(intValue, true)).toBe(false)
 		expect(scope2.has(combinedValue, true)).toBe(false)
+
+		expect(scope2.has(nonPreferedValue, true)).toBe(true)
 
 		await scope2.dispose()
 		expect(scope1.has(intValue)).toBe(true)
