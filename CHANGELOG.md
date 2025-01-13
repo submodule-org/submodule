@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [12.0.0](https://github.com/submodule-org/submodule/compare/v11.5.1...v12.0.0) (2025-01-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* removed observable, replaced by reactive concepts from reactivex
+* added Scope to the 2nd parameter of constructor, (1st in case of provide
+
+### Features
+
+* added Scope to the 2nd parameter of constructor, (1st in case of provide ([a2f9cbb](https://github.com/submodule-org/submodule/commit/a2f9cbb996440e97437095f6922b1a4ac3387b51))
+* applied rx to react ([a2f9cbb](https://github.com/submodule-org/submodule/commit/a2f9cbb996440e97437095f6922b1a4ac3387b51))
+* removed observable, replaced by reactive concepts from reactivex ([a2f9cbb](https://github.com/submodule-org/submodule/commit/a2f9cbb996440e97437095f6922b1a4ac3387b51))
+
+
+### Bug Fixes
+
+* corrected test run for cases of combining ([99ba1d9](https://github.com/submodule-org/submodule/commit/99ba1d999e1b0191adcc9cd46826967cbe6b63f7))
+
 ## [11.5.1](https://github.com/submodule-org/submodule/compare/v11.5.0...v11.5.1) (2025-01-07)
 
 
