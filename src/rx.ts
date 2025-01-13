@@ -525,44 +525,54 @@ export const observables = {
    * @param {object} sources - The sources to combine.
    * @returns {Subscribable<T>} The combined observable.
    */
-  combineLatest<T extends Record<string, unknown>>(sources: {
-    [K in keyof T]: Subscribable<T[K]> | PushObservable<T[K]>
-  }): Subscribable<T> {
-    const { observable, subscriber } = pushObservable<T>()
+  combineLatest<T extends Record<string, unknown>>(
+    sources: {
+      [K in keyof T]: Subscribable<T[K]> | PushObservable<T[K]>
+    }): Subscribable<T> {
 
-    const keys = Object.keys(sources) as (keyof T)[]
-    const values = Object.values(sources) as Array<Subscribable<unknown> | PushObservable<unknown>>
+    // only emit where every up streams have emitted
+    const keys = Object.keys(sources) as (keyof T)[];
+    const { observable, subscriber } = pushObservable<T>();
+    const values = {} as T;
 
-    const latest = new Array(keys.length)
-    const hasValue = new Array(keys.length).fill(false)
-    let completed = 0
+    // value can be Subscriable or PushObservable, distinguish them
+    const observables = keys.map(key => {
+      const source = sources[key] satisfies PushObservable<T[typeof key]> | Subscribable<T[typeof key]>;
+      return 'observable' in source ? source.observable : source;
+    });
 
-    const unsubs = values.map((src, i) => ('observable' in src ? src.observable : src).subscribe({
-      next: (val) => {
-        latest[i] = val
-        hasValue[i] = true
-        if (hasValue.every(Boolean)) {
-          subscriber.next(Object.fromEntries(keys.map((k, j) => [k, j])) as T)
-        }
-      },
-      error: (err) => subscriber.error(err),
-      complete: () => {
-        completed++
-        if (completed === keys.length) subscriber.complete()
-      },
-    }))
+    // subscribe all of them, make sure only emitting on all of them has value
+    // must use external flag to track, the emitting value can be null or undefined
+    const hasValue = Array(keys.length).fill(false);
+    const valuesArray = Array(keys.length).fill(undefined);
+
+    const unsubs = observables.map((obs, i) => {
+      return obs.subscribe({
+        next: (val) => {
+          valuesArray[i] = val;
+          hasValue[i] = true;
+          if (hasValue.every(v => v)) {
+            keys.forEach((key, j) => {
+              values[key] = valuesArray[j];
+            });
+            subscriber.next(values);
+          }
+        },
+        error: (err) => subscriber.error(err),
+        complete: () => subscriber.complete()
+      });
+    });
 
     return {
       ...observable,
       subscribe: (obs) => {
-        const unsub2 = observable.subscribe(obs)
+        const unsub = observable.subscribe(obs);
         return () => {
-          unsub2()
-          for (const unsub of unsubs) {
-            unsub()
-          }
-        }
+          unsub();
+          // biome-ignore lint/complexity/noForEach: <explanation>
+          unsubs.forEach(unsub => unsub());
+        };
       }
-    }
+    };
   }
 }

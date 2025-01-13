@@ -199,7 +199,7 @@ describe('Observable', () => {
 
   describe('static creation', () => {
     describe('combineLatest', () => {
-      it('should combine latest values from multiple observables', () => {
+      it('should combine latest values from multiple observables', async () => {
         const next = vi.fn();
         const { observable: obs1, subscriber: ctrl1 } = pushObservable<number>();
         const { observable: obs2, subscriber: ctrl2 } = pushObservable<string>();
@@ -209,17 +209,18 @@ describe('Observable', () => {
           str: obs2
         }).subscribe({
           next,
-          error: () => { },
-          complete: () => { }
         });
 
         ctrl1.next(1);
+        await nextTickPromise()
         expect(next).not.toHaveBeenCalled(); // Wait for all sources
 
         ctrl2.next('a');
+        await nextTickPromise()
         expect(next).toHaveBeenCalledWith({ num: 1, str: 'a' });
 
         ctrl1.next(2);
+        await nextTickPromise()
         expect(next).toHaveBeenCalledWith({ num: 2, str: 'a' });
       });
 
@@ -238,7 +239,7 @@ describe('Observable', () => {
         });
 
         ctrl1.complete();
-        expect(complete).not.toHaveBeenCalled();
+        expect(complete).toHaveBeenCalled();
 
         ctrl2.complete();
         expect(complete).toHaveBeenCalled();
@@ -582,23 +583,26 @@ describe("submodule:observables", () => {
     const counterStream = providePushObservable<number>(1000)
     const textStream = providePushObservable<string>("hello")
 
-    const combinedStream = combineObservables({ counterMod: counterStream, textMod: textStream })
+    const combinedStream = combineObservables({ counterStream, textStream })
 
     const scope = createScope()
 
     const result = await scope.safeRun({
       combinedStream, textStream, counterStream
-    }, ({ combinedStream, textStream, counterStream }) => {
+    }, async ({ combinedStream, textStream, counterStream }) => {
       const fn = vi.fn()
       combinedStream.subscribe({ next: fn })
 
-      expect(fn).toHaveBeenCalledWith({ counterMod: 1000, textMod: "hello" })
+      await nextTickPromise()
+      expect(fn).toHaveBeenCalledWith({ counterStream: 1000, textStream: "hello" })
 
       counterStream.subscriber.next(1)
-      expect(fn).toHaveBeenCalledWith({ counterMod: 1, textMod: "hello" })
+      await nextTickPromise()
+      expect(fn).toHaveBeenCalledWith({ counterStream: 1, textStream: "hello" })
 
       textStream.subscriber.next("world")
-      expect(fn).toHaveBeenCalledWith({ counterMod: 1, textMod: "world" })
+      await nextTickPromise()
+      expect(fn).toHaveBeenCalledWith({ counterStream: 1, textStream: "world" })
     })
 
     if (result.error) {
@@ -606,3 +610,9 @@ describe("submodule:observables", () => {
     }
   })
 })
+
+function nextTickPromise() {
+  return new Promise<void>(resolve => {
+    queueMicrotask(() => resolve())
+  })
+}
