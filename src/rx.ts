@@ -109,10 +109,14 @@ const noops: Unsubscribe = () => { }
  * @returns {PushObservable<T>} The created push-based observable.
  */
 export function pushObservable<T>(initialValue?: T): PushObservable<T> {
-  let subject: Subject<T> = {
+  let subject: Subject<T> = initialValue === undefined ? {
     kind: 'init',
     subscribers: new Set()
-  };
+  } : {
+    kind: 'active',
+    subscribers: new Set(),
+    lastValue: initialValue
+  }
 
   function handleNext(value: T) {
     if (subject.kind === 'error' || subject.kind === 'complete') return;
@@ -183,10 +187,6 @@ export function pushObservable<T>(initialValue?: T): PushObservable<T> {
             error: obs.error ?? noops,
             complete: obs.complete ?? noops
           });
-
-          if (initialValue !== undefined) {
-            obs.next?.(initialValue);
-          }
 
           break;
       }
