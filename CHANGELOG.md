@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [12.2.0](https://github.com/submodule-org/submodule/compare/v12.1.2...v12.2.0) (2025-01-14)
+
+
+### Features
+
+* improve tap operator DX ([6905a30](https://github.com/submodule-org/submodule/commit/6905a304802c600b8aee5787315b61dd3cfdd9a0))
+
 ## [12.1.2](https://github.com/submodule-org/submodule/compare/v12.1.1...v12.1.2) (2025-01-14)
 
 
