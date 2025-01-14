@@ -341,25 +341,56 @@ export const operators = {
     };
   },
   /**
-   * Performs a side effect for each value emitted by the source observable.
+   * Performs side effects for each value emitted by the source observable.
    * @template T The type of the input value.
-   * @param {function(T): void} sideEffect - The side effect function to apply to each value.
-   * @returns {Operator<T, T>} The operator that performs the side effect.
+   * @param {object} handlers - The side effect handlers.
+   * @param {function(T): void} [handlers.onNext] - The side effect function to apply to each value.
+   * @param {function(unknown): void} [handlers.onError] - The side effect function to apply on error.
+   * @param {function(): void} [handlers.onComplete] - The side effect function to apply on completion.
+   * @returns {Operator<T, T>} The operator that performs the side effects.
    */
-  tap<T>(sideEffect: (value: T) => void): Operator<T, T> {
+  tap<T>({
+    onNext,
+    onError,
+    onComplete,
+  }: {
+    onNext?: (value: T) => void;
+    onError?: (error: unknown) => void;
+    onComplete?: () => void;
+  }): Operator<T, T> {
     return (source) => {
       const [observable, subscriber] = pushObservable<T>();
       const unsub = source.subscribe({
         next: (val) => {
           try {
-            sideEffect(val);
+            onNext?.(val);
             subscriber.next(val);
           } catch (err) {
             subscriber.error(err);
           }
         },
-        error: (err) => subscriber.error(err),
-        complete: () => subscriber.complete()
+        error: (err) => {
+          if (onError) {
+            try {
+              onError(err);
+            } catch (e) {
+              subscriber.error(e);
+              return;
+            }
+          }
+          subscriber.error(err);
+        },
+        complete: () => {
+          if (onComplete) {
+            try {
+              onComplete();
+            } catch (err) {
+              subscriber.error(err);
+              return;
+            }
+          }
+          subscriber.complete();
+        }
       });
       return {
         ...observable,

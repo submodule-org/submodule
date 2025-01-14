@@ -466,7 +466,7 @@ describe('Observable', () => {
       const [source, subscriber] = pushObservable<number>();
 
       source.pipe(
-        operators.tap(sideEffect)
+        operators.tap({ onNext: sideEffect })
       ).subscribe({ next });
 
       subscriber.next(1);
@@ -485,7 +485,7 @@ describe('Observable', () => {
       const [source, subscriber] = pushObservable<number>();
 
       source.pipe(
-        operators.tap(() => { throw new Error('test'); })
+        operators.tap({ onNext: () => { throw new Error('test'); } })
       ).subscribe({ next: () => { }, error });
 
       subscriber.next(1);
@@ -498,14 +498,41 @@ describe('Observable', () => {
       const [source, subscriber] = pushObservable<number>();
 
       source.pipe(
-        operators.tap(sideEffect)
+        operators.tap({ onNext: sideEffect })
       ).subscribe({ next: () => { }, error: () => { }, complete });
 
       subscriber.complete();
       expect(complete).toHaveBeenCalled();
     });
-  });
 
+    it('should handle onError side effect', () => {
+      const error = vi.fn();
+      const sideEffect = vi.fn();
+      const [source, subscriber] = pushObservable<number>();
+
+      source.pipe(
+        operators.tap({ onError: sideEffect })
+      ).subscribe({ error });
+
+      subscriber.error('test error');
+      expect(sideEffect).toHaveBeenCalledWith('test error');
+      expect(error).toHaveBeenCalledWith('test error');
+    });
+
+    it('should handle onComplete side effect', () => {
+      const complete = vi.fn();
+      const sideEffect = vi.fn();
+      const [source, subscriber] = pushObservable<number>();
+
+      source.pipe(
+        operators.tap({ onComplete: sideEffect })
+      ).subscribe({ next: undefined, error: undefined, complete });
+
+      subscriber.complete();
+      expect(sideEffect).toHaveBeenCalled();
+      expect(complete).toHaveBeenCalled();
+    });
+  });
 
   describe('operator:reduce', () => {
     it('should accumulate values and emit after completion', () => {
