@@ -10,7 +10,7 @@ import {
 import {
 	ScopeProvider,
 	useObservable,
-	usePushObservable,
+	useControllableObservable,
 	useResolve,
 } from "../../src/react";
 import type { PropsWithChildren } from "react";
@@ -60,7 +60,8 @@ describe("test observable", () => {
 	test("manual observable should just work", async () => {
 		const { result } = renderHook(
 			() => {
-				const [counter, setCounter] = usePushObservable(observableCount);
+				const [counter, setCounter] =
+					useControllableObservable(observableCount);
 
 				return { counter, setCounter };
 			},
@@ -89,8 +90,9 @@ describe("test observable", () => {
 	test("useObservable with a little bit more complicated usecase", async () => {
 		const { result } = renderHook(
 			() => {
-				const [selectedId, setSelectedId] = usePushObservable(selectedIdStream);
-				const [list, setList] = usePushObservable(listStream);
+				const [selectedId, setSelectedId] =
+					useControllableObservable(selectedIdStream);
+				const [list, setList] = useControllableObservable(listStream);
 				const selected = useObservable(selectedItem);
 
 				return {
@@ -173,7 +175,8 @@ describe("test useOperator with useObservable and useObservableValue", () => {
 		const { result } = renderHook(
 			() => {
 				const [factor, setFactor] = useState(1);
-				const [counter, setCounter] = usePushObservable(observableCount);
+				const [counter, setCounter] =
+					useControllableObservable(observableCount);
 				const doubledCounter = useObservable(observableCount, operator);
 
 				return { counter, setCounter, doubledCounter, factor, setFactor };
@@ -217,7 +220,8 @@ describe("test useOperator with useObservable and useObservableValue", () => {
 					[],
 				);
 
-				const [counter, setCounter] = usePushObservable(observableCount);
+				const [counter, setCounter] =
+					useControllableObservable(observableCount);
 				const doubledCounter = useObservable(
 					observableCount,
 					operator,

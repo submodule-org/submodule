@@ -821,7 +821,7 @@ export function createFamily<K, P>(
   return fn as Family<K, P>
 }
 
-export { createOperator, operators, pipe, type Subscribable, observables } from './rx'
+export { createOperator, operators, pipe, type Subscribable, type ControllableObservable, observables } from './rx'
 
 export type PushObservableExecutor<Value> = Executor<PushObservable<Value>>
 

@@ -7,8 +7,8 @@ import {
 	type Executor,
 	type Scope,
 	type Subscribable,
+	type ControllableObservable,
 	observables,
-	type OperatorLike,
 	pipe,
 } from "../";
 
@@ -199,10 +199,12 @@ const NOT_EMITTED = {
 /**
  * @param pobservable - The push observable executor to use.
  * @returns A tuple containing the emission and a subscriber for the push observable.
+ * - left is the emission of the observable.
+ * - right is the controller (or subscriber)
  */
-export function usePushObservable<P>(
-	pobservable: PushObservableExecutor<P>,
-): [Emission<P> & Result<P>, Subscriber<P>] {
+export function useControllableObservable<P, V>(
+	pobservable: Executor<ControllableObservable<P, V>>,
+): [Emission<P> & Result<P>, V] {
 	const [observable, subscriber] = useResolve(pobservable);
 
 	return [useObservableValue(observable), subscriber];

@@ -69,11 +69,14 @@ export type Subscriber<T> = {
   complete: () => void
 }
 
+/** Utility type to force tuple Subscriber and controller */
+export type ControllableObservable<T, V> = [Subscribable<T>, V]
+
 /**
  * Represents a push-based observable with a subscriber.
  * @template T The type of the value emitted by the observable.
  */
-export type PushObservable<T> = [Subscribable<T>, Subscriber<T>];
+export type PushObservable<T> = ControllableObservable<T, Subscriber<T>>
 
 type SubjectInit<T> = {
   kind: 'init'
