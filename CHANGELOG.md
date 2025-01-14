@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [12.1.0](https://github.com/submodule-org/submodule/compare/v12.0.1...v12.1.0) (2025-01-14)
+
+
+### Features
+
+* renamed usePushObservable to useControllableObservable, added ControllableObservable type ([e1442a5](https://github.com/submodule-org/submodule/commit/e1442a575a2aee9d72eb910ce18edc75322a94b4))
+
+
+### Bug Fixes
+
+* cleanup package.json dependency list ([2845131](https://github.com/submodule-org/submodule/commit/28451312dab667e23cf5436cfb756031c558c386))
+
 ## [12.0.1](https://github.com/submodule-org/submodule/compare/v12.0.0...v12.0.1) (2025-01-14)
 
 
