@@ -70,7 +70,7 @@ export type Subscriber<T> = {
 }
 
 /** Utility type to force tuple Subscriber and controller */
-export type ControllableObservable<T, V> = [Subscribable<T>, V]
+export type ControllableObservable<T, V> = readonly [Subscribable<T>, V]
 
 /**
  * Represents a push-based observable with a subscriber.
@@ -530,7 +530,8 @@ export const observables = {
    */
   combineLatest<T extends Record<string, unknown>>(
     sources: {
-      [K in keyof T]: Subscribable<T[K]> | PushObservable<T[K]>
+      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      [K in keyof T]: Subscribable<T[K]> | ControllableObservable<T[K], any>
     }): Subscribable<T> {
 
     // only emit where every up streams have emitted
