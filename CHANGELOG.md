@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [12.0.1](https://github.com/submodule-org/submodule/compare/v12.0.0...v12.0.1) (2025-01-14)
+
+
+### Bug Fixes
+
+* react components to render infinitely ([0e3c47c](https://github.com/submodule-org/submodule/commit/0e3c47c29d03497cf2d670799aa3c8737d4c691f))
+
 ## [12.0.0](https://github.com/submodule-org/submodule/compare/v11.5.1...v12.0.0) (2025-01-13)
 
 
