@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [12.1.1](https://github.com/submodule-org/submodule/compare/v12.1.0...v12.1.1) (2025-01-14)
+
+
+### Bug Fixes
+
+* ControllableObservable to be readonly ([52af2ae](https://github.com/submodule-org/submodule/commit/52af2ae3d9f25317b17930e0ced85f8094982b52))
+
 ## [12.1.0](https://github.com/submodule-org/submodule/compare/v12.0.1...v12.1.0) (2025-01-14)
 
 
