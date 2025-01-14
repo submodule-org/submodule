@@ -660,7 +660,7 @@ export function produce<P, D>(
  */
 export function map<P, D>(
   source: EODE<P>,
-  mapper: Fn<D, P> | Executor<Fn<D, P>>,
+  mapper: Provider<D, P> | Executor<Fn<D, P>>,
   pOption?: Option
 ): Executor<D> {
   const id = `${pOption?.id ? pOption.id : ''}-map`
@@ -685,7 +685,7 @@ export function map<P, D>(
  */
 export function flatMap<P, D>(
   provider: Executor<P>,
-  mapper: Fn<Executor<D>, P>,
+  mapper: Provider<Executor<D>, P>,
   option?: Option
 ): Executor<D> {
   return flat(map(provider, mapper, option))
@@ -842,7 +842,7 @@ export function providePushObservable<Value>(
     })
 }
 
-type OperatorLike<S, A> = Operator<S, A> | Executor<Operator<S, A>>
+export type OperatorLike<S, A> = Operator<S, A> | Executor<Operator<S, A>>
 
 /**
  * Apply pipe to existing stream with support from all others submodule operators

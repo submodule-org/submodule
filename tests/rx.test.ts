@@ -6,7 +6,7 @@ describe('Observable', () => {
   describe('basic subscription', () => {
     it('should emit multiple values', () => {
       const next = vi.fn()
-      const { observable, subscriber } = pushObservable<number>()
+      const [observable, subscriber] = pushObservable<number>()
 
       observable.subscribe({ next, error: () => { }, complete: () => { } })
 
@@ -24,7 +24,7 @@ describe('Observable', () => {
       const next = vi.fn()
       const complete = vi.fn()
 
-      const { observable, subscriber } = pushObservable<number>()
+      const [observable, subscriber] = pushObservable<number>()
 
       observable.subscribe({ next, error: () => { }, complete })
 
@@ -41,7 +41,7 @@ describe('Observable', () => {
 
     it('should support partial observer', () => {
       const next = vi.fn();
-      const { observable, subscriber } = pushObservable<number>();
+      const [observable, subscriber] = pushObservable<number>();
 
       observable.subscribe({ next });
 
@@ -61,7 +61,7 @@ describe('Observable', () => {
       const error = vi.fn()
       const testError = new Error('test error')
 
-      const { observable, subscriber } = pushObservable<number>()
+      const [observable, subscriber] = pushObservable<number>()
 
       observable.subscribe({ next, error, complete: () => { } })
 
@@ -78,7 +78,7 @@ describe('Observable', () => {
       const error = vi.fn()
       const testError = new Error('test error')
 
-      const { observable, subscriber } = pushObservable<number>()
+      const [observable, subscriber] = pushObservable<number>()
       observable.subscribe({ error })
 
       subscriber.error(testError)
@@ -91,7 +91,7 @@ describe('Observable', () => {
   describe('pipe operations', () => {
     it('should transform values through pipe', () => {
       const next = vi.fn()
-      const { observable, subscriber } = pushObservable<number>()
+      const [observable, subscriber] = pushObservable<number>()
 
       pipe(observable,
         operators.map(x => x * 2),
@@ -111,7 +111,7 @@ describe('Observable', () => {
 
     it('should support method chaining with pipe', () => {
       const next = vi.fn()
-      const { observable, subscriber } = pushObservable<number>()
+      const [observable, subscriber] = pushObservable<number>()
 
       observable.pipe(
         operators.map(x => x * 2),
@@ -135,7 +135,7 @@ describe('Observable', () => {
       const next = vi.fn()
       const complete = vi.fn()
 
-      const { observable, subscriber } = pushObservable<number>()
+      const [observable, subscriber] = pushObservable<number>()
 
       observable.subscribe({ next, error: () => { }, complete })
 
@@ -201,8 +201,8 @@ describe('Observable', () => {
     describe('combineLatest', () => {
       it('should combine latest values from multiple observables', async () => {
         const next = vi.fn();
-        const { observable: obs1, subscriber: ctrl1 } = pushObservable<number>();
-        const { observable: obs2, subscriber: ctrl2 } = pushObservable<string>();
+        const [obs1, ctrl1] = pushObservable<number>();
+        const [obs2, ctrl2] = pushObservable<string>();
 
         observables.combineLatest({
           num: obs1,
@@ -226,8 +226,8 @@ describe('Observable', () => {
 
       it('should complete when all sources complete', () => {
         const complete = vi.fn();
-        const { observable: obs1, subscriber: ctrl1 } = pushObservable<number>();
-        const { observable: obs2, subscriber: ctrl2 } = pushObservable<string>();
+        const [obs1, ctrl1] = pushObservable<number>();
+        const [obs2, ctrl2] = pushObservable<string>();
 
         observables.combineLatest({
           num: obs1,
@@ -251,7 +251,7 @@ describe('Observable', () => {
   describe('operator:map', () => {
     it('should transform values', () => {
       const next = vi.fn();
-      const { observable: source, subscriber } = pushObservable<number>();
+      const [source, subscriber] = pushObservable<number>();
 
       source.pipe(
         operators.map(x => x * 2)
@@ -269,7 +269,7 @@ describe('Observable', () => {
 
     it('should handle errors', () => {
       const error = vi.fn();
-      const { observable: source, subscriber } = pushObservable<number>();
+      const [source, subscriber] = pushObservable<number>();
 
       source.pipe(
         operators.map(() => { throw new Error('test'); })
@@ -281,7 +281,7 @@ describe('Observable', () => {
 
     it('should complete when source completes', () => {
       const complete = vi.fn();
-      const { observable: source, subscriber } = pushObservable<number>();
+      const [source, subscriber] = pushObservable<number>();
 
       source.pipe(
         operators.map(x => x * 2)
@@ -295,7 +295,7 @@ describe('Observable', () => {
   describe('operator:latest', () => {
     it('should emit last value only on completion', () => {
       const next = vi.fn();
-      const { observable: source, subscriber } = pushObservable<number>();
+      const [source, subscriber] = pushObservable<number>();
 
       source.pipe(
         operators.latest()
@@ -314,7 +314,7 @@ describe('Observable', () => {
 
     it('should not emit if no values received', () => {
       const next = vi.fn();
-      const { observable: source, subscriber } = pushObservable<number>();
+      const [source, subscriber] = pushObservable<number>();
 
       source.pipe(
         operators.latest()
@@ -327,7 +327,7 @@ describe('Observable', () => {
     it('should handle errors', () => {
       const next = vi.fn();
       const error = vi.fn();
-      const { observable: source, subscriber } = pushObservable<number>();
+      const [source, subscriber] = pushObservable<number>();
 
       source.pipe(
         operators.latest()
@@ -344,7 +344,7 @@ describe('Observable', () => {
   describe('operator:filter', () => {
     it('should filter values based on predicate', () => {
       const next = vi.fn();
-      const { observable: source, subscriber } = pushObservable<number>();
+      const [source, subscriber] = pushObservable<number>();
 
       source.pipe(
         operators.filter(x => x % 2 === 0)
@@ -362,7 +362,7 @@ describe('Observable', () => {
 
     it('should handle errors in predicate', () => {
       const error = vi.fn();
-      const { observable: source, subscriber } = pushObservable<number>();
+      const [source, subscriber] = pushObservable<number>();
 
       source.pipe(
         operators.filter(() => { throw new Error('test'); })
@@ -374,7 +374,7 @@ describe('Observable', () => {
 
     it('should complete when source completes', () => {
       const complete = vi.fn();
-      const { observable: source, subscriber } = pushObservable<number>();
+      const [source, subscriber] = pushObservable<number>();
 
       source.pipe(
         operators.filter(x => x % 2 === 0)
@@ -388,7 +388,7 @@ describe('Observable', () => {
   describe('operator:distinctUntilChanged', () => {
     it('should emit first value always', () => {
       const next = vi.fn();
-      const { observable: source, subscriber } = pushObservable<number>();
+      const [source, subscriber] = pushObservable<number>();
 
       source.pipe(
         operators.emitOnChange()
@@ -400,7 +400,7 @@ describe('Observable', () => {
 
     it('should not emit same value twice', () => {
       const next = vi.fn();
-      const { observable: source, subscriber } = pushObservable<number>();
+      const [source, subscriber] = pushObservable<number>();
 
       source.pipe(
         operators.emitOnChange()
@@ -414,7 +414,7 @@ describe('Observable', () => {
 
     it('should support custom compare function', () => {
       const next = vi.fn();
-      const { observable: source, subscriber } = pushObservable<{ id: number }>();
+      const [source, subscriber] = pushObservable<{ id: number }>();
 
       source.pipe(
         operators.emitOnChange({
@@ -431,7 +431,7 @@ describe('Observable', () => {
     it('should support custom clone function', () => {
       const next = vi.fn();
       const clone = vi.fn(x => ({ ...x }));
-      const { observable: source, subscriber } = pushObservable<{ id: number }>();
+      const [source, subscriber] = pushObservable<{ id: number }>();
 
       source.pipe(
         operators.emitOnChange({
@@ -445,7 +445,7 @@ describe('Observable', () => {
 
     it('should handle errors in compare function', () => {
       const error = vi.fn();
-      const { observable: source, subscriber } = pushObservable<number>();
+      const [source, subscriber] = pushObservable<number>();
 
       source.pipe(
         operators.emitOnChange({
@@ -463,7 +463,7 @@ describe('Observable', () => {
     it('should perform side effects without modifying values', () => {
       const next = vi.fn();
       const sideEffect = vi.fn();
-      const { observable: source, subscriber } = pushObservable<number>();
+      const [source, subscriber] = pushObservable<number>();
 
       source.pipe(
         operators.tap(sideEffect)
@@ -482,7 +482,7 @@ describe('Observable', () => {
 
     it('should handle errors in side effect', () => {
       const error = vi.fn();
-      const { observable: source, subscriber } = pushObservable<number>();
+      const [source, subscriber] = pushObservable<number>();
 
       source.pipe(
         operators.tap(() => { throw new Error('test'); })
@@ -495,7 +495,7 @@ describe('Observable', () => {
     it('should not affect completion', () => {
       const complete = vi.fn();
       const sideEffect = vi.fn();
-      const { observable: source, subscriber } = pushObservable<number>();
+      const [source, subscriber] = pushObservable<number>();
 
       source.pipe(
         operators.tap(sideEffect)
@@ -511,7 +511,7 @@ describe('Observable', () => {
     it('should accumulate values and emit after completion', () => {
       const next = vi.fn();
       const complete = vi.fn();
-      const { observable: source, subscriber } = pushObservable<number>();
+      const [source, subscriber] = pushObservable<number>();
 
       source.pipe(
         operators.reduce((acc, val) => acc + val, 0)
@@ -528,7 +528,7 @@ describe('Observable', () => {
 
     it('should handle errors in accumulator', () => {
       const error = vi.fn();
-      const { observable: source, subscriber } = pushObservable<number>();
+      const [source, subscriber] = pushObservable<number>();
 
       source.pipe(
         operators.reduce(() => { throw new Error('test'); }, 0)
@@ -542,7 +542,7 @@ describe('Observable', () => {
   describe('pushObservable', () => {
     it('should emit initial value and subsequent values', () => {
       const next = vi.fn();
-      const { observable, subscriber } = pushObservable<number>(99);
+      const [observable, subscriber] = pushObservable<number>(99);
 
       observable.subscribe({ next });
       expect(next).toHaveBeenCalledWith(99);
@@ -553,7 +553,7 @@ describe('Observable', () => {
 
     it('should emit null value', () => {
       const next = vi.fn();
-      const { observable, subscriber } = pushObservable<null>(null);
+      const [observable, subscriber] = pushObservable<null>(null);
 
       observable.subscribe({ next });
       expect(next).toHaveBeenCalledWith(null);
@@ -573,8 +573,8 @@ describe("submodule:observables", () => {
 
     const counter = await scope.resolve(counterMod)
 
-    counter.observable.subscribe({ next })
-    counter.subscriber.next(1)
+    counter[0].subscribe({ next })
+    counter[1].next(1)
 
     expect(next).toHaveBeenCalledWith(1)
   })
@@ -596,11 +596,11 @@ describe("submodule:observables", () => {
       await nextTickPromise()
       expect(fn).toHaveBeenCalledWith({ counterStream: 1000, textStream: "hello" })
 
-      counterStream.subscriber.next(1)
+      counterStream[1].next(1)
       await nextTickPromise()
       expect(fn).toHaveBeenCalledWith({ counterStream: 1, textStream: "hello" })
 
-      textStream.subscriber.next("world")
+      textStream[1].next("world")
       await nextTickPromise()
       expect(fn).toHaveBeenCalledWith({ counterStream: 1, textStream: "world" })
     })

@@ -73,7 +73,7 @@ export type Subscriber<T> = {
  * Represents a push-based observable with a subscriber.
  * @template T The type of the value emitted by the observable.
  */
-export type PushObservable<T> = { observable: Subscribable<T>, subscriber: Subscriber<T> }
+export type PushObservable<T> = [Subscribable<T>, Subscriber<T>];
 
 type SubjectInit<T> = {
   kind: 'init'
@@ -200,7 +200,7 @@ export function pushObservable<T>(initialValue?: T): PushObservable<T> {
     }) as any
   }
 
-  return { observable, subscriber };
+  return [observable, subscriber];
 }
 
 /**
@@ -281,7 +281,7 @@ export const operators = {
    */
   map<T, R>(fn: (value: T) => R): Operator<T, R> {
     return (source) => {
-      const { observable, subscriber } = pushObservable<R>();
+      const [observable, subscriber] = pushObservable<R>();
       const unsub = source.subscribe({
         next: (val) => {
           try {
@@ -313,7 +313,7 @@ export const operators = {
    */
   filter<T>(predicate: (value: T) => boolean): Operator<T, T> {
     return (source) => {
-      const { observable, subscriber } = pushObservable<T>();
+      const [observable, subscriber] = pushObservable<T>();
       const unsub = source.subscribe({
         next: (val) => {
           try {
@@ -345,7 +345,7 @@ export const operators = {
    */
   tap<T>(sideEffect: (value: T) => void): Operator<T, T> {
     return (source) => {
-      const { observable, subscriber } = pushObservable<T>();
+      const [observable, subscriber] = pushObservable<T>();
       const unsub = source.subscribe({
         next: (val) => {
           try {
@@ -377,7 +377,7 @@ export const operators = {
    */
   latest<T>(): Operator<T, T> {
     return (source) => {
-      const { observable, subscriber } = pushObservable<T>();
+      const [observable, subscriber] = pushObservable<T>();
       let lastValue: T | undefined;
       let hasValue = false;
       const unsub = source.subscribe({
@@ -420,7 +420,7 @@ export const operators = {
     const clone = options?.clone ?? structuredClone;
 
     return (source) => {
-      const { observable, subscriber } = pushObservable<T>();
+      const [observable, subscriber] = pushObservable<T>();
       let last: T | undefined;
       let hasValue = false;
       const unsub = source.subscribe({
@@ -462,7 +462,7 @@ export const operators = {
    */
   reduce<T, R>(accumulator: (acc: R, value: T) => R, seed: R): Operator<T, R> {
     return (source) => {
-      const { observable, subscriber } = pushObservable<R>();
+      const [observable, subscriber] = pushObservable<R>();
       let accumulated = seed;
       const unsub = source.subscribe({
         next: (val) => {
@@ -532,13 +532,13 @@ export const observables = {
 
     // only emit where every up streams have emitted
     const keys = Object.keys(sources) as (keyof T)[];
-    const { observable, subscriber } = pushObservable<T>();
+    const [observable, subscriber] = pushObservable<T>();
     const values = {} as T;
 
     // value can be Subscriable or PushObservable, distinguish them
     const observables = keys.map(key => {
       const source = sources[key] satisfies PushObservable<T[typeof key]> | Subscribable<T[typeof key]>;
-      return 'observable' in source ? source.observable : source;
+      return Array.isArray(source) ? source[0] : source;
     });
 
     // subscribe all of them, make sure only emitting on all of them has value
@@ -574,5 +574,9 @@ export const observables = {
         };
       }
     };
+  },
+  /** determine if it's subscriber or pushObservable */
+  isPushObservable<T>(source: Subscribable<T> | PushObservable<T>): source is PushObservable<T> {
+    return Array.isArray(source);
   }
 }

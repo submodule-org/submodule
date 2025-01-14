@@ -7,6 +7,9 @@ import {
 	type Executor,
 	type Scope,
 	type Subscribable,
+	observables,
+	type OperatorLike,
+	pipe,
 } from "../";
 
 import React, {
@@ -21,7 +24,12 @@ import React, {
 	useState,
 	useSyncExternalStore,
 } from "react";
-import type { Subscriber, OperatorFactory } from "../rx";
+import type {
+	Subscriber,
+	OperatorFactory,
+	PushObservable,
+	Operator,
+} from "../rx";
 
 const scopeContext = createContext<Scope | undefined>(undefined);
 const resetContext = createContext<() => void>(() => {});
@@ -70,6 +78,11 @@ function BaseScopeProvider({
 
 const next = () => Math.random();
 
+/**
+ * Provide the scope for the component tree. This is the root of the scope tree.
+ * @param Scope can take a list of scope to be used in the tree.
+ * @returns
+ */
 export function ScopeProvider({
 	children,
 	scopes,
@@ -96,6 +109,11 @@ export function ScopeProvider({
 	);
 }
 
+/**
+ * Get the closest scope from the current component. Throw error if the use is not within a ScopeProvider.
+ *
+ * @returns The current scope.
+ */
 export function useScope(): Scope {
 	const scope = useContext(scopeContext);
 
@@ -106,6 +124,10 @@ export function useScope(): Scope {
 	return scope;
 }
 
+/**
+ * @experimental - don't use this yet
+ * @returns
+ */
 export function useResetScope() {
 	return useContext(resetContext);
 }
@@ -119,6 +141,7 @@ type CacheEntry = [unknown, Cache];
 
 /**
  * Core functionality of submodule. Resolves an executor within the current scope.
+ * useResolve must be used within a Suspense boundary.
  *
  * @param executor - The executor to resolve within the current scope.
  * @returns The resolved value of the executor.
@@ -173,22 +196,58 @@ const NOT_EMITTED = {
 	hasValue: false,
 } satisfies Emission<unknown> & Result<unknown>;
 
+/**
+ * @param pobservable - The push observable executor to use.
+ * @returns A tuple containing the emission and a subscriber for the push observable.
+ */
 export function usePushObservable<P>(
 	pobservable: PushObservableExecutor<P>,
 ): [Emission<P> & Result<P>, Subscriber<P>] {
-	const { observable, subscriber } = useResolve(pobservable);
+	const [observable, subscriber] = useResolve(pobservable);
 
 	return [useObservableValue(observable), subscriber];
 }
 
 export function useObservableValue<P>(
-	subcribable: Subscribable<P>,
-): Emission<P> & Result<P> {
-	const valueRef = useRef<Emission<P> & Result<P>>(NOT_EMITTED);
+	subcribable: Subscribable<P> | PushObservable<P>,
+): Emission<P> & Result<P>;
 
+export function useObservableValue<P, A>(
+	subcribable: Subscribable<P> | PushObservable<P>,
+	op1: Operator<P, A>,
+): Emission<A> & Result<A>;
+
+export function useObservableValue<P, A, B>(
+	subcribable: Subscribable<P> | PushObservable<P>,
+	op1: Operator<P, A>,
+	op2: Operator<A, B>,
+): Emission<B> & Result<B>;
+
+export function useObservableValue<P>(
+	subcribable: Subscribable<P> | PushObservable<P>,
+	...ops: Operator<unknown, unknown>[]
+): Emission<unknown> & Result<unknown>;
+
+/**
+ * @param subcribable - The subscribable to use.
+ * @returns The emission and result of the subscribable. The return value can be discriminated by the kind property or hasValue/hasError properties.
+ */
+export function useObservableValue<P>(
+	subcribable: Subscribable<P> | PushObservable<P>,
+	...ops: Operator<unknown, unknown>[]
+): Emission<unknown> & Result<unknown> {
+	const valueRef = useRef<Emission<unknown> & Result<unknown>>(NOT_EMITTED);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	const subs = useCallback(
 		(cb: () => void) => {
-			const unsubscribe = subcribable.subscribe({
+			const observable = observables.isPushObservable(subcribable)
+				? subcribable[0]
+				: subcribable;
+
+			const piped = pipe(observable, ...ops);
+
+			const unsubscribe = piped.subscribe({
 				next: (value) => {
 					valueRef.current = {
 						kind: "value",
@@ -214,7 +273,7 @@ export function useObservableValue<P>(
 				unsubscribe();
 			};
 		},
-		[subcribable],
+		[subcribable, ...ops],
 	);
 
 	const subbed = useSyncExternalStore(
@@ -226,11 +285,60 @@ export function useObservableValue<P>(
 	return subbed;
 }
 
-export function useObservable<P>(
-	pexecutor: Executor<Subscribable<P>>,
-): Emission<P> {
-	const observable = useResolve(pexecutor);
-	return useObservableValue(observable);
+/**
+ * Use observable in combination with operators.
+ * @param source - The source of the observable.
+ */
+export function useObservable<S>(
+	source: Executor<Subscribable<S> | PushObservable<S>>,
+): Emission<S> & Result<S>;
+
+export function useObservable<S, A>(
+	source: Executor<Subscribable<S> | PushObservable<S>>,
+	op1: Operator<S, A>,
+): Emission<A> & Result<A>;
+
+export function useObservable<S, A, B>(
+	source: Executor<Subscribable<S> | PushObservable<S>>,
+	op1: Operator<S, A>,
+	op2: Operator<A, B>,
+): Emission<B> & Result<B>;
+
+export function useObservable<S, A, B, C>(
+	source: Executor<Subscribable<S> | PushObservable<S>>,
+	op1: Operator<S, A>,
+	op2: Operator<A, B>,
+	op3: Operator<B, C>,
+): Emission<C> & Result<C>;
+
+export function useObservable<S, A, B, C, D>(
+	source: Executor<Subscribable<S> | PushObservable<S>>,
+	op1: Operator<S, A>,
+	op2: Operator<A, B>,
+	op3: Operator<B, C>,
+	op4: Operator<C, D>,
+): Emission<D> & Result<D>;
+
+export function useObservable<S, A, B, C, D, E>(
+	source: Executor<Subscribable<S> | PushObservable<S>>,
+	op1: Operator<S, A>,
+	op2: Operator<A, B>,
+	op3: Operator<B, C>,
+	op4: Operator<C, D>,
+	op5: Operator<D, E>,
+): Emission<E> & Result<E>;
+
+export function useObservable<S>(
+	source: Executor<Subscribable<S>>,
+	...ops: Operator<S, unknown>[]
+): Emission<unknown> & Result<unknown>;
+
+export function useObservable<S>(
+	source: Executor<Subscribable<S> | PushObservable<S>>,
+	...ops: Operator<S, unknown>[]
+): Emission<unknown> & Result<unknown> {
+	const observable = useResolve(source);
+	return useObservableValue(observable, ...ops);
 }
 
 export function useOperator<P, V, Params extends Array<unknown>>(

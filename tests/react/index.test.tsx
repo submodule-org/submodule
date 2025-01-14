@@ -2,6 +2,7 @@ import { renderHook, configure, waitFor, act } from "@testing-library/react";
 import {
 	applyPipes,
 	combineObservables,
+	observables,
 	operators,
 	providePushObservable,
 	value,
@@ -13,7 +14,7 @@ import {
 	useResolve,
 } from "../../src/react";
 import type { PropsWithChildren } from "react";
-import React, { Suspense, useState } from "react";
+import React, { Suspense, useMemo, useState } from "react";
 import "@testing-library/jest-dom";
 
 configure({ reactStrictMode: true });
@@ -44,13 +45,6 @@ const wrapper = ({ children }: PropsWithChildren) => (
 		<Suspense>{children}</Suspense>
 	</ScopeProvider>
 );
-
-function useConstFn<I extends Array<unknown>, O>(
-	value: (...params: I) => O,
-): (...params: I) => O {
-	const [v] = useState(() => value);
-	return v;
-}
 
 describe("test useResolve", () => {
 	test("useResolve should be able to resolve value", async () => {
@@ -168,6 +162,91 @@ describe("test observable", () => {
 			expect(result.current.selected).toMatchObject({
 				kind: "value",
 				value: null,
+			});
+		});
+	});
+});
+
+describe("test useOperator with useObservable and useObservableValue", () => {
+	test("useOperator with useObservable should work", async () => {
+		const operator = operators.map((value: number) => value * 2);
+		const { result } = renderHook(
+			() => {
+				const [factor, setFactor] = useState(1);
+				const [counter, setCounter] = usePushObservable(observableCount);
+				const doubledCounter = useObservable(observableCount, operator);
+
+				return { counter, setCounter, doubledCounter, factor, setFactor };
+			},
+			{
+				wrapper,
+			},
+		);
+
+		await waitFor(() => {
+			expect(result.current.counter).toMatchObject({ kind: "not-emitted" });
+			expect(result.current.doubledCounter).toMatchObject({
+				kind: "not-emitted",
+			});
+		});
+
+		act(() => {
+			result.current.setCounter.next(5);
+		});
+
+		await waitFor(() => {
+			expect(result.current.counter).toMatchObject({ value: 5, kind: "value" });
+			expect(result.current.doubledCounter).toMatchObject({
+				value: 10,
+				kind: "value",
+			});
+		});
+	});
+
+	test("useOperator with useObservable inline should work", async () => {
+		const { result } = renderHook(
+			() => {
+				const [factor, setFactor] = useState(2);
+				const operator = useMemo(
+					() => operators.map((value: number) => value * factor),
+					[factor],
+				);
+
+				const toStringOp = useMemo(
+					() => operators.map((value: number) => value.toString()),
+					[],
+				);
+
+				const [counter, setCounter] = usePushObservable(observableCount);
+				const doubledCounter = useObservable(
+					observableCount,
+					operator,
+					toStringOp,
+				);
+
+				return { counter, setCounter, doubledCounter, factor, setFactor };
+			},
+			{
+				wrapper,
+			},
+		);
+
+		await waitFor(() => {
+			expect(result.current.counter).toMatchObject({ kind: "not-emitted" });
+			expect(result.current.doubledCounter).toMatchObject({
+				kind: "not-emitted",
+			});
+		});
+
+		act(() => {
+			result.current.setFactor(3);
+			result.current.setCounter.next(5);
+		});
+
+		await waitFor(() => {
+			expect(result.current.doubledCounter).toMatchObject({
+				value: "15",
+				kind: "value",
 			});
 		});
 	});
