@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [12.1.2](https://github.com/submodule-org/submodule/compare/v12.1.1...v12.1.2) (2025-01-14)
+
+
+### Bug Fixes
+
+* pushObservable should emit initial value ([131231b](https://github.com/submodule-org/submodule/commit/131231b7c56a8a55d213d4022b19128df681abba))
+* removed types/react optional dependency ([2d2d925](https://github.com/submodule-org/submodule/commit/2d2d92508e163faf5c32ff223404770f373ceec5))
+
 ## [12.1.1](https://github.com/submodule-org/submodule/compare/v12.1.0...v12.1.1) (2025-01-14)
 
 
