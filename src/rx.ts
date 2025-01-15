@@ -533,40 +533,27 @@ export const operators = {
    * Combines the source observable with the latest values from multiple other observables.
    * @template T The type of the source value.
    * @template R The type of the combined value.
-   * @param {object} sources - The sources to combine.
-   * @returns {Operator<T, R>} The operator that combines the source with the latest values from the other observables.
+   * @param {Array<Subscribable<any> | ControllableObservable<any, any>>} sources - The sources to combine.
+   * @returns {Operator<T, [T, ...any[]]>} The operator that combines the source with the latest values from the other observables.
    */
-  withLatestFrom<T, R extends Record<string, unknown>>(
-    sources: {
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-      [K in keyof R]: Subscribable<R[K]> | ControllableObservable<R[K], any>
-    }
-  ): Operator<T, T & R> {
+  withLatestFrom<T, R extends Array<Subscribable<unknown> | ControllableObservable<unknown, unknown>>>(
+    ...sources: R
+  ): Operator<T, [T, ...{ [K in keyof R]: R[K] extends Subscribable<infer U> ? U : R[K] extends ControllableObservable<infer U, unknown> ? U : never }]> {
     return (source) => {
-      const keys = Object.keys(sources) as (keyof R)[];
-      const [observable, subscriber] = pushObservable<T & R>();
-      const values = {} as R;
+      const [observable, subscriber] = pushObservable<[T, ...{ [K in keyof R]: R[K] extends Subscribable<infer U> ? U : R[K] extends ControllableObservable<infer U, unknown> ? U : never }]>();
+      const values = new Array(sources.length) as { [K in keyof R]: R[K] extends Subscribable<infer U> ? U : R[K] extends ControllableObservable<infer U, unknown> ? U : never }[];
 
-      const observables = keys.map(key => {
-        const source = sources[key] satisfies PushObservable<R[typeof key]> | Subscribable<R[typeof key]>;
-        return Array.isArray(source) ? source[0] : source;
-      });
+      const hasValue = Array(sources.length).fill(false);
 
-      const hasValue = Array(keys.length).fill(false);
-      const valuesArray = Array(keys.length).fill(undefined);
-
-      const unsubs = observables.map((obs, i) => {
-        return obs.subscribe({
-          next: (val) => {
-            valuesArray[i] = val;
+      const unsubs = sources.map((obs, i) => {
+        const observable = Array.isArray(obs) ? obs[0] : obs;
+        return observable.subscribe({
+          // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+          next: (val: any) => {
+            values[i] = val;
             hasValue[i] = true;
-            if (hasValue.every(v => v)) {
-              keys.forEach((key, j) => {
-                values[key] = valuesArray[j];
-              });
-            }
           },
-          error: (err) => subscriber.error(err),
+          error: (err: unknown) => subscriber.error(err),
           complete: () => subscriber.complete()
         });
       });
@@ -574,7 +561,8 @@ export const operators = {
       const unsubSource = source.subscribe({
         next: (val) => {
           if (hasValue.every(v => v)) {
-            subscriber.next({ ...val, ...values });
+            // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+            subscriber.next([val, ...values] as any);
           }
         },
         error: (err) => subscriber.error(err),

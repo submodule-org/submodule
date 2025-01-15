@@ -589,6 +589,76 @@ describe('Observable', () => {
       expect(next).toHaveBeenCalledTimes(2);
     });
   });
+
+  describe('operator:withLatestFrom', () => {
+    it('should combine latest values from multiple observables', () => {
+      const next = vi.fn();
+      const [source, sourceSubscriber] = pushObservable<number>();
+      const [obs1, ctrl1] = pushObservable<number>();
+      const [obs2, ctrl2] = pushObservable<string>();
+
+      source.pipe(
+        operators.withLatestFrom(obs1, obs2)
+      ).subscribe({ next });
+
+      ctrl1.next(1);
+      ctrl2.next('a');
+      sourceSubscriber.next(100);
+
+      expect(next).toHaveBeenCalledWith([100, 1, 'a']);
+    });
+
+    it('should handle errors in source observable', () => {
+      const error = vi.fn();
+      const [source, sourceSubscriber] = pushObservable<number>();
+      const [obs1, ctrl1] = pushObservable<number>();
+      const [obs2, ctrl2] = pushObservable<string>();
+
+      source.pipe(
+        operators.withLatestFrom(obs1, obs2)
+      ).subscribe({ next: () => { }, error });
+
+      ctrl1.next(1);
+      ctrl2.next('a');
+      sourceSubscriber.error('test error');
+
+      expect(error).toHaveBeenCalledWith('test error');
+    });
+
+    it('should handle errors in combined observables', () => {
+      const error = vi.fn();
+      const [source, sourceSubscriber] = pushObservable<number>();
+      const [obs1, ctrl1] = pushObservable<number>();
+      const [obs2, ctrl2] = pushObservable<string>();
+
+      source.pipe(
+        operators.withLatestFrom(obs1, obs2)
+      ).subscribe({ next: () => { }, error });
+
+      ctrl1.next(1);
+      ctrl2.error('test error');
+      sourceSubscriber.next(100);
+
+      expect(error).toHaveBeenCalledWith('test error');
+    });
+
+    it('should complete when source completes', () => {
+      const complete = vi.fn();
+      const [source, sourceSubscriber] = pushObservable<number>();
+      const [obs1, ctrl1] = pushObservable<number>();
+      const [obs2, ctrl2] = pushObservable<string>();
+
+      source.pipe(
+        operators.withLatestFrom(obs1, obs2)
+      ).subscribe({ next: () => { }, complete });
+
+      ctrl1.next(1);
+      ctrl2.next('a');
+      sourceSubscriber.complete();
+
+      expect(complete).toHaveBeenCalled();
+    });
+  });
 });
 
 describe("submodule:observables", () => {
