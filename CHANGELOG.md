@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [12.3.0](https://github.com/submodule-org/submodule/compare/v12.2.0...v12.3.0) (2025-01-15)
+
+
+### Features
+
+* added operators.withLatestFrom ([406a1c6](https://github.com/submodule-org/submodule/commit/406a1c672c24ea959a5648dd00773eb187be1ef7))
+* expose lastValue from the stream ([406a1c6](https://github.com/submodule-org/submodule/commit/406a1c672c24ea959a5648dd00773eb187be1ef7))
+
 ## [12.2.0](https://github.com/submodule-org/submodule/compare/v12.1.2...v12.2.0) (2025-01-14)
 
 
