@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [12.3.1](https://github.com/submodule-org/submodule/compare/v12.3.0...v12.3.1) (2025-01-15)
+
+
+### Bug Fixes
+
+* fix withLatestFrom DX ([7b9efb8](https://github.com/submodule-org/submodule/commit/7b9efb8bd0f1497aae56e1f4910b5320d7748053))
+
 ## [12.3.0](https://github.com/submodule-org/submodule/compare/v12.2.0...v12.3.0) (2025-01-15)
 
 
