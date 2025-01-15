@@ -27,6 +27,7 @@ export type Operator<T, R> = UnaryFunction<Subscribable<T>, Subscribable<R>>
  */
 export type Subscribable<T> = {
   subscribe: (observer: Partial<Observer<T>>) => Unsubscribe
+  readonly lastValue: T | undefined
   pipe<A>(op1: Operator<T, A>): Subscribable<A>;
   pipe<A, B>(op1: Operator<T, A>, op2: Operator<A, B>): Subscribable<B>;
   pipe<A, B, C>(op1: Operator<T, A>, op2: Operator<A, B>, op3: Operator<B, C>): Subscribable<C>;
@@ -200,7 +201,10 @@ export function pushObservable<T>(initialValue?: T): PushObservable<T> {
     pipe: ((...ops: Operator<unknown, unknown>[]): Subscribable<unknown> => {
       return pipe(observable, ...ops);
       // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    }) as any
+    }) as any,
+    get lastValue() {
+      return subject.kind === 'active' ? subject.lastValue : undefined;
+    }
   }
 
   return [observable, subscriber];
@@ -233,7 +237,8 @@ export function pullObservable<T>(observer: ObservableInput<T>): Subscribable<T>
     pipe: ((...ops: Operator<unknown, unknown>[]): Subscribable<unknown> => {
       return pipe(observable, ...ops);
       // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    }) as any
+    }) as any,
+    lastValue: undefined
   } satisfies Subscribable<T>;
 
   return observable;
@@ -523,6 +528,73 @@ export const operators = {
         }
       };
     };
+  },
+  /**
+   * Combines the source observable with the latest values from multiple other observables.
+   * @template T The type of the source value.
+   * @template R The type of the combined value.
+   * @param {object} sources - The sources to combine.
+   * @returns {Operator<T, R>} The operator that combines the source with the latest values from the other observables.
+   */
+  withLatestFrom<T, R extends Record<string, unknown>>(
+    sources: {
+      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      [K in keyof R]: Subscribable<R[K]> | ControllableObservable<R[K], any>
+    }
+  ): Operator<T, T & R> {
+    return (source) => {
+      const keys = Object.keys(sources) as (keyof R)[];
+      const [observable, subscriber] = pushObservable<T & R>();
+      const values = {} as R;
+
+      const observables = keys.map(key => {
+        const source = sources[key] satisfies PushObservable<R[typeof key]> | Subscribable<R[typeof key]>;
+        return Array.isArray(source) ? source[0] : source;
+      });
+
+      const hasValue = Array(keys.length).fill(false);
+      const valuesArray = Array(keys.length).fill(undefined);
+
+      const unsubs = observables.map((obs, i) => {
+        return obs.subscribe({
+          next: (val) => {
+            valuesArray[i] = val;
+            hasValue[i] = true;
+            if (hasValue.every(v => v)) {
+              keys.forEach((key, j) => {
+                values[key] = valuesArray[j];
+              });
+            }
+          },
+          error: (err) => subscriber.error(err),
+          complete: () => subscriber.complete()
+        });
+      });
+
+      const unsubSource = source.subscribe({
+        next: (val) => {
+          if (hasValue.every(v => v)) {
+            subscriber.next({ ...val, ...values });
+          }
+        },
+        error: (err) => subscriber.error(err),
+        complete: () => subscriber.complete()
+      });
+
+      return {
+        ...observable,
+        subscribe: (obs) => {
+          const unsub = observable.subscribe(obs);
+          return () => {
+            unsub();
+            unsubSource();
+            for (const unsub of unsubs) {
+              unsub();
+            }
+          };
+        }
+      };
+    };
   }
 }
 
@@ -553,6 +625,20 @@ export const observables = {
    * @returns {Subscribable<A>} The resulting subscribable after applying the operators.
    */
   pipe,
+  extends: <T>(source: Subscribable<T>, options: {
+    cleanup: () => void
+  }): Subscribable<T> => {
+    return {
+      ...source,
+      subscribe: (obs) => {
+        const unsub = source.subscribe(obs);
+        return () => {
+          unsub();
+          options.cleanup();
+        };
+      }
+    }
+  },
   /**
    * Combines the latest values from multiple observables into a single observable.
    * @template T The type of the combined value.
