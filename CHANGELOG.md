@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [12.3.2](https://github.com/submodule-org/submodule/compare/v12.3.1...v12.3.2) (2025-01-16)
+
+
+### Bug Fixes
+
+* ease up react type ([7cf8302](https://github.com/submodule-org/submodule/commit/7cf8302b02acce1888047f877b281140223d68c8))
+
 ## [12.3.1](https://github.com/submodule-org/submodule/compare/v12.3.0...v12.3.1) (2025-01-15)
 
 
