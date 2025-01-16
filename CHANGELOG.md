@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [12.4.0](https://github.com/submodule-org/submodule/compare/v12.3.2...v12.4.0) (2025-01-16)
+
+
+### Features
+
+* expose observables.createState and provideState ([87cb88c](https://github.com/submodule-org/submodule/commit/87cb88c76f7776054b29f23d1fbc2ca448424902))
+
 ## [12.3.2](https://github.com/submodule-org/submodule/compare/v12.3.1...v12.3.2) (2025-01-16)
 
 
