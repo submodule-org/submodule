@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [12.4.1](https://github.com/submodule-org/submodule/compare/v12.4.0...v12.4.1) (2025-01-16)
+
+
+### Bug Fixes
+
+* Emission type was way too wide ([d083e1a](https://github.com/submodule-org/submodule/commit/d083e1abcbddd703075f986b527aaa04a6aa632f))
+
 ## [12.4.0](https://github.com/submodule-org/submodule/compare/v12.3.2...v12.4.0) (2025-01-16)
 
 
