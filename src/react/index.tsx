@@ -185,10 +185,9 @@ type Emission<Value> =
 	| { kind: "not-emitted" };
 
 type Result<Value> =
-	| { hasError: false; hasValue: false; value: undefined }
+	| { hasError: false; hasValue: false; value?: Value }
 	| { hasError: true; hasValue: false; value: undefined; error: unknown }
-	| { hasError: false; hasValue: true; value: Value }
-	| { hasError: boolean; hasValue: boolean; value?: Value };
+	| { hasError: false; hasValue: true; value: Value };
 
 const NOT_EMITTED = {
 	kind: "not-emitted",
