@@ -627,6 +627,19 @@ export const observables = {
       }
     }
   },
+
+  /** Simplified version of push observable that focusing on providing a shaped api */
+  createState: <T, C>(
+    initialValue: T,
+    fn: (subscriber: Subscriber<T>, get: () => T) => C
+  ): readonly [Subscribable<T>, C] => {
+    const [observable, subscriber] = pushObservable<T>(initialValue);
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    const get = () => observable.lastValue!;
+
+    const controller = fn(subscriber, get);
+    return [observable, controller] as const;
+  },
   /**
    * Combines the latest values from multiple observables into a single observable.
    * @template T The type of the combined value.

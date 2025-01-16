@@ -1,4 +1,4 @@
-import { observables, pipe, pushObservable, type Operator, type PushObservable, type Subscribable } from "./rx"
+import { observables, pipe, pushObservable, type Operator, type PushObservable, type Subscribable, type Subscriber } from "./rx"
 
 declare const ExecutorIdBrand: unique symbol
 export type ExecutorId = string & { readonly [ExecutorIdBrand]: never }
@@ -840,6 +840,28 @@ export function providePushObservable<Value>(
     : provide(() => {
       return pushObservable()
     })
+}
+
+/**
+ * Utility to integrate state with submodule ecosystem
+ * @param pValue - value that will be used as initial state
+ * @param controller - api to control the state
+ * @returns 
+ */
+export function provideState<
+  Value,
+  Controller,
+  ControllerFn extends (sub: Subscriber<Value>, get: () => Value) => Controller
+>(
+  pValue: Value | Executor<Value>,
+  controller: ControllerFn | Executor<ControllerFn>
+): Executor<readonly [Subscribable<Value>, Controller]> {
+  return map(
+    { value: normalize(pValue), controller: normalize(controller) },
+    ({ value, controller }) => {
+      return observables.createState<Value, Controller>(value, controller)
+    }
+  )
 }
 
 export type OperatorLike<S, A> = Operator<S, A> | Executor<Operator<S, A>>
