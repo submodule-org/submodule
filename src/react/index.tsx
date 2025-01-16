@@ -188,7 +188,7 @@ type Result<Value> =
 	| { hasError: false; hasValue: false; value: undefined }
 	| { hasError: true; hasValue: false; value: undefined; error: unknown }
 	| { hasError: false; hasValue: true; value: Value }
-	| { hasError: false; hasValue: false };
+	| { hasError: boolean; hasValue: boolean; value?: Value };
 
 const NOT_EMITTED = {
 	kind: "not-emitted",
