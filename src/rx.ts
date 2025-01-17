@@ -27,8 +27,8 @@ export type Operator<T, R> = UnaryFunction<Subscribable<T>, Subscribable<R>>
  */
 export type Subscribable<T> = {
   subscribe: (observer: Partial<Observer<T>>) => Unsubscribe
-  readonly get: T | undefined
-  readonly getState: State<T>
+  readonly value: T | undefined
+  readonly state: State<T>
 }
 
 /**
@@ -62,8 +62,8 @@ export type Subscriber<T> = {
 }
 
 type ControllerBase<T> = Subscriber<T> & {
-  readonly get: () => T | undefined
-  readonly getState: () => State<T>
+  readonly value: () => T | undefined
+  readonly state: () => State<T>
 }
 
 /** Utility type to force tuple Subscriber and controller */
@@ -156,12 +156,12 @@ export function createObservable<T>(initialValue?: T): PushObservable<T> {
     next: handleNext,
     error: handleError,
     complete: handleComplete,
-    get: () => {
+    value: () => {
       if (subject.kind === 'active') {
         return subject.lastValue;
       }
     },
-    getState: () => {
+    state: () => {
       return subject.kind === 'active'
         ? { kind: 'active', value: subject.lastValue }
         : { kind: 'inactive', value: undefined }
@@ -204,10 +204,10 @@ export function createObservable<T>(initialValue?: T): PushObservable<T> {
         }
       };
     },
-    get get() {
+    get value() {
       return subject.kind === 'active' ? subject.lastValue : undefined;
     },
-    get getState() {
+    get state() {
       return subject.kind === 'active'
         ? { kind: 'active', value: subject.lastValue } as const
         : { kind: 'inactive', value: undefined } as const
@@ -589,18 +589,6 @@ export const observables = {
     }
   },
 
-  /** Simplified version of push observable that focusing on providing a shaped api */
-  createState: <T, C>(
-    initialValue: T,
-    fn: (subscriber: Subscriber<T>, get: () => T) => C
-  ): readonly [Subscribable<T>, C] => {
-    const [observable, subscriber] = createObservable<T>(initialValue);
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
-    const get = () => observable.get!;
-
-    const controller = fn(subscriber, get);
-    return [observable, controller] as const;
-  },
   /**
    * Combines the latest values from multiple observables into a single observable.
    * @template T The type of the combined value.
