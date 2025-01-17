@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [12.5.1](https://github.com/submodule-org/submodule/compare/v12.5.0...v12.5.1) (2025-01-17)
+
+
+### Bug Fixes
+
+* changed name of get to value and getState to state ([d9e9a82](https://github.com/submodule-org/submodule/commit/d9e9a821bf0b6462012a6b96ef3637c2ad364601))
+
 ## [12.5.0](https://github.com/submodule-org/submodule/compare/v12.4.1...v12.5.0) (2025-01-17)
 
 
