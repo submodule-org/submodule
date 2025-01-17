@@ -3,7 +3,6 @@ import {
 	isExecutor,
 	map,
 	value,
-	type PushObservableExecutor,
 	type Executor,
 	type Scope,
 	type Subscribable,
@@ -24,12 +23,7 @@ import React, {
 	useState,
 	useSyncExternalStore,
 } from "react";
-import type {
-	Subscriber,
-	OperatorFactory,
-	PushObservable,
-	Operator,
-} from "../rx";
+import type { OperatorFactory, PushObservable, Operator } from "../rx";
 
 const scopeContext = createContext<Scope | undefined>(undefined);
 const resetContext = createContext<() => void>(() => {});
@@ -147,7 +141,15 @@ type CacheEntry = [unknown, Cache];
  * @returns The resolved value of the executor.
  * @throws {Promise} If the executor is not yet resolved, a promise is thrown to suspend the component.
  */
-export function useResolve<T>(executor: Executor<T>): T {
+export function useResolve<T>(
+	executor: Executor<T>,
+	params: unknown[] = [],
+	factory: (
+		scope: Scope,
+		executor: Executor<T>,
+		params: unknown[],
+	) => Promise<T> = (scope, executor) => scope.resolve(executor),
+): T {
 	const scope = useScope();
 	const { cache } = useCache();
 
@@ -164,7 +166,7 @@ export function useResolve<T>(executor: Executor<T>): T {
 	const cacheEntry: CacheEntry = [
 		executor,
 		{
-			promise: scope.resolve(executor).then(
+			promise: factory(scope, executor, params).then(
 				(resolved) => {
 					cacheEntry[1].result = { data: resolved };
 				},

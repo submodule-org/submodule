@@ -4,7 +4,7 @@ import {
 	combineObservables,
 	observables,
 	operators,
-	providePushObservable,
+	provideObservable,
 	value,
 } from "../../src";
 import {
@@ -21,15 +21,15 @@ configure({ reactStrictMode: true });
 
 const stringvalue = value("hello");
 
-const observableCount = providePushObservable<number>(0);
+const observableCount = provideObservable<number>(0);
 
-const listStream = providePushObservable([
+const listStream = provideObservable([
 	{ id: 1, value: "1" },
 	{ id: 2, value: "2" },
 	{ id: 3, value: "3" },
 ]);
 
-const selectedIdStream = providePushObservable(null as null | number);
+const selectedIdStream = provideObservable(null as null | number);
 
 const selectedItem = applyPipes(
 	combineObservables({ listStream, selectedIdStream }),

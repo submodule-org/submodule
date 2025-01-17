@@ -27,17 +27,8 @@ export type Operator<T, R> = UnaryFunction<Subscribable<T>, Subscribable<R>>
  */
 export type Subscribable<T> = {
   subscribe: (observer: Partial<Observer<T>>) => Unsubscribe
-  readonly lastValue: T | undefined
-  pipe<A>(op1: Operator<T, A>): Subscribable<A>;
-  pipe<A, B>(op1: Operator<T, A>, op2: Operator<A, B>): Subscribable<B>;
-  pipe<A, B, C>(op1: Operator<T, A>, op2: Operator<A, B>, op3: Operator<B, C>): Subscribable<C>;
-  pipe<A, B, C, D>(op1: Operator<T, A>, op2: Operator<A, B>, op3: Operator<B, C>, op4: Operator<C, D>): Subscribable<D>;
-  pipe<A, B, C, D, E>(op1: Operator<T, A>, op2: Operator<A, B>, op3: Operator<B, C>, op4: Operator<C, D>, op5: Operator<D, E>): Subscribable<E>;
-  pipe<A, B, C, D, E, F>(op1: Operator<T, A>, op2: Operator<A, B>, op3: Operator<B, C>, op4: Operator<C, D>, op5: Operator<D, E>, op6: Operator<E, F>): Subscribable<F>;
-  pipe<A, B, C, D, E, F, G>(op1: Operator<T, A>, op2: Operator<A, B>, op3: Operator<B, C>, op4: Operator<C, D>, op5: Operator<D, E>, op6: Operator<E, F>, op7: Operator<F, G>): Subscribable<G>;
-  pipe<A, B, C, D, E, F, G, H>(op1: Operator<T, A>, op2: Operator<A, B>, op3: Operator<B, C>, op4: Operator<C, D>, op5: Operator<D, E>, op6: Operator<E, F>, op7: Operator<F, G>, op8: Operator<G, H>): Subscribable<H>;
-  pipe<A, B, C, D, E, F, G, H, I>(op1: Operator<T, A>, op2: Operator<A, B>, op3: Operator<B, C>, op4: Operator<C, D>, op5: Operator<D, E>, op6: Operator<E, F>, op7: Operator<F, G>, op8: Operator<G, H>, op9: Operator<H, I>): Subscribable<I>;
-  pipe<A, B, C, D, E, F, G, H, I, J>(op1: Operator<T, A>, op2: Operator<A, B>, op3: Operator<B, C>, op4: Operator<C, D>, op5: Operator<D, E>, op6: Operator<E, F>, op7: Operator<F, G>, op8: Operator<G, H>, op9: Operator<H, I>, op10: Operator<I, J>): Subscribable<J>;
+  readonly get: T | undefined
+  readonly getState: State<T>
 }
 
 /**
@@ -70,6 +61,11 @@ export type Subscriber<T> = {
   complete: () => void
 }
 
+type ControllerBase<T> = Subscriber<T> & {
+  readonly get: () => T | undefined
+  readonly getState: () => State<T>
+}
+
 /** Utility type to force tuple Subscriber and controller */
 export type ControllableObservable<T, V> = readonly [Subscribable<T>, V]
 
@@ -77,7 +73,7 @@ export type ControllableObservable<T, V> = readonly [Subscribable<T>, V]
  * Represents a push-based observable with a subscriber.
  * @template T The type of the value emitted by the observable.
  */
-export type PushObservable<T> = ControllableObservable<T, Subscriber<T>>
+export type PushObservable<T> = ControllableObservable<T, ControllerBase<T>>
 
 type SubjectInit<T> = {
   kind: 'init'
@@ -87,7 +83,7 @@ type SubjectInit<T> = {
 type SubjectActive<T> = {
   kind: 'active'
   subscribers: Set<Partial<Observer<T>>>
-  lastValue?: T
+  lastValue: T
 }
 
 type SubjectError = {
@@ -100,6 +96,9 @@ type SubjectComplete = {
 }
 
 type Subject<T> = SubjectInit<T> | SubjectActive<T> | SubjectError | SubjectComplete
+type State<T> =
+  | { kind: 'active', value: T }
+  | { kind: 'inactive', value: undefined }
 
 const noops: Unsubscribe = () => { }
 
@@ -109,7 +108,7 @@ const noops: Unsubscribe = () => { }
  * @param {T} [initialValue] - The initial value to emit.
  * @returns {PushObservable<T>} The created push-based observable.
  */
-export function pushObservable<T>(initialValue?: T): PushObservable<T> {
+export function createObservable<T>(initialValue?: T): PushObservable<T> {
   let subject: Subject<T> = initialValue === undefined ? {
     kind: 'init',
     subscribers: new Set()
@@ -125,11 +124,10 @@ export function pushObservable<T>(initialValue?: T): PushObservable<T> {
     if (subject.kind === 'init') {
       subject = {
         kind: 'active',
-        subscribers: subject.subscribers
+        subscribers: subject.subscribers,
+        lastValue: value
       };
     }
-
-    (subject as SubjectActive<T>).lastValue = value
 
     for (const sub of subject.subscribers) {
       sub.next?.(value);
@@ -154,10 +152,20 @@ export function pushObservable<T>(initialValue?: T): PushObservable<T> {
     }
   }
 
-  const subscriber: Subscriber<T> = {
+  const controller: ControllerBase<T> = {
     next: handleNext,
     error: handleError,
-    complete: handleComplete
+    complete: handleComplete,
+    get: () => {
+      if (subject.kind === 'active') {
+        return subject.lastValue;
+      }
+    },
+    getState: () => {
+      return subject.kind === 'active'
+        ? { kind: 'active', value: subject.lastValue }
+        : { kind: 'inactive', value: undefined }
+    }
   };
 
   const observable: Subscribable<T> = {
@@ -176,9 +184,7 @@ export function pushObservable<T>(initialValue?: T): PushObservable<T> {
             complete: obs.complete ?? noops
           });
 
-          if (subject.lastValue !== undefined) {
-            obs.next?.(subject.lastValue)
-          }
+          obs.next?.(subject.lastValue)
 
           break
         }
@@ -198,50 +204,17 @@ export function pushObservable<T>(initialValue?: T): PushObservable<T> {
         }
       };
     },
-    pipe: ((...ops: Operator<unknown, unknown>[]): Subscribable<unknown> => {
-      return pipe(observable, ...ops);
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    }) as any,
-    get lastValue() {
+    get get() {
       return subject.kind === 'active' ? subject.lastValue : undefined;
+    },
+    get getState() {
+      return subject.kind === 'active'
+        ? { kind: 'active', value: subject.lastValue } as const
+        : { kind: 'inactive', value: undefined } as const
     }
   }
 
-  return [observable, subscriber];
-}
-
-/**
- * Also known as cold observable, the Input will be called and cleaned as a new subscriber subscribes
- * @param observer 
- * @returns 
- */
-/**
- * Creates a pull-based observable.
- * @template T The type of the value emitted by the observable.
- * @param {ObservableInput<T>} observer - The observer function to call for each subscription.
- * @returns {Subscribable<T>} The created pull-based observable.
- */
-export function pullObservable<T>(observer: ObservableInput<T>): Subscribable<T> {
-  const observable = {
-    subscribe: (subscriber) => {
-      const unsub = observer({
-        next: subscriber.next?.bind(subscriber),
-        error: subscriber.error?.bind(subscriber),
-        complete: () => {
-          subscriber.complete?.();
-          unsub(); // auto cleanup on complete
-        }
-      });
-      return unsub;
-    },
-    pipe: ((...ops: Operator<unknown, unknown>[]): Subscribable<unknown> => {
-      return pipe(observable, ...ops);
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    }) as any,
-    lastValue: undefined
-  } satisfies Subscribable<T>;
-
-  return observable;
+  return [observable, controller];
 }
 
 /**
@@ -289,7 +262,7 @@ export const operators = {
    */
   map<T, R>(fn: (value: T) => R): Operator<T, R> {
     return (source) => {
-      const [observable, subscriber] = pushObservable<R>();
+      const [observable, subscriber] = createObservable<R>();
       const unsub = source.subscribe({
         next: (val) => {
           try {
@@ -321,7 +294,7 @@ export const operators = {
    */
   filter<T>(predicate: (value: T) => boolean): Operator<T, T> {
     return (source) => {
-      const [observable, subscriber] = pushObservable<T>();
+      const [observable, subscriber] = createObservable<T>();
       const unsub = source.subscribe({
         next: (val) => {
           try {
@@ -348,23 +321,18 @@ export const operators = {
   /**
    * Performs side effects for each value emitted by the source observable.
    * @template T The type of the input value.
-   * @param {object} handlers - The side effect handlers.
-   * @param {function(T): void} [handlers.onNext] - The side effect function to apply to each value.
-   * @param {function(unknown): void} [handlers.onError] - The side effect function to apply on error.
-   * @param {function(): void} [handlers.onComplete] - The side effect function to apply on completion.
+   * @param {function(T): void} onNext - The side effect function to apply to each value.
+   * @param {function(unknown): void} [onError] - The side effect function to apply on error.
+   * @param {function(): void} [onComplete] - The side effect function to apply on completion.
    * @returns {Operator<T, T>} The operator that performs the side effects.
    */
-  tap<T>({
-    onNext,
-    onError,
-    onComplete,
-  }: {
-    onNext?: (value: T) => void;
-    onError?: (error: unknown) => void;
-    onComplete?: () => void;
-  }): Operator<T, T> {
+  tap<T>(
+    onNext?: (value: T) => void,
+    onError?: (error: unknown) => void,
+    onComplete?: () => void
+  ): Operator<T, T> {
     return (source) => {
-      const [observable, subscriber] = pushObservable<T>();
+      const [observable, subscriber] = createObservable<T>();
       const unsub = source.subscribe({
         next: (val) => {
           try {
@@ -416,7 +384,7 @@ export const operators = {
    */
   latest<T>(): Operator<T, T> {
     return (source) => {
-      const [observable, subscriber] = pushObservable<T>();
+      const [observable, subscriber] = createObservable<T>();
       let lastValue: T | undefined;
       let hasValue = false;
       const unsub = source.subscribe({
@@ -459,7 +427,7 @@ export const operators = {
     const clone = options?.clone ?? structuredClone;
 
     return (source) => {
-      const [observable, subscriber] = pushObservable<T>();
+      const [observable, subscriber] = createObservable<T>();
       let last: T | undefined;
       let hasValue = false;
       const unsub = source.subscribe({
@@ -501,7 +469,7 @@ export const operators = {
    */
   reduce<T, R>(accumulator: (acc: R, value: T) => R, seed: R): Operator<T, R> {
     return (source) => {
-      const [observable, subscriber] = pushObservable<R>();
+      const [observable, subscriber] = createObservable<R>();
       let accumulated = seed;
       const unsub = source.subscribe({
         next: (val) => {
@@ -540,7 +508,7 @@ export const operators = {
     ...sources: R
   ): Operator<T, [T, ...{ [K in keyof R]: R[K] extends Subscribable<infer U> ? U : R[K] extends ControllableObservable<infer U, unknown> ? U : never }]> {
     return (source) => {
-      const [observable, subscriber] = pushObservable<[T, ...{ [K in keyof R]: R[K] extends Subscribable<infer U> ? U : R[K] extends ControllableObservable<infer U, unknown> ? U : never }]>();
+      const [observable, subscriber] = createObservable<[T, ...{ [K in keyof R]: R[K] extends Subscribable<infer U> ? U : R[K] extends ControllableObservable<infer U, unknown> ? U : never }]>();
       const values = new Array(sources.length) as { [K in keyof R]: R[K] extends Subscribable<infer U> ? U : R[K] extends ControllableObservable<infer U, unknown> ? U : never }[];
 
       const hasValue = Array(sources.length).fill(false);
@@ -596,14 +564,7 @@ export const observables = {
    * @param {T} [initialValue] - The initial value to emit.
    * @returns {PushObservable<T>} The created push-based observable.
    */
-  pushObservable,
-  /**
-   * Creates a pull-based observable.
-   * @template T The type of the value emitted by the observable.
-   * @param {ObservableInput<T>} observer - The observer function to call for each subscription.
-   * @returns {Subscribable<T>} The created pull-based observable.
-   */
-  pullObservable,
+  create: createObservable,
   /**
    * Pipes multiple operators together.
    * @template S The type of the source value.
@@ -633,9 +594,9 @@ export const observables = {
     initialValue: T,
     fn: (subscriber: Subscriber<T>, get: () => T) => C
   ): readonly [Subscribable<T>, C] => {
-    const [observable, subscriber] = pushObservable<T>(initialValue);
+    const [observable, subscriber] = createObservable<T>(initialValue);
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
-    const get = () => observable.lastValue!;
+    const get = () => observable.get!;
 
     const controller = fn(subscriber, get);
     return [observable, controller] as const;
@@ -654,7 +615,7 @@ export const observables = {
 
     // only emit where every up streams have emitted
     const keys = Object.keys(sources) as (keyof T)[];
-    const [observable, subscriber] = pushObservable<T>();
+    const [observable, subscriber] = createObservable<T>();
     const values = {} as T;
 
     // value can be Subscriable or PushObservable, distinguish them
