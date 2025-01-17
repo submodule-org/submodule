@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [12.5.0](https://github.com/submodule-org/submodule/compare/v12.4.1...v12.5.0) (2025-01-17)
+
+
+### Features
+
+* added get and getState to subscribable and controllerBase ([7168963](https://github.com/submodule-org/submodule/commit/716896313de73581fabb0bee3e3035b1163f390c))
+
 ## [12.4.1](https://github.com/submodule-org/submodule/compare/v12.4.0...v12.4.1) (2025-01-16)
 
 
